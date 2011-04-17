@@ -296,6 +296,211 @@ extern "C" {
 
   /* VI */
   /**
+   * @name Collection of comparison functions.
+   * @{
+   */
+  /**
+   * @return non-zero if t1 is equal to t2. Return zero, otherwise.
+   */
+  static inline int utility_time_eq(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return ((t1->t.tv_sec == t2->t.tv_sec)
+	    && (t1->t.tv_nsec == t2->t.tv_nsec));
+  }
+  /**
+   * Work just like utility_time_eq() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_eq_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_eq(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_eq() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_eq_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_eq_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+
+  /**
+   * @return non-zero if t1 is less than t2. Return zero, otherwise.
+   */
+  static inline int utility_time_lt(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return ((t1->t.tv_sec < t2->t.tv_sec)
+	    || ((t1->t.tv_sec == t2->t.tv_sec)
+		&& (t1->t.tv_nsec < t2->t.tv_nsec)));
+  }
+  /**
+   * Work just like utility_time_lt() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_lt_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_lt(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_lt() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_lt_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_lt_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+
+  /**
+   * @return non-zero if t1 is less than or equal to t2. Return zero,
+   * otherwise.
+   */
+  static inline int utility_time_le(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return (utility_time_eq(t1, t2) || utility_time_lt(t1, t2));
+  }
+  /**
+   * Work just like utility_time_le() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_le_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_le(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_le() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_le_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_le_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+
+  /**
+   * @return non-zero if t1 is greater than t2. Return zero,
+   * otherwise.
+   */
+  static inline int utility_time_gt(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return !utility_time_le(t1, t2);
+  }
+  /**
+   * Work just like utility_time_gt() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_gt_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_gt(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_gt() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_gt_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_gt_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+
+  /**
+   * @return non-zero if t1 is greater than or equal to t2. Return
+   * zero, otherwise.
+   */
+  static inline int utility_time_ge(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return !utility_time_lt(t1, t2);
+  }
+  /**
+   * Work just like utility_time_ge() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_ge_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_ge(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_ge() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_ge_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_ge_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+
+  /**
+   * @return non-zero if t1 is not equal to t2. Return zero,
+   * otherwise.
+   */
+  static inline int utility_time_ne(const utility_time *t1,
+				    const utility_time *t2)
+  {
+    return !utility_time_eq(t1, t2);
+  }
+  /**
+   * Work just like utility_time_ne() except that t2 is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline int utility_time_ne_gc_t2(const utility_time *t1,
+					  const utility_time *t2)
+  {
+    int res = utility_time_ne(t1, t2);
+    utility_time_gc_auto(t2);
+    return res;
+  }
+  /**
+   * Work just like utility_time_ne() except that both operands are
+   * garbage collected if they are subject to automatic garbage
+   * collection.
+   */
+  static inline int utility_time_ne_gc(const utility_time *t1,
+				       const utility_time *t2)
+  {
+    int res = utility_time_ne_gc_t2(t1, t2);
+    utility_time_gc_auto(t1);
+    return res;
+  }
+  /** @} End of collection of comparison functions */
+
+  /* VII */
+  /**
    * @name Collection of operational functions.
    * @{
    */

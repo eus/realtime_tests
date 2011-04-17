@@ -111,5 +111,29 @@ int main(int argc, char **argv, char **envp)
   to_timespec(&internal_t, &t);
   assert((t.tv_sec == 0) && (t.tv_nsec == 32000000));
 
+  /* Testcase 12 */
+  assert(utility_time_eq_gc(to_utility_time_dyn(4, ms),
+			    to_utility_time_dyn(4, ms)));
+
+  /* Testcase 13 */
+  assert(utility_time_ne_gc(to_utility_time_dyn(4, s),
+			    to_utility_time_dyn(4, ms)));
+
+  /* Testcase 14 */
+  assert(utility_time_gt_gc(to_utility_time_dyn(4, s),
+			    to_utility_time_dyn(4, ms)));
+
+  /* Testcase 15 */
+  assert(utility_time_ge_gc(to_utility_time_dyn(4, s),
+			    to_utility_time_dyn(4, ms)));
+
+  /* Testcase 16 */
+  assert(utility_time_le_gc(to_utility_time_dyn(4, us),
+			    to_utility_time_dyn(4, us)));
+
+  /* Testcase 17 */
+  assert(utility_time_lt_gc(to_utility_time_dyn(4, ns),
+			    to_utility_time_dyn(4, us)));
+
   return EXIT_SUCCESS;
 }
