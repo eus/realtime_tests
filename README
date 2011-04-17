@@ -1,0 +1,35 @@
+There are many concepts and algorithms in the study of real-time
+systems. This project attempts to implement them to see their real
+behaviors in a real machine making it easier to understand the
+concepts and algorithms while allowing some real experimentations out
+of curiosity to concretely see some problems like chained blocking in
+priority inheritance and scheduling bug in a particular operating
+system.
+
+The codebase is divided logically into two parts:
+1. Infrastructure components.
+2. Experimentation components.
+
+The first part contains software components that are used in
+developing experimentation components. Each component should be in the
+form of a single source file accompanied with a program to run test
+cases that test the corresponding source file for semantical
+correctness and the absent of memory leak and memory violations and
+other things. As an example, the software component utility_time is
+developed using C programming language and as such consists of
+utility_time.h, utility_time.c (can be absent if all functions are
+inlined) and utility_time_test.c. The test program is then registered
+in the Makefile to be run with `make check'. The infrastructure
+software components are usually developed by refactoring common
+functions from the experimentation components.
+
+The second part contains software components that are used to
+understand some concepts, algorithms or problems related to the study
+of real-time systems. Each experimentation software component should
+be in the form of a single directory containing one README file
+describing the concept(s) or algorithm(s) or problem(s) that the
+component wishes to demonstrate and one or more source or data files.
+
+The codebase is Free Software licensed under GNU GPL version 3 and is
+developed to support the thesis work of Tadeus Prastowo in the area of
+real-time systems.
