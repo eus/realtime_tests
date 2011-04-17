@@ -184,6 +184,12 @@ extern "C" {
     }
     return internal_t;
   }
+
+  /* Set time to 0. */
+  static inline void utility_time_zero_t(utility_time *internal_t)
+  {
+    memset(&internal_t->t, 0, sizeof(internal_t->t));
+  }
   /* End of collection of internal helper functions and constants */
 
   /* IV */
@@ -589,6 +595,75 @@ extern "C" {
   {
     utility_time_inc(target, inc);
     utility_time_gc_auto(inc);
+  }
+
+  /* 3. utility_time_sub and variants
+   * Overlap is allowed (i.e., res can also be t1 or t2 or both)
+   */
+  /**
+   * Perform max(0, t1 - t2). That is, if the first operand is greater
+   * than or equal to the second, subtract the second utility_time
+   * object from the first one and store the result in the given
+   * utility_time object. Otherwise, store 0 as the result. Overlap is
+   * allowed (i.e., any of the operand objects and the object to store
+   * the result can be the same memory location).
+   *
+   * @param t1 a pointer to first operand.
+   * @param t2 a pointer to the subtractor.
+   * @param res a pointer to the utility_time object to store the result.
+   */
+  static inline void utility_time_sub(const utility_time *t1,
+				      const utility_time *t2,
+				      utility_time *res)
+  {
+    if (utility_time_le(t1, t2)) {
+      utility_time_zero_t(res);
+    } else {
+      if (t1->t.tv_nsec < t2->t.tv_nsec) {
+	res->t.tv_sec = t1->t.tv_sec - 1 - t2->t.tv_sec;
+	res->t.tv_nsec = BILLION + t1->t.tv_nsec - t2->t.tv_nsec;
+      } else {
+	res->t.tv_sec = t1->t.tv_sec - t2->t.tv_sec;
+	res->t.tv_nsec = t1->t.tv_nsec - t2->t.tv_nsec;
+      }
+    }
+  }
+  /**
+   * Work just like utility_time_sub() except that both the operands are
+   * garbage collected if they are subject to automatic garbage collection.
+   */
+  static inline void utility_time_sub_gc(const utility_time *t1,
+					 const utility_time *t2,
+					 utility_time *res)
+  {
+    utility_time_sub(t1, t2, res);
+    utility_time_gc_auto(t1);
+    utility_time_gc_auto(t2);
+  }
+  /**
+   * Work just like utility_time_sub() except that it returns the result
+   * as dynamic utility_time object subject to automatic garbage collection.
+   */
+  static inline utility_time *utility_time_sub_dyn(const utility_time *t1,
+						   const utility_time *t2)
+  {
+    utility_time *internal_t = utility_time_make_dyn();
+    if (internal_t != NULL) {
+      utility_time_sub(t1, t2, internal_t);
+    }
+    return internal_t;
+  }
+  /**
+   * Work just like utility_time_sub_dyn() except that both the operands are
+   * garbage collected if they are subject to automatic garbage collection.
+   */
+  static inline utility_time *utility_time_sub_dyn_gc(const utility_time *t1,
+						      const utility_time *t2)
+  {
+    utility_time *internal_t = utility_time_sub_dyn(t1, t2);
+    utility_time_gc_auto(t1);
+    utility_time_gc_auto(t2);
+    return internal_t;
   }
   /** @} End of collection of operational functions */
 

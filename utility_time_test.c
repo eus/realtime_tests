@@ -135,5 +135,31 @@ int main(int argc, char **argv, char **envp)
   assert(utility_time_lt_gc(to_utility_time_dyn(4, ns),
 			    to_utility_time_dyn(4, us)));
 
+  /* Testcase 18 */
+  to_timespec_gc(utility_time_sub_dyn_gc(to_utility_time_dyn(3, us),
+					 to_utility_time_dyn(3, us)), &t);
+  assert((t.tv_sec == 0) && (t.tv_nsec == 0));
+
+  /* Testcase 19 */
+  to_timespec_gc(utility_time_sub_dyn_gc(to_utility_time_dyn(3, ns),
+					 to_utility_time_dyn(3, us)), &t);
+  assert((t.tv_sec == 0) && (t.tv_nsec == 0));
+
+  /* Testcase 20 */
+  to_timespec_gc(utility_time_sub_dyn_gc(to_utility_time_dyn(3, us),
+					 to_utility_time_dyn(3, ns)), &t);
+  assert((t.tv_sec == 0) && (t.tv_nsec == 2997));
+
+  /* Testcase 21 */
+  to_timespec_gc(utility_time_sub_dyn_gc(to_utility_time_dyn(3000300999ULL, ns),
+					 to_utility_time_dyn(3, s)), &t);
+  assert((t.tv_sec == 0) && (t.tv_nsec == 300999));
+
+  /* Testcase 22 */
+  internal_t_dyn = to_utility_time_dyn(3000300999ULL, ns);
+  utility_time_sub(internal_t_dyn, internal_t_dyn, internal_t_dyn);
+  to_timespec_gc(internal_t_dyn, &t);
+  assert((t.tv_sec == 0) && (t.tv_nsec == 0));
+
   return EXIT_SUCCESS;
 }
