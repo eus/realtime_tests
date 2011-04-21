@@ -17,7 +17,7 @@
 
 /**
  * @file utility_time.h
- * @brief various functionalities to deal conveniently with data structures
+ * @brief Various functionalities to deal conveniently with data structures
  * related to various time functions.
  * @author Tadeus Prastowo <eus@member.fsf.org>
  *
