@@ -15,10 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
+#define _GNU_SOURCE /* fmemopen() */
+
 #include <assert.h>
+#include <errno.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "utility_time.h"
 
 int main(int argc, char **argv, char **envp)
@@ -160,6 +164,21 @@ int main(int argc, char **argv, char **envp)
   utility_time_sub(internal_t_dyn, internal_t_dyn, internal_t_dyn);
   to_timespec_gc(internal_t_dyn, &t);
   assert((t.tv_sec == 0) && (t.tv_nsec == 0));
+
+  /* Testcase 23 */
+  char test_out_stream_buffer[1024];
+  FILE *test_out_stream = fmemopen(test_out_stream_buffer,
+				   sizeof(test_out_stream_buffer), "w");
+  if (test_out_stream == NULL) {
+    fprintf(stderr, "Unable to open test_out_stream (%s)\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  to_file_string_gc(to_utility_time_dyn(4004, ms), test_out_stream);
+  if (fclose(test_out_stream) != 0) {
+    fprintf(stderr, "Unable to close test_out_stream (%s)\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  assert(strcmp(test_out_stream_buffer, "4.004000000") == 0);
 
   return EXIT_SUCCESS;
 }

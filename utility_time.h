@@ -45,6 +45,7 @@
 #define UTILITY_TIME
 
 #include <time.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -296,6 +297,34 @@ extern "C" {
 				    struct timespec *t)
   {
     to_timespec(internal_t, t);
+    utility_time_gc_auto(internal_t);
+  }
+
+  /**
+   * Convert the internal representation of time to a string in the
+   * form of "SECOND.NANOSECOND" where NANOSECOND is a fixed 9 digit
+   * integer and output the string directly to the given file
+   * stream. In case of an error related to the FILE object, the error
+   * is simply logged to the log stream.
+   *
+   * @param internal_t a pointer to the internal representation of time.
+   * @param out_stream a pointer to the FILE object opened for writing.
+   */
+  static inline void to_file_string(const utility_time *internal_t,
+				    FILE *out_stream)
+  {
+    fprintf(out_stream, "%lu.%09lu",
+	    internal_t->t.tv_sec, internal_t->t.tv_nsec);
+  }
+  /**
+   * Work just like to_file_string() but the given internal
+   * representation object is garbage collected if automatic garbage
+   * collection is permitted.
+   */
+  static inline void to_file_string_gc(const utility_time *internal_t,
+				       FILE *out_stream)
+  {
+    to_file_string(internal_t, out_stream);
     utility_time_gc_auto(internal_t);
   }
   /** @} End of collection of conversion functions to other types */
