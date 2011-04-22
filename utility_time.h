@@ -197,6 +197,8 @@ extern "C" {
   /* IV */
   /**
    * @name Collection of conversion functions to internal representation.
+   * The utility_time object to store the result must always be
+   * initalized first.
    * @{
    */
   /**
@@ -365,6 +367,31 @@ extern "C" {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
       string_to_utility_time(str, endptr, internal_t);
+    }
+    return internal_t;
+  }
+
+  /**
+   * Assign the internal representation of time from src to dst.
+   */
+  static inline void utility_time_to_utility_time(const utility_time *src,
+						  utility_time *dst)
+  {
+    dst->t.tv_sec = src->t.tv_sec;
+    dst->t.tv_nsec = src->t.tv_nsec;
+  }
+  /**
+   * Work just like utility_time_to_utility_time() except that it
+   * returns the result as dynamic utility_time object subject to
+   * automatic garbage collection.
+   */
+  static inline utility_time *utility_time_to_utility_time_dyn(const
+							       utility_time *
+							       src)
+  {
+    utility_time *internal_t = utility_time_make_dyn();
+    if (internal_t != NULL) {
+      utility_time_to_utility_time(src, internal_t);
     }
     return internal_t;
   }

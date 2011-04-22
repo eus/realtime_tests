@@ -216,5 +216,10 @@ int main(int argc, char **argv, char **envp)
 			    internal_t_dyn));
   assert(endptr == &str[2]);
 
+  /* Testcase 28 */
+  to_utility_time(7777, ms, &internal_t);
+  to_timespec_gc(utility_time_to_utility_time_dyn(&internal_t), &t);
+  assert((t.tv_sec == 7) && (t.tv_nsec == 777000000));
+
   return EXIT_SUCCESS;
 }
