@@ -181,24 +181,40 @@ int main(int argc, char **argv, char **envp)
   assert(strcmp(test_out_stream_buffer, "4.004000000") == 0);
 
   /* Testcase 24 */
-  internal_t_dyn = string_to_utility_time_dyn("45694");
+  char *endptr;
+  char *str = "45694";
+  internal_t_dyn = string_to_utility_time_dyn(str, &endptr);
   assert(utility_time_eq_gc(to_utility_time_dyn(45694, s),
 			    internal_t_dyn));
+  assert(endptr == &str[strlen(str)]);
 
   /* Testcase 25 */
-  internal_t_dyn = string_to_utility_time_dyn(".45694");
+  str = ".45694";
+  internal_t_dyn = string_to_utility_time_dyn(str, &endptr);
   assert(utility_time_eq_gc(to_utility_time_dyn(0, s),
 			    internal_t_dyn));
+  assert(endptr == str);
 
   /* Testcase 26 */
-  internal_t_dyn = string_to_utility_time_dyn("0.45694");
+  str = "0.45694";
+  internal_t_dyn = string_to_utility_time_dyn(str, &endptr);
   assert(utility_time_eq_gc(to_utility_time_dyn(456940, us),
 			    internal_t_dyn));
+  assert(endptr == &str[strlen(str)]);
 
   /* Testcase 26 */
-  internal_t_dyn = string_to_utility_time_dyn("9999.999999999");
+  str = "9999.999999999";
+  internal_t_dyn = string_to_utility_time_dyn(str, &endptr);
   assert(utility_time_eq_gc(to_utility_time_dyn(9999999999999ULL, ns),
 			    internal_t_dyn));
+  assert(endptr == &str[strlen(str)]);
+
+  /* Testcase 27 */
+  str = "45. It is the fastest.";
+  internal_t_dyn = string_to_utility_time_dyn(str, &endptr);
+  assert(utility_time_eq_gc(to_utility_time_dyn(45, s),
+			    internal_t_dyn));
+  assert(endptr == &str[2]);
 
   return EXIT_SUCCESS;
 }

@@ -281,18 +281,31 @@ extern "C" {
    * converted, a zero time is returned. If the fraction of a second
    * is longer than nine digits, only the first nine digits are
    * converted. If the second part is greater than what can be
-   * represented on the host system, it will be set to zero.
+   * represented on the host system, no conversion happens and a zero
+   * time is returned.
+   *
+   * If a conversion happens and endptr is not NULL, the address of
+   * the next unconverted character is returned in endptr. If no
+   * conversion happens but endptr is not NULL, str is stored in
+   * endptr.
    *
    * @param str a pointer to the string to be converted.
+   * @param endptr a pointer to the pointer that will be pointed to
+   * the next unprocessed character in str.
    * @param internal_t a pointer to the utility_time object to store the result.
    */
   static inline void string_to_utility_time(const char *str,
+					    char **endptr,
 					    utility_time *internal_t)
   {
     const int longest_second_digit_count = (sizeof(internal_t->t.tv_sec) * 8
 					    / 10 * 3);
     /* can be calculated based on 2^10 ~ 10^3 */
     const char delimiter = '.';
+
+    if (endptr != NULL) {
+      *endptr = (char *) str;
+    }
     
     /* Get the second part */
     const char *ptr = str;
@@ -326,9 +339,19 @@ extern "C" {
 	  nanosecond_digit_count++;
 	}
 
+	/* Handle case like: "The lap time is 45. It is the fastest." */
+	if (nanosecond_digit_count == 0) {
+	  ptr--;
+	}
+	/* End of handling special case */
+
 	internal_t->t.tv_nsec = strtoull(buffer, NULL, 10);
       } else {
 	internal_t->t.tv_nsec = 0;
+      }
+
+      if (endptr != NULL) {
+	*endptr = (char *) ptr;
       }
     }
   }
@@ -336,11 +359,12 @@ extern "C" {
    * Work just like string_to_utility_time() except that it returns the result
    * as dynamic utility_time object subject to automatic garbage collection.
    */
-  static inline utility_time *string_to_utility_time_dyn(const char *str)
+  static inline utility_time *string_to_utility_time_dyn(const char *str,
+							 char **endptr)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
-      string_to_utility_time(str, internal_t);
+      string_to_utility_time(str, endptr, internal_t);
     }
     return internal_t;
   }
