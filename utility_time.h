@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -266,6 +267,80 @@ extern "C" {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
       timespec_to_utility_time(t, internal_t);
+    }
+    return internal_t;
+  }
+
+  /**
+   * Convert the given string to the internal time representation.
+   * The string must consist of either an integer representing a time
+   * in second or two positive integers separated by a dot
+   * representing a time in second and in a fraction of a second
+   * (i.e., SECOND.FRACTION_OF_A_SECOND). Conversion stops once a
+   * non-digit character is encountered in the string. If nothing is
+   * converted, a zero time is returned. If the fraction of a second
+   * is longer than nine digits, only the first nine digits are
+   * converted. If the second part is greater than what can be
+   * represented on the host system, it will be set to zero.
+   *
+   * @param str a pointer to the string to be converted.
+   * @param internal_t a pointer to the utility_time object to store the result.
+   */
+  static inline void string_to_utility_time(const char *str,
+					    utility_time *internal_t)
+  {
+    const int longest_second_digit_count = (sizeof(internal_t->t.tv_sec) * 8
+					    / 10 * 3);
+    /* can be calculated based on 2^10 ~ 10^3 */
+    const char delimiter = '.';
+    
+    /* Get the second part */
+    const char *ptr = str;
+    unsigned int second_digit_count = 0;
+    while (isdigit(*ptr)) {
+      ptr++;
+      second_digit_count++;
+    }
+    /* End of getting the second part */
+
+    if (second_digit_count == 0
+	|| second_digit_count > longest_second_digit_count) {
+      /* Special cases */
+      internal_t->t.tv_sec = 0;
+      internal_t->t.tv_nsec = 0;
+    } else {
+      /* Extract the second part */
+      internal_t->t.tv_sec = strtoull(str, NULL, 10);
+
+      /* Extract the nanosecond part */
+      if (*ptr == delimiter) {
+	char buffer[9 + 1];
+	memset(buffer, '0', sizeof(buffer) - 1);
+	buffer[sizeof(buffer) - 1] = '\0';
+
+	++ptr;
+	unsigned int nanosecond_digit_count = 0;
+	while (isdigit(*ptr) && nanosecond_digit_count < sizeof(buffer) - 1) {
+	  buffer[nanosecond_digit_count] = *ptr;
+	  ptr++;
+	  nanosecond_digit_count++;
+	}
+
+	internal_t->t.tv_nsec = strtoull(buffer, NULL, 10);
+      } else {
+	internal_t->t.tv_nsec = 0;
+      }
+    }
+  }
+  /**
+   * Work just like string_to_utility_time() except that it returns the result
+   * as dynamic utility_time object subject to automatic garbage collection.
+   */
+  static inline utility_time *string_to_utility_time_dyn(const char *str)
+  {
+    utility_time *internal_t = utility_time_make_dyn();
+    if (internal_t != NULL) {
+      string_to_utility_time(str, internal_t);
     }
     return internal_t;
   }

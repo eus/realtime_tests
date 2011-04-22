@@ -180,5 +180,25 @@ int main(int argc, char **argv, char **envp)
   }
   assert(strcmp(test_out_stream_buffer, "4.004000000") == 0);
 
+  /* Testcase 24 */
+  internal_t_dyn = string_to_utility_time_dyn("45694");
+  assert(utility_time_eq_gc(to_utility_time_dyn(45694, s),
+			    internal_t_dyn));
+
+  /* Testcase 25 */
+  internal_t_dyn = string_to_utility_time_dyn(".45694");
+  assert(utility_time_eq_gc(to_utility_time_dyn(0, s),
+			    internal_t_dyn));
+
+  /* Testcase 26 */
+  internal_t_dyn = string_to_utility_time_dyn("0.45694");
+  assert(utility_time_eq_gc(to_utility_time_dyn(456940, us),
+			    internal_t_dyn));
+
+  /* Testcase 26 */
+  internal_t_dyn = string_to_utility_time_dyn("9999.999999999");
+  assert(utility_time_eq_gc(to_utility_time_dyn(9999999999999ULL, ns),
+			    internal_t_dyn));
+
   return EXIT_SUCCESS;
 }
