@@ -381,6 +381,16 @@ extern "C" {
     dst->t.tv_nsec = src->t.tv_nsec;
   }
   /**
+   * Work just like utility_time_to_utility_time() but src is garbage
+   * collected if automatic garbage collection is permitted.
+   */
+  static inline void utility_time_to_utility_time_gc(const utility_time *src,
+						     utility_time *dst)
+  {
+    utility_time_to_utility_time(src, dst);
+    utility_time_gc_auto(src);
+  }
+  /**
    * Work just like utility_time_to_utility_time() except that it
    * returns the result as dynamic utility_time object subject to
    * automatic garbage collection.
