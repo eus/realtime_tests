@@ -207,7 +207,8 @@ extern "C" {
    *
    * @param t the integer representing a time.
    * @param t_unit the unit of the time.
-   * @param internal_t a pointer to the utility_time object to store the result.
+   * @param internal_t a pointer to an initialized utility_time object
+   * to store the result.
    */
   static inline void to_utility_time(unsigned long long t,
 				     enum time_unit t_unit,
@@ -251,7 +252,8 @@ extern "C" {
    * representation.
    *
    * @param t a pointer to the struct timespec object.
-   * @param internal_t a pointer to the utility_time object to store the result.
+   * @param internal_t a pointer to an initialized utility_time object
+   * to store the result.
    */
   static inline void timespec_to_utility_time(const struct timespec *t,
 					      utility_time *internal_t)
@@ -294,7 +296,8 @@ extern "C" {
    * @param str a pointer to the string to be converted.
    * @param endptr a pointer to the pointer that will be pointed to
    * the next unprocessed character in str.
-   * @param internal_t a pointer to the utility_time object to store the result.
+   * @param internal_t a pointer to an initialized utility_time object
+   * to store the result.
    */
   static inline void string_to_utility_time(const char *str,
 					    char **endptr,
@@ -373,6 +376,10 @@ extern "C" {
 
   /**
    * Assign the internal representation of time from src to dst.
+   *
+   * @param src a pointer to the utility_time object to be copied.
+   * @param dst a pointer to an initialized utility_time object to
+   * store the result
    */
   static inline void utility_time_to_utility_time(const utility_time *src,
 						  utility_time *dst)
