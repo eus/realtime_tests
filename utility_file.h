@@ -38,6 +38,33 @@ extern "C" {
    */
 
   /**
+   * Open a text file for reading.
+   *
+   * @param path a pointer to the string containing the file path.
+   *
+   * @return a pointer to the opened file stream. If there is an I/O
+   * error to open the file for reading, the error is @ref
+   * utility_log.h "logged" and NULL is returned.
+   */
+  FILE *utility_file_open_for_reading(const char *path);
+
+  /**
+   * Close a file stream.
+   *
+   * @param file_stream a pointer to the file stream to be closed.
+   * @param path a pointer to the string containing the file path
+   * associated with file_stream. This is only used for logging when
+   * the file stream cannot be closed successfully. And as such, there
+   * is no hard requirement that the given path is really the path of
+   * the file_stream.
+   *
+   * @return 0 if file_stream is successfully closed. If the file
+   * stream cannot be closed successfully, the error is @ref
+   * utility_log.h "logged" and -1 is returned.
+   */
+  int utility_file_close(FILE *file_stream, const char *path);
+
+  /**
    * Read the next line of a file stream to the given buffer enlarging
    * the buffer as necessary in a multiple of the specified
    * increment. The buffer can be preallocated. The caller is

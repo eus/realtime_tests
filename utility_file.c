@@ -21,8 +21,28 @@
 #include "utility_log.h"
 #include "utility_file.h"
 
+FILE *utility_file_open_for_reading(const char *path)
+{
+  FILE *result = fopen(path, "r");
+  if (result == NULL) {
+    log_syserror("Cannot open %s for textual reading", path);
+  }
+
+  return result;
+}
+
+int utility_file_close(FILE *file_stream, const char *path)
+{
+  if (fclose(file_stream) != 0) {
+    log_syserror("Cannot close textual file %s", path);
+    return -1;
+  }
+
+  return 0;
+}
+
 int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
-			  size_t buffer_inc)
+			size_t buffer_inc)
 {
   /* Detect EOF */
   if (feof(file_stream)) {
