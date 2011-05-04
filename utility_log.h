@@ -153,7 +153,7 @@ extern "C" {
   /**
    * Each file defining the main function must define a program name.
    */
-  extern const char *prog_name;
+  extern const char prog_name[];
 
   /**
    * Each file defining the main function must provide an output
