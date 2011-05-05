@@ -21,14 +21,24 @@ utility_time.h, utility_time.c (can be absent if all functions are
 inlined) and utility_time_test.c. The test program is then registered
 in the Makefile to be run with `make check'. The infrastructure
 software components are usually developed by refactoring common
-functions from the experimentation components.
+functions from the experimentation components. The infrastructure
+software components and their Makefile are located in the base
+directory.
 
 The second part contains software components that are used to
 understand some concepts, algorithms or problems related to the study
 of real-time systems. Each experimentation software component should
 be in the form of a single directory containing one README file
 describing the concept(s) or algorithm(s) or problem(s) that the
-component wishes to demonstrate and one or more source or data files.
+component wishes to demonstrate, one or more source or data files, and
+one Makefile.
+
+Each file defining main() function must also define two global
+variables and initialize them appropriately as follows:
+const char prog_name[] = "PROGRAM_NAME";
+FILE *log_stream; /* Initialize this at the very beginning of main()
+                   * so that the logging facility can work properly
+                   */
 
 The codebase is Free Software licensed under GNU GPL version 3 and is
 developed to support the thesis work of Tadeus Prastowo in the area of

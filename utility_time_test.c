@@ -24,9 +24,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "utility_time.h"
+#include "utility_log.h"
+
+const char prog_name[] = "utility_time_test";
+FILE *log_stream;
 
 int main(int argc, char **argv, char **envp)
 {
+  log_stream = stderr;
+
   utility_time internal_t;
   utility_time_init(&internal_t);
 
@@ -170,13 +176,11 @@ int main(int argc, char **argv, char **envp)
   FILE *test_out_stream = fmemopen(test_out_stream_buffer,
 				   sizeof(test_out_stream_buffer), "w");
   if (test_out_stream == NULL) {
-    fprintf(stderr, "Unable to open test_out_stream (%s)\n", strerror(errno));
-    exit(EXIT_FAILURE);
+    fatal_syserror("Unable to open test_out_stream");
   }
   to_file_string_gc(to_utility_time_dyn(4004, ms), test_out_stream);
   if (fclose(test_out_stream) != 0) {
-    fprintf(stderr, "Unable to close test_out_stream (%s)\n", strerror(errno));
-    exit(EXIT_FAILURE);
+    fatal_syserror("Unable to close test_out_stream");
   }
   assert(strcmp(test_out_stream_buffer, "4.004000000") == 0);
 
