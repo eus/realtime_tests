@@ -24,20 +24,13 @@
  *
  * All log messages take the following format:
  * @code
- * PROGRAM_NAME[THREAD_ID_OR_PROCESS_ID]: LOG_MESSAGE
+ * PROGRAM_NAME[PROCESS_ID][THREAD_ID]: LOG_MESSAGE
  * @endcode
  *
- * When a program uses multithreading where the use of function
- * <code>pthread_self</code> makes sense, and the program uses this
- * header, it must be compiled by defining <code>_REENTRANT</code> so
- * that the logging component can use function
- * <code>pthread_self</code> instead of function <code>getpid</code>
- * when printing log messages so that one can properly identify the
- * source of a log message. The constant <code>_REENTRANT</code> is
- * automatically defined when compiling using GCC by specifying option
- * <code>-pthread</code>.
- *
  * The logging functions are synchronized to the logging stream.
+ *
+ * User is responsible for opening the logging stream as well as
+ * closing it to avoid any loss of log message.
  */
 
 #ifndef UTILITY_LOG_H
@@ -47,16 +40,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef _REENTRANT
 #include <pthread.h>
-#define log_hdr() fprintf(log_stream, "%s[%lu]: ", prog_name, \
-			  (unsigned long) pthread_self())
-#else
 #include <unistd.h>
-#define log_hdr() fprintf(log_stream, "%s[%lu]: ", prog_name, \
-			  (unsigned long) getpid())
-#endif
+
+/**
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: " to the specified
+ * stream. This should not be used in normal logging operation because
+ * one has to go through the hassle of synchronizing to the log
+ * stream.
+ *
+ * @hideinitializer
+ */
+#define log_hdr(stream) fprintf(stream, "%s[%lu][%lu]: ", prog_name,	\
+				(unsigned long) getpid(),		\
+				(unsigned long) pthread_self())
+
+/**
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: [ERROR] " to the
+ * specified stream. This should not be used in normal logging
+ * operation because one has to go through the hassle of synchronizing
+ * to the log stream.
+ *
+ * @hideinitializer
+ */
+#define log_hdr_error(stream)				\
+  fprintf(stream, "%s[%lu][%lu]: [ERROR] ", prog_name,	\
+	  (unsigned long) getpid(),			\
+	  (unsigned long) pthread_self())
+
+/**
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: [FATAL] " to the
+ * specified stream. This should not be used in normal logging
+ * operation because one has to go through the hassle of synchronizing
+ * to the log stream.
+ *
+ * @hideinitializer
+ */
+#define log_hdr_fatal(stream)				\
+  fprintf(stream, "%s[%lu][%lu]: [FATAL] ", prog_name,	\
+	  (unsigned long) getpid(),			\
+	  (unsigned long) pthread_self())
 
 /**
  * Log the given message as it is to the logging stream. This is a
@@ -72,9 +95,18 @@
 #define log_verbose(msg, ...)			\
   do {						\
     flockfile(log_stream);			\
-    log_hdr();					\
+    log_hdr(log_stream);			\
     fprintf(log_stream, msg , ## __VA_ARGS__);	\
     funlockfile(log_stream);			\
+  } while (0)
+
+/* Common function to both log_error() and fatal_error() */
+#define log_error_core(hdr, msg, ...)			\
+  do {							\
+    flockfile(log_stream);				\
+    hdr(log_stream);					\
+    fprintf(log_stream, msg "\n" , ## __VA_ARGS__);	\
+    funlockfile(log_stream);				\
   } while (0)
 
 /**
@@ -90,25 +122,30 @@
  *
  * @hideinitializer
  */
-#define log_error(msg, ...)				\
-  do {							\
-    flockfile(log_stream);				\
-    log_hdr();						\
-    fprintf(log_stream, msg "\n" , ## __VA_ARGS__);	\
-    funlockfile(log_stream);				\
-  } while (0)
+#define log_error(msg, ...) log_error_core(log_hdr_error, msg, ## __VA_ARGS__)
 
 /**
  * Work just like log_error() but exit the program with function
  * <code>exit</code> supplying error code <code>EXIT_FAILURE</code>
- * after logging the message.
+ * after logging the message. The logging stream is flushed just
+ * before exiting.
  *
  * @hideinitializer
  */
 #define fatal_error(msg, ...)				\
   do {							\
-    log_error(msg , ## __VA_ARGS__);			\
+    log_error_core(log_hdr_fatal, msg, ## __VA_ARGS__);	\
+    fflush(log_stream);					\
     exit(EXIT_FAILURE);					\
+  } while (0)
+
+#define log_syserror_core(hdr, msg, ...)				\
+  do {									\
+    const char *err_msg = strerror(errno);				\
+    flockfile(log_stream);						\
+    hdr(log_stream);							\
+    fprintf(log_stream, msg " (%s)\n" , ## __VA_ARGS__, err_msg);	\
+    funlockfile(log_stream);						\
   } while (0)
 
 /**
@@ -124,25 +161,21 @@
  *
  * @hideinitializer
  */
-#define log_syserror(msg, ...)						\
-  do {									\
-    const char *err_msg = strerror(errno);				\
-    flockfile(log_stream);						\
-    log_hdr();								\
-    fprintf(log_stream, msg " (%s)\n" , ## __VA_ARGS__, err_msg);	\
-    funlockfile(log_stream);						\
-  } while (0)
+#define log_syserror(msg, ...)				\
+  log_syserror_core(log_hdr_error, msg, ## __VA_ARGS__)
 
 /**
  * This works just like log_syserror() but exit the program with
  * function <code>exit</code> supplying error code
- * <code>EXIT_FAILURE</code>.
+ * <code>EXIT_FAILURE</code>. The logging stream is flushed just
+ * before exiting.
  *
  * @hideinitializer
  */
 #define fatal_syserror(msg, ...)					\
   do {									\
-    log_syserror(msg , ## __VA_ARGS__);					\
+    log_syserror_core(log_hdr_fatal, msg , ## __VA_ARGS__);		\
+    fflush(log_stream);							\
     exit(EXIT_FAILURE);							\
   } while (0)
 

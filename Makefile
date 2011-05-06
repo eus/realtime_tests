@@ -3,12 +3,15 @@
 
 override CFLAGS := -O3 -Wall $(CFLAGS)
 
-test_cases_header_only := utility_time_test
+test_cases_header_only := utility_time_test utility_log_test
 test_cases_with_source := utility_file_test
 test_cases := $(test_cases_header_only) $(test_cases_with_source)
 
 # Requirements of individual test cases
 $(test_cases_with_source): %_test: %.o
+
+utility_log_test: CFLAGS += -pthread
+utility_log_test: LDFLAGS += -lpthread
 # End of individual test case requirements
 
 # Main rules
