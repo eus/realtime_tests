@@ -44,6 +44,11 @@
 #include <unistd.h>
 
 /**
+ * @name Collection of functions that should not be used in normal circumstances
+ * @{
+ */
+
+/**
  * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: " to the specified
  * stream. This should not be used in normal logging operation because
  * one has to go through the hassle of synchronizing to the log
@@ -80,6 +85,9 @@
   fprintf(stream, "%s[%lu][%lu]: [FATAL] ", prog_name,	\
 	  (unsigned long) getpid(),			\
 	  (unsigned long) pthread_self())
+
+/** @} End of collection of functions that should not be used in
+    normal circumstances */
 
 /**
  * Log the given message as it is to the logging stream. This is a
