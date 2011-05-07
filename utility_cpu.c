@@ -59,7 +59,7 @@ int get_last_cpu(void)
   while ((rc = utility_file_readln(linux_cpuinfo, &buffer, &buffer_len, 1024))
 	 == 0) {
     if (strncmp(buffer, keyword, keyword_len) == 0
-	&& isspace(buffer[keyword_len])) {
+	&& (isspace(buffer[keyword_len]) || buffer[keyword_len] == ':')) {
       proc_count++;
     }
   }
