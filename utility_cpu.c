@@ -21,9 +21,11 @@
 #include <pthread.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include "utility_cpu.h"
 #include "utility_log.h"
 #include "utility_file.h"
+#include "utility_time.h"
 
 int lock_me_to_cpu(int which_cpu)
 {
@@ -46,6 +48,7 @@ int get_last_cpu(void)
   const char linux_cpuinfo_path[] = "/proc/cpuinfo";
   FILE *linux_cpuinfo = utility_file_open_for_reading(linux_cpuinfo_path);
   if (linux_cpuinfo == NULL) {
+    log_error("Cannot open %s for reading", linux_cpuinfo_path);
     return -1;
   }
 
@@ -71,6 +74,7 @@ int get_last_cpu(void)
   utility_file_close(linux_cpuinfo, linux_cpuinfo_path);
 
   if (rc == -2) {
+    log_error("Error while reading %s", linux_cpuinfo_path);
     return -1;
   }
 
@@ -80,4 +84,84 @@ int get_last_cpu(void)
   }
 
   return proc_count;
+}
+
+#define LINUX_GOVERNOR_FILE_PATH_FORMAT				\
+  "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor"
+
+cpu_freq_governor *cpu_freq_get_governor(int which_cpu)
+{
+  cpu_freq_governor *result = malloc(sizeof (cpu_freq_governor));
+  if (result == NULL) {
+    log_error("Insufficient memory to create cpu_freq_governor object");
+    return NULL;
+  }
+  result->which_cpu = which_cpu;
+
+  char linux_governor_file_path[1024];
+  snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
+	   LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
+  FILE *linux_governor_file
+    = utility_file_open_for_reading(linux_governor_file_path);
+  if (linux_governor_file == NULL) {
+    log_syserror("Cannot open '%s' for reading", linux_governor_file_path);
+    free(result);
+    return NULL;
+  }
+
+  char *buffer = NULL;
+  size_t buffer_len = 0;
+  int rc = utility_file_readln(linux_governor_file, &buffer, &buffer_len, 32);
+  utility_file_close(linux_governor_file, linux_governor_file_path);
+
+  if (rc == 0) {
+    result->linux_cpu_governor_name = buffer;
+    return result;
+  } else if (rc == -1) {
+    log_error("No governor exists");
+  } else {
+    log_error("Fail to read '%s'", linux_governor_file_path);
+  }
+
+  free(buffer);
+  free(result);
+  return NULL;
+}
+
+int cpu_freq_restore_governor(cpu_freq_governor *governor)
+{
+  char linux_governor_file_path[1024];
+  snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
+	   LINUX_GOVERNOR_FILE_PATH_FORMAT, governor->which_cpu);
+
+  FILE *linux_governor_file = fopen(linux_governor_file_path, "w");
+  if (linux_governor_file == NULL) {
+    log_syserror("Cannot open '%s' for writing", linux_governor_file_path);
+    if (errno == EACCES) {
+      return -2;
+    } else {
+      return -1;
+    }
+  }
+
+  fprintf(linux_governor_file, "%s", governor->linux_cpu_governor_name);
+
+  if (utility_file_close(linux_governor_file, linux_governor_file_path) != 0) {
+    log_error("Cannot close '%s' after writing", linux_governor_file_path);
+    return -1;
+  }
+
+  destroy_cpu_freq_governor(governor);
+  return 0;
+}
+
+void destroy_cpu_freq_governor(cpu_freq_governor *governor)
+{
+  free(governor->linux_cpu_governor_name);
+  free(governor);
+}
+
+unsigned long long *cpu_freq_available(int which_cpu, size_t *list_len)
+{
+  return NULL;
 }

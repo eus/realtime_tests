@@ -45,6 +45,9 @@ int main(int argc, char **argv, char **envp)
   pid_t child_pid = fork();
   if (child_pid == 0) {
 
+    enter_UP_mode(); /* Enter UP mode ASAP to prevent
+			failed_migrations_hot to be larger than 0 */
+
     struct sigaction signal_handler_data = {
       .sa_handler = signal_handler,
     };
@@ -53,7 +56,6 @@ int main(int argc, char **argv, char **envp)
       fatal_syserror("Cannot register SIGINT handler");
     }
 
-    enter_UP_mode();
     while (!stop_infinite_loop);
 
   } else if (child_pid == -1) {
@@ -144,6 +146,48 @@ int main(int argc, char **argv, char **envp)
   }
   assert(fclose(linux_cpuinfo) == 0);
   assert(get_last_cpu() == (cpu_count - 1));
+
+  /* Testcase 3: setting Linux governor of CPU0 */
+  const char linux_governor_file_path[]
+    = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor";
+
+  /* Read current governor */
+  FILE *linux_governor_file
+    = utility_file_open_for_reading(linux_governor_file_path);
+  assert(linux_governor_file != NULL);
+  char *buffer1 = NULL;
+  size_t buffer1_len = 0;
+  assert(utility_file_readln(linux_governor_file, &buffer1, &buffer1_len, 32)
+	 == 0);
+  utility_file_close(linux_governor_file, linux_governor_file_path);
+
+  /* Use the library function to keep the current governor */
+  cpu_freq_governor *used_gov = cpu_freq_get_governor(0);
+  assert(used_gov != NULL);
+
+  /* Change the governor */
+  linux_governor_file = utility_file_open_for_writing(linux_governor_file_path);
+  assert(linux_governor_file != NULL);
+  fprintf(linux_governor_file, "performance");
+  assert(utility_file_close(linux_governor_file, linux_governor_file_path)
+	 == 0);
+
+  /* Use the library function to restore the governor */
+  assert(cpu_freq_restore_governor(used_gov) == 0);
+
+  /* Check that the governor is indeed restored */
+  linux_governor_file = utility_file_open_for_reading(linux_governor_file_path);
+  assert(linux_governor_file != NULL);
+  char *buffer2 = NULL;
+  size_t buffer2_len = 0;
+  assert(utility_file_readln(linux_governor_file, &buffer2, &buffer2_len, 32)
+	 == 0);
+  utility_file_close(linux_governor_file, linux_governor_file_path);
+  assert(strcmp(buffer1, buffer2) == 0);
+
+  /* Clean up */
+  free(buffer1);
+  free(buffer2);
 
   return EXIT_SUCCESS;
 }

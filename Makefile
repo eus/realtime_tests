@@ -1,14 +1,18 @@
-.PHONY := check clean mrproper
+.PHONY := check check_sudo clean mrproper
 .DEFAULT_GOAL := check
 
 override CFLAGS := -O3 -Wall $(CFLAGS)
 
 test_cases_header_only := utility_time_test utility_log_test
-test_cases_with_source := utility_file_test utility_cpu_test
+test_cases_with_source := utility_file_test
 test_cases := $(test_cases_header_only) $(test_cases_with_source)
 
+test_cases_sudo_header_only :=
+test_cases_sudo_with_source := utility_cpu_test
+test_cases_sudo := $(test_cases_sudo_header_only) $(test_cases_sudo_with_source)
+
 # Requirements of individual test cases
-$(test_cases_with_source): %_test: %.o
+$(test_cases_with_source) $(test_cases_sudo_with_source): %_test: %.o
 
 test_cases_requiring_pthread := utility_log_test utility_cpu_test
 $(test_cases_requiring_pthread): CFLAGS += -pthread
@@ -18,9 +22,12 @@ utility_cpu_test: utility_file.o
 # End of individual test case requirements
 
 # Main rules
-check: $(test_cases)
-	for test_case_exec in $^; do \
+check: $(test_cases) $(test_cases_sudo)
+	for test_case_exec in $(test_cases); do \
 		valgrind --leak-check=full -q ./$$test_case_exec; \
+	done
+	for test_case_sudo_exec in $(test_cases_sudo); do \
+		sudo valgrind --leak-check=full -q ./$$test_case_sudo_exec; \
 	done
 
 clean:
