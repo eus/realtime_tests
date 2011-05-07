@@ -49,6 +49,17 @@ extern "C" {
   FILE *utility_file_open_for_reading(const char *path);
 
   /**
+   * Open a text file for writing.
+   *
+   * @param path a pointer to the string containing the file path.
+   *
+   * @return a pointer to the opened file stream. If there is an I/O
+   * error to open the file for writing, the error is @ref
+   * utility_log.h "logged" and NULL is returned.
+   */
+  FILE *utility_file_open_for_writing(const char *path);
+
+  /**
    * Close a file stream.
    *
    * @param file_stream a pointer to the file stream to be closed.

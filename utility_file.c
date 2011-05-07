@@ -31,6 +31,16 @@ FILE *utility_file_open_for_reading(const char *path)
   return result;
 }
 
+FILE *utility_file_open_for_writing(const char *path)
+{
+  FILE *result = fopen(path, "w");
+  if (result == NULL) {
+    log_syserror("Cannot open %s for textual writing", path);
+  }
+
+  return result;
+}
+
 int utility_file_close(FILE *file_stream, const char *path)
 {
   if (fclose(file_stream) != 0) {

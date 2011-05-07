@@ -53,15 +53,17 @@ int main(int argc, char **argv, char **envp)
 
   /* Start of testcases */
 
-#define write_to_test_in_stream(content) do {			\
-    FILE *test_out_stream = fopen(tmp_file_name, "w");		\
-    if (test_out_stream == NULL) {				\
-      fatal_syserror("Unable to open test_out_stream");		\
-    }								\
-    fprintf(test_out_stream, "%s", content);			\
-    if (fclose(test_out_stream) != 0) {				\
-      fatal_syserror("Unable to close test_out_stream");	\
-    }								\
+#define write_to_test_in_stream(content) do {		\
+    FILE *test_out_stream				\
+      = utility_file_open_for_writing(tmp_file_name);	\
+    if (test_out_stream == NULL) {			\
+      fatal_error("Unable to open test_out_stream");	\
+    }							\
+    fprintf(test_out_stream, "%s", content);		\
+    if (utility_file_close(test_out_stream,		\
+			   tmp_file_name) != 0) {	\
+      fatal_error("Unable to close test_out_stream");	\
+    }							\
   } while (0)
 
 #define begin_testcase(content) do {				\
