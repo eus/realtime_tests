@@ -45,8 +45,8 @@ int main(int argc, char **argv, char **envp)
   pid_t child_pid = fork();
   if (child_pid == 0) {
 
-    enter_UP_mode(); /* Enter UP mode ASAP to prevent
-			failed_migrations_hot to be larger than 0 */
+    enter_UP_mode(); /* Enter UP mode ASAP to prevent any migration statistics
+			to be larger than 0 */
 
     struct sigaction signal_handler_data = {
       .sa_handler = signal_handler,
@@ -73,10 +73,10 @@ int main(int argc, char **argv, char **envp)
     char *buffer = NULL;
     size_t buffer_len = 0;
     int rc = 0;
-    const char keyword1[] = "se.statistics.nr_failed_migrations_running";
+    const char keyword1[] = "se.statistics.nr_failed_migrations_affine";
     const size_t keyword1_len = strlen(keyword1);
     int keyword1_count = -1;
-    const char keyword2[] = "se.statistics.nr_failed_migrations_hot";
+    const char keyword2[] = "se.statistics.nr_failed_migrations_running";
     const size_t keyword2_len = strlen(keyword2);
     int keyword2_count = -1;
     const char keyword3[] = "se.statistics.nr_forced_migrations";
@@ -85,7 +85,7 @@ int main(int argc, char **argv, char **envp)
     unsigned int keyword_hit_mask = 0;
     while ((rc = utility_file_readln(linux_process_info, &buffer, &buffer_len,
 				     1024)) == 0) {
-#define check_for_zero(keyword_no) do {					\
+#define get_keyword_count(keyword_no) do {				\
 	if (strncmp(buffer, keyword ## keyword_no,			\
 		    keyword ## keyword_no ## _len) == 0			\
 	    && (isspace(buffer[keyword ## keyword_no ## _len])		\
@@ -106,15 +106,15 @@ int main(int argc, char **argv, char **envp)
 	}								\
       } while (0)
 
-      check_for_zero(1);
-      check_for_zero(2);
-      check_for_zero(3);
+      get_keyword_count(1);
+      get_keyword_count(2);
+      get_keyword_count(3);
 
       if (keyword_hit_mask == 0x7) {
 	break;
       }
 
-#undef check_for_zero
+#undef get_keyword_count
     }
     if (buffer != NULL) {
       free(buffer);
@@ -126,7 +126,7 @@ int main(int argc, char **argv, char **envp)
 
     assert(rc != -2);
     assert(keyword_hit_mask == 0x7);
-    assert(keyword1_count == 0);
+    assert(keyword1_count != 0);
     assert(keyword2_count == 0);
     assert(keyword3_count == 0);
   }
