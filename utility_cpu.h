@@ -110,7 +110,8 @@ extern "C" {
   void destroy_cpu_freq_governor(cpu_freq_governor *governor);
 
   /**
-   * List all available frequencies in Hz of the given CPU.
+   * List all available frequencies in Hz in descending order of the
+   * given CPU.
    *
    * @param which_cpu the CPU ID of the CPU whose frequency is to be
    * listed.

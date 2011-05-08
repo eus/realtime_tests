@@ -211,6 +211,9 @@ int main(int argc, char **argv, char **envp)
   buffer2 = strtok(buffer1, delim);
   while (buffer2 != NULL) {
     expected_freq_count++;
+    if (strtoull(buffer1, NULL, 10) < strtoull(buffer2, NULL, 10))  {
+      buffer1 = buffer2; /* Track the greatest frequency */
+    }
     buffer2 = strtok(NULL, delim);
   }
 
@@ -220,6 +223,12 @@ int main(int argc, char **argv, char **envp)
   assert(freq_count == expected_freq_count);
   assert(freqs != NULL);
   assert(freqs[0] == (strtoull(buffer1, NULL, 10) * 1000));
+
+  /* Check descending order */
+  int i;
+  for (i = 1; i < freq_count; i++) {
+    assert(freqs[i - 1] >= freqs[i]);
+  }
 
   /* Clean-up */
   free(buffer1);
