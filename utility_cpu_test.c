@@ -235,12 +235,17 @@ int main(int argc, char **argv, char **envp)
   free(freqs);
 
   /* Testcase 5: check cpu_freq_set() and cpu_freq_get() */
+  /* Save current governor */
   used_gov = cpu_freq_get_governor(0);
+  assert(used_gov != NULL);
 
+  /* Set the CPU frequency */
   freqs = cpu_freq_available(0, &freq_count);
+  assert(freq_count >= 1);
   cpu_freq_set(0, freqs[0]);
   sleep(10); /* Allow for visual inspection through GNOME applet, for example */
 
+  /* Manually read the current frequency */
   const char linux_curr_freq_file_path[]
     = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
   FILE *linux_curr_freq_file
@@ -251,10 +256,14 @@ int main(int argc, char **argv, char **envp)
   assert(utility_file_readln(linux_curr_freq_file, &buffer1, &buffer1_len, 32)
 	 == 0);
   utility_file_close(linux_curr_freq_file, linux_curr_freq_file_path);
+
+  /* Check that cpu_freq_get() agrees with the manually read frequency */
   assert (cpu_freq_get(0) == strtoull(buffer1, NULL, 10) * 1000);
   
+  /* Restore the saved governor */
   cpu_freq_restore_governor(used_gov);
 
+  /* Clean-up */
   free(buffer1);
   free(freqs);
 
