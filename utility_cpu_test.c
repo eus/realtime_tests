@@ -242,8 +242,10 @@ int main(int argc, char **argv, char **envp)
   /* Set the CPU frequency */
   freqs = cpu_freq_available(0, &freq_count);
   assert(freq_count >= 1);
+
+  sleep(5); /* Allow for visual inspection through GNOME applet, for example */
   cpu_freq_set(0, freqs[0]);
-  sleep(10); /* Allow for visual inspection through GNOME applet, for example */
+  sleep(5);
 
   /* Manually read the current frequency */
   const char linux_curr_freq_file_path[]
