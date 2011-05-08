@@ -53,9 +53,9 @@ extern "C" {
   /**
    * Is equivalent to lock_me_to_cpu(0);
    */
-  static inline void enter_UP_mode(void)
+  static inline int enter_UP_mode(void)
   {
-    lock_me_to_cpu(0);
+    return lock_me_to_cpu(0);
   }
 
   /**

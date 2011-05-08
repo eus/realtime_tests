@@ -45,8 +45,9 @@ int main(int argc, char **argv, char **envp)
   pid_t child_pid = fork();
   if (child_pid == 0) {
 
-    enter_UP_mode(); /* Enter UP mode ASAP to prevent any migration statistics
-			to be larger than 0 */
+    assert(enter_UP_mode() == 0); /* Enter UP mode ASAP to prevent any
+				     migration statistics to be larger
+				     than 0 */
 
     struct sigaction signal_handler_data = {
       .sa_handler = signal_handler,
