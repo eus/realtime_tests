@@ -180,5 +180,63 @@ int main(int argc, char **argv, char **envp)
   rc = utility_file_close(test_in_stream, tmp_file_name);
   gracious_assert(rc == 0);
 
+  /* Testcase 6: test utility_file_read() */
+  write_to_test_in_stream("hello there\n"
+			  "last line");
+  test_in_stream = utility_file_open_for_reading(tmp_file_name);
+  gracious_assert(test_in_stream != NULL);
+
+  unsigned line_counter = 0;
+  int read_fn(const char *line, void *args)
+  {
+    unsigned *line_counter = args;
+
+    switch (*line_counter) {
+    case 0:
+      gracious_assert(strcmp(line, "hello there") == 0);
+      break;
+    case 1:
+      gracious_assert(strcmp(line, "last line") == 0);
+      break;
+    default:
+      gracious_assert(0);
+    }
+
+    *line_counter += 1;
+
+    return 0;
+  }
+  rc = utility_file_read(test_in_stream, 4, read_fn, &line_counter);
+  assert(rc == 0);
+
+  free_buffer();
+  rc = utility_file_close(test_in_stream, tmp_file_name);
+  gracious_assert(rc == 0);
+
+  /* Testcase 7: test utility_file_read() with early bailout */
+  write_to_test_in_stream("hello there\n"
+			  "last line");
+  test_in_stream = utility_file_open_for_reading(tmp_file_name);
+  gracious_assert(test_in_stream != NULL);
+
+  line_counter = 0;
+  int read_fn_bailout(const char *line, void *args)
+  {
+    read_fn(line, args);
+
+    return 1;
+  }
+  rc = utility_file_read(test_in_stream, 4, read_fn_bailout, &line_counter);
+  assert(rc == -1);
+
+  /* Continuation must be possible */
+  line_counter = 1;
+  rc = utility_file_read(test_in_stream, 4, read_fn, &line_counter);
+  assert(rc == 0);
+
+  free_buffer();
+  rc = utility_file_close(test_in_stream, tmp_file_name);
+  gracious_assert(rc == 0);
+
   return EXIT_SUCCESS;
 }

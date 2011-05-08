@@ -105,6 +105,29 @@ extern "C" {
    */
   int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
 			  size_t buffer_inc);
+
+  /**
+   * Use utility_file_readln() to read a textual file stream
+   * line-by-line at each line of which read_fn is invoked to process
+   * the read line. To stop reading the file, read_fn can return a
+   * non-zero value. Otherwise, read_fn must return zero.
+   *
+   * @param file_stream a pointer to the file stream to read.
+   * @param buffer_inc the desired increment in bytes when the
+   * internal buffer needs to be enlarged.
+   * @param read_fn a pointer to the callback function to process the
+   * just read line.
+   * @param args a pointer to an object to be passed as the second
+   * argument of read_fn
+   *
+   * @return zero if all lines can be read successfully, -1 if read_fn
+   * returns non-zero preventing the processing of the remaining
+   * lines, or -2 if there is an I/O error while reading (the error
+   * itself is @ref utility_log.h "logged" directly).
+   */
+  int utility_file_read(FILE *file_stream, size_t buffer_inc,
+			int (*read_fn)(const char *line, void *args),
+			void *args);
   /** @} End of collection of functions to deal with textual files */
 
 #ifdef __cplusplus
