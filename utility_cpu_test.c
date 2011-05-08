@@ -58,6 +58,8 @@ int main(int argc, char **argv, char **envp)
 
     while (!stop_infinite_loop);
 
+    return EXIT_SUCCESS;
+
   } else if (child_pid == -1) {
     fatal_syserror("[Testcase 1] Cannot do fork()");
   } else {
@@ -227,6 +229,7 @@ int main(int argc, char **argv, char **envp)
 
   freqs = cpu_freq_available(0, &freq_count);
   cpu_freq_set(0, freqs[0]);
+  sleep(10); /* Allow for visual inspection through GNOME applet, for example */
 
   const char linux_curr_freq_file_path[]
     = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
