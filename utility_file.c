@@ -98,7 +98,7 @@ int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
 
   /* Check for a read error */
   if (ferror(file_stream)) {
-    log_error("Error while reading the whole line");
+    log_syserror("Error while reading the whole line");
     return -2;
   }
   /* End of checking for a read error */
