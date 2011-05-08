@@ -222,5 +222,28 @@ int main(int argc, char **argv, char **envp)
   free(buffer1);
   free(freqs);
 
+  /* Testcase 5: check cpu_freq_set() and cpu_freq_get() */
+  used_gov = cpu_freq_get_governor(0);
+
+  freqs = cpu_freq_available(0, &freq_count);
+  cpu_freq_set(0, freqs[0]);
+
+  const char linux_curr_freq_file_path[]
+    = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
+  FILE *linux_curr_freq_file
+    = utility_file_open_for_reading(linux_curr_freq_file_path);
+  assert(linux_curr_freq_file != NULL);
+  buffer1 = NULL;
+  buffer1_len = 0;
+  assert(utility_file_readln(linux_curr_freq_file, &buffer1, &buffer1_len, 32)
+	 == 0);
+  utility_file_close(linux_curr_freq_file, linux_curr_freq_file_path);
+  assert (cpu_freq_get(0) == strtoull(buffer1, NULL, 10) * 1000);
+  
+  cpu_freq_restore_governor(used_gov);
+
+  free(buffer1);
+  free(freqs);
+
   return EXIT_SUCCESS;
 }

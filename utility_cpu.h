@@ -147,7 +147,9 @@ extern "C" {
 
   /**
    * @return the CPU frequency of the given CPU. The frequency will be
-   * one of those returned by cpu_freq_available().
+   * one of those returned by cpu_freq_available(). Zero is returned
+   * in case of hard error that requires the investigation of the
+   * output of the logging facility to fix the error.
    */
   unsigned long long cpu_freq_get(int which_cpu);
   /** @} End of collection of functions to deal with CPU frequency */

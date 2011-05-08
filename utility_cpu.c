@@ -105,7 +105,7 @@ cpu_freq_governor *cpu_freq_get_governor(int which_cpu)
   FILE *linux_governor_file
     = utility_file_open_for_reading(linux_governor_file_path);
   if (linux_governor_file == NULL) {
-    log_syserror("Cannot open '%s' for reading", linux_governor_file_path);
+    log_error("Cannot open '%s' for reading", linux_governor_file_path);
     free(result);
     return NULL;
   }
@@ -181,7 +181,7 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
   FILE *linux_frequencies_file
     = utility_file_open_for_reading(linux_frequencies_file_path);
   if (linux_frequencies_file == NULL) {
-    log_syserror("Cannot open '%s' for reading", linux_frequencies_file_path);
+    log_error("Cannot open '%s' for reading", linux_frequencies_file_path);
     return NULL;
   }
   /* End of opening the frequency file */
@@ -246,4 +246,84 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
     free(buffer);
   }
   return NULL;
+}
+
+#define LINUX_SET_FREQUENCY_FILE_PATH_FORMAT			\
+  "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed"
+
+int cpu_freq_set(int which_cpu, unsigned long long new_freq)
+{
+  /* Select the right governor first */
+  char linux_governor_file_path[1024];
+  snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
+	   LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
+  FILE *linux_governor_file = fopen(linux_governor_file_path, "w");
+  if (linux_governor_file == NULL) {
+    if (errno == EACCES) {
+      return -2;
+    }
+    log_syserror("Cannot open '%s' for writing", linux_governor_file_path);
+    return -1;
+  }
+  fprintf(linux_governor_file, "userspace");
+  utility_file_close(linux_governor_file, linux_governor_file_path);
+  /* End of selecting the right governor */
+
+  /* Set the frequency */
+  char linux_set_frequency_file_path[1024];
+  snprintf(linux_set_frequency_file_path, sizeof(linux_set_frequency_file_path),
+	   LINUX_SET_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
+  FILE *linux_set_frequency_file = fopen(linux_set_frequency_file_path, "w");
+  if (linux_set_frequency_file == NULL) {
+    if (errno == EACCES) {
+      return -2;
+    }
+    log_syserror("Cannot open '%s' for writing", linux_set_frequency_file_path);
+    return -1;
+  }
+  fprintf(linux_set_frequency_file, "%llu", new_freq / 1000);
+  utility_file_close(linux_set_frequency_file, linux_set_frequency_file_path);
+  /* End of setting the frequency*/
+
+  return 0;
+}
+
+#define LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT			\
+  "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq"
+
+unsigned long long cpu_freq_get(int which_cpu)
+{
+  char linux_cur_frequency_file_path[1024];
+  snprintf(linux_cur_frequency_file_path, sizeof(linux_cur_frequency_file_path),
+	   LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
+  FILE *linux_cur_frequency_file
+    = utility_file_open_for_reading(linux_cur_frequency_file_path);
+  if (linux_cur_frequency_file == NULL) {
+    log_syserror("Cannot open '%s' for reading", linux_cur_frequency_file_path);
+    return 0;
+  }
+
+  char *buffer = NULL;
+  size_t buffer_len = 0;
+  int rc = utility_file_readln(linux_cur_frequency_file,
+			       &buffer, &buffer_len, 32);
+  if (rc == -1) {
+    log_error("'%s' is empty", linux_cur_frequency_file_path);
+    goto error;
+  } else if (rc == -2) {
+    log_error("Fail to read '%s'", linux_cur_frequency_file_path);
+    goto error;
+  }
+
+  utility_file_close(linux_cur_frequency_file, linux_cur_frequency_file_path);
+
+  unsigned long long result = strtoull(buffer, NULL, 10) * 1000;
+  free(buffer);
+  return result;
+
+ error:
+  if (buffer != NULL) {
+    free(buffer);
+  }
+  return 0;
 }
