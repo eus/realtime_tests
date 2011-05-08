@@ -189,5 +189,38 @@ int main(int argc, char **argv, char **envp)
   free(buffer1);
   free(buffer2);
 
+  /* Testcase 4: check cpu_freq_available() */
+  /* Open the frequency file */
+  const char linux_freq_file_path[]
+    = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies";
+  FILE *linux_freq_file = utility_file_open_for_reading(linux_freq_file_path);
+  assert(linux_freq_file != NULL);
+
+  /* Read in all frequencies */
+  buffer1 = NULL;
+  buffer1_len = 0;
+  assert(utility_file_readln(linux_freq_file, &buffer1, &buffer1_len, 32) == 0);
+  assert(utility_file_close(linux_freq_file, linux_freq_file_path) == 0);
+
+  /* Count the frequencies */
+  const char delim[] = " ";
+  size_t expected_freq_count = 0;
+  buffer2 = strtok(buffer1, delim);
+  while (buffer2 != NULL) {
+    expected_freq_count++;
+    buffer2 = strtok(NULL, delim);
+  }
+
+  /* Use cpu_freq_available() */
+  ssize_t freq_count = -1;
+  unsigned long long *freqs = cpu_freq_available(0, &freq_count);
+  assert(freq_count == expected_freq_count);
+  assert(freqs != NULL);
+  assert(freqs[0] == (strtoull(buffer1, NULL, 10) * 1000));
+
+  /* Clean-up */
+  free(buffer1);
+  free(freqs);
+
   return EXIT_SUCCESS;
 }

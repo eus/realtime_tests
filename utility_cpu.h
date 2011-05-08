@@ -118,10 +118,11 @@ extern "C" {
    *
    * @return a dynamically allocated list of frequencies or NULL if
    * there is an error (the error is @ref utility_log.h "logged"
-   * directly). The caller is responsible for freeing the returned
-   * list.
+   * directly) in which case list_len is set to -1. The caller is
+   * responsible for freeing the returned list. NULL is also returned
+   * if the list is empty in which case list_len is set to 0.
    */
-  unsigned long long *cpu_freq_available(int which_cpu, size_t *list_len);
+  unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len);
 
   /**
    * Turn off dynamic CPU frequency scaling in the given CPU and set

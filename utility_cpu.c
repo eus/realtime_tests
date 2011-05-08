@@ -22,6 +22,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdlib.h>
 #include "utility_cpu.h"
 #include "utility_log.h"
 #include "utility_file.h"
@@ -123,7 +124,9 @@ cpu_freq_governor *cpu_freq_get_governor(int which_cpu)
     log_error("Fail to read '%s'", linux_governor_file_path);
   }
 
-  free(buffer);
+  if (buffer != NULL) {
+    free(buffer);
+  }
   free(result);
   return NULL;
 }
@@ -161,7 +164,86 @@ void destroy_cpu_freq_governor(cpu_freq_governor *governor)
   free(governor);
 }
 
-unsigned long long *cpu_freq_available(int which_cpu, size_t *list_len)
+#define LINUX_FREQUENCIES_FILE_PATH_FORMAT				\
+  "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_frequencies"
+
+unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
 {
+  *list_len = -1;
+
+  /* Set the correct file path */
+  char linux_frequencies_file_path[1024];
+  snprintf(linux_frequencies_file_path, sizeof(linux_frequencies_file_path),
+	   LINUX_FREQUENCIES_FILE_PATH_FORMAT, which_cpu);
+  /* End of setting the correct file path */
+
+  /* Open the frequency file */
+  FILE *linux_frequencies_file
+    = utility_file_open_for_reading(linux_frequencies_file_path);
+  if (linux_frequencies_file == NULL) {
+    log_syserror("Cannot open '%s' for reading", linux_frequencies_file_path);
+    return NULL;
+  }
+  /* End of opening the frequency file */
+
+  /* Read the available frequencies */
+  char *buffer = NULL;
+  size_t buffer_len = 0;
+  int rc = utility_file_readln(linux_frequencies_file,
+			       &buffer, &buffer_len, 256);
+  if (rc == -2) {
+    log_error("Cannot read '%s'", linux_frequencies_file_path);
+    goto error;
+  } else if (rc == -1) {
+    *list_len = 0;
+    goto error;
+  } else {
+    utility_file_close(linux_frequencies_file, linux_frequencies_file_path);
+  }
+  /* End of reading the available frequencies */
+
+  /* Count the number of available frequencies */
+  size_t frequency_count = 0;
+  char *ptr = buffer;
+  while (*ptr != '\0') {
+    if (isspace(*ptr)) {
+      frequency_count++;
+    }
+    ptr++;
+  }
+  /* End of counting the number of available frequencies */
+
+  /* Create the result */
+  *list_len = frequency_count;
+  unsigned long long *result = NULL;
+  if (frequency_count != 0) {
+    result = malloc(sizeof(unsigned long long) * frequency_count);
+    int result_idx = 0;
+    char *ptr = buffer;
+    char *ptr_start = buffer;
+    while (*ptr != '\0') {
+      if (isspace(*ptr)) {
+	*ptr = '\0';
+	result[result_idx++] = strtoull(ptr_start, NULL, 10) * 1000;
+	ptr++;
+	ptr_start = ptr;
+      } else {
+	ptr++;
+      }
+    }
+  }
+  /* End of creating the result */
+
+  if (buffer != NULL) {
+    free(buffer);
+  }
+
+  return result;
+
+ error:
+  utility_file_close(linux_frequencies_file, linux_frequencies_file_path);
+  if (buffer != NULL) {
+    free(buffer);
+  }
   return NULL;
 }
