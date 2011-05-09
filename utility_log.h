@@ -24,7 +24,7 @@
  *
  * All log messages take the following format:
  * @code
- * PROGRAM_NAME[PROCESS_ID][THREAD_ID]: LOG_MESSAGE
+ * PROGRAM_NAME[PROCESS_ID][THREAD_ID][FUNCTION@FILE:LINE]: LOG_MESSAGE
  * @endcode
  *
  * The logging functions are synchronized to the logging stream.
@@ -49,20 +49,23 @@
  */
 
 /**
- * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: " to the specified
- * stream. This should not be used in normal logging operation because
- * one has to go through the hassle of synchronizing to the log
- * stream.
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID][FUNCTION@FILE:LINE]: "
+ * to the specified stream. This should not be used in normal logging
+ * operation because one has to go through the hassle of synchronizing
+ * to the log stream.
  *
  * @hideinitializer
  */
-#define log_hdr(stream) fprintf(stream, "%s[%lu][%lu]: ", prog_name,	\
+#define log_hdr(stream) fprintf(stream,					\
+				"%s[%lu][%lu][%s@%s:%u]: ",		\
+				prog_name,				\
 				(unsigned long) getpid(),		\
-				(unsigned long) pthread_self())
+				(unsigned long) pthread_self(),		\
+				__FUNCTION__, __FILE__, __LINE__)
 
 /**
- * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: [ERROR] " to the
- * specified stream. This should not be used in normal logging
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID][FUNCTION@FILE:LINE]: [ERROR] "
+ * to the specified stream. This should not be used in normal logging
  * operation because one has to go through the hassle of synchronizing
  * to the log stream.
  *
@@ -74,8 +77,8 @@
 	  (unsigned long) pthread_self())
 
 /**
- * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID]: [FATAL] " to the
- * specified stream. This should not be used in normal logging
+ * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID][FUNCTION@FILE:LINE]: [FATAL] "
+ * to the specified stream. This should not be used in normal logging
  * operation because one has to go through the hassle of synchronizing
  * to the log stream.
  *
