@@ -198,7 +198,7 @@ extern "C" {
   /**
    * @name Collection of conversion functions to internal representation.
    * The utility_time object to store the result must always be
-   * initalized first.
+   * <strong>initalized</strong> first.
    * @{
    */
   /**
@@ -207,8 +207,8 @@ extern "C" {
    *
    * @param t the integer representing a time.
    * @param t_unit the unit of the time.
-   * @param internal_t a pointer to an initialized utility_time object
-   * to store the result.
+   * @param internal_t a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
    */
   static inline void to_utility_time(unsigned long long t,
 				     enum time_unit t_unit,
@@ -252,8 +252,8 @@ extern "C" {
    * representation.
    *
    * @param t a pointer to the struct timespec object.
-   * @param internal_t a pointer to an initialized utility_time object
-   * to store the result.
+   * @param internal_t a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
    */
   static inline void timespec_to_utility_time(const struct timespec *t,
 					      utility_time *internal_t)
@@ -296,8 +296,8 @@ extern "C" {
    * @param str a pointer to the string to be converted.
    * @param endptr a pointer to the pointer that will be pointed to
    * the next unprocessed character in str.
-   * @param internal_t a pointer to an initialized utility_time object
-   * to store the result.
+   * @param internal_t a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
    */
   static inline void string_to_utility_time(const char *str,
 					    char **endptr,
@@ -378,8 +378,8 @@ extern "C" {
    * Assign the internal representation of time from src to dst.
    *
    * @param src a pointer to the utility_time object to be copied.
-   * @param dst a pointer to an initialized utility_time object to
-   * store the result
+   * @param dst a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result
    */
   static inline void utility_time_to_utility_time(const utility_time *src,
 						  utility_time *dst)
@@ -693,7 +693,8 @@ extern "C" {
    *
    * @param t1 a pointer to the first operand.
    * @param t2 a pointer to the second operand.
-   * @param res a pointer to the utility_time object to store the result.
+   * @param res a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
    */
   static inline void utility_time_add(const utility_time *t1,
 				      const utility_time *t2,
@@ -748,7 +749,8 @@ extern "C" {
    * utility_time object. Overlap is allowed (i.e., any of the objects can be
    * the same memory location).
    *
-   * @param target a pointer to the utility_time object to be incremented.
+   * @param target a pointer to an <strong>initialized</strong>
+   * utility_time object to be incremented.
    * @param inc a pointer to the utility_time object storing the amount of the
    * increment.
    */
@@ -782,7 +784,8 @@ extern "C" {
    *
    * @param t1 a pointer to first operand.
    * @param t2 a pointer to the subtractor.
-   * @param res a pointer to the utility_time object to store the result.
+   * @param res a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
    */
   static inline void utility_time_sub(const utility_time *t1,
 				      const utility_time *t2,
