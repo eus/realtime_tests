@@ -72,9 +72,11 @@
  * @hideinitializer
  */
 #define log_hdr_error(stream)				\
-  fprintf(stream, "%s[%lu][%lu]: [ERROR] ", prog_name,	\
+  fprintf(stream, "%s[%lu][%lu][%s@%s:%u]: [ERROR] ",	\
+	  prog_name,					\
 	  (unsigned long) getpid(),			\
-	  (unsigned long) pthread_self())
+	  (unsigned long) pthread_self(),		\
+	  __FUNCTION__, __FILE__, __LINE__)
 
 /**
  * Print "PROGRAM_NAME[PROCESS_ID][THREAD_ID][FUNCTION@FILE:LINE]: [FATAL] "
@@ -85,9 +87,11 @@
  * @hideinitializer
  */
 #define log_hdr_fatal(stream)				\
-  fprintf(stream, "%s[%lu][%lu]: [FATAL] ", prog_name,	\
+  fprintf(stream, "%s[%lu][%lu][%s@%s:%u]: [FATAL] ",	\
+	  prog_name,					\
 	  (unsigned long) getpid(),			\
-	  (unsigned long) pthread_self())
+	  (unsigned long) pthread_self(),		\
+	  __FUNCTION__, __FILE__, __LINE__)
 
 /** @} End of collection of functions that should not be used in
     normal circumstances */
