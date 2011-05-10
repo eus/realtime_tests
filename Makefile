@@ -18,20 +18,34 @@ test_cases_requiring_pthread := utility_log_test utility_cpu_test
 $(test_cases_requiring_pthread): CFLAGS += -pthread
 $(test_cases_requiring_pthread): LDFLAGS += -lpthread
 
+test_cases_requiring_rt := utility_cpu_test
+$(test_cases_requiring_pthread): LDFLAGS += -lrt
+
 utility_cpu_test: utility_file.o
 # End of individual test case requirements
 
 # Main rules
 check: $(test_cases) $(test_cases_sudo)
+	@set -e; \
+	echo "[With Valgrind] Test cases without root privilege"; \
 	for test_case_exec in $(test_cases); do \
-		valgrind --leak-check=full -q ./$$test_case_exec; \
-	done
+		valgrind --leak-check=full -q ./$$test_case_exec 1; \
+	done; \
+	echo "[With Valgrind] Test cases with root privilege"; \
 	for test_case_sudo_exec in $(test_cases_sudo); do \
-		sudo valgrind --leak-check=full -q ./$$test_case_sudo_exec; \
+		sudo valgrind --leak-check=full -q ./$$test_case_sudo_exec 1; \
+	done; \
+	echo "[Without Valgrind] Test cases without root privilege"; \
+	for test_case_exec in $(test_cases); do \
+		./$$test_case_exec 0; \
+	done; \
+	echo "[Without Valgrind] Test cases with root privilege"; \
+	for test_case_sudo_exec in $(test_cases_sudo); do \
+		sudo ./$$test_case_sudo_exec 0; \
 	done
 
 clean:
-	-rm -- *.o *.d $(test_cases) > /dev/null 2>&1
+	-rm -- *.o *.d $(test_cases) $(test_cases_sudo) > /dev/null 2>&1
 # End of main rules
 
 # Automatic dependency generation taken from GNU Make documentation

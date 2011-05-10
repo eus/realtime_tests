@@ -134,7 +134,7 @@ extern "C" {
    * cpu_freq_get_governor() before calling this function and to call
    * cpu_freq_restore_governor() after the code section that needs a
    * particular CPU frequency because this function may change the
-   * governor of the CPU.
+   * governor of the CPU if it returns zero.
    *
    * @param which_cpu the CPU ID of the CPU to be set.
    * @param new_freq the desired frequency.
@@ -155,6 +155,28 @@ extern "C" {
   unsigned long long cpu_freq_get(int which_cpu);
   /** @} End of collection of functions to deal with CPU frequency */
 
+  /* This function is copied from Prof. Abeni's RTTest cputime.c. The
+   * TSC (Timestamp Counter) is incremented once at every tick. So, a
+   * 1 GHz core will increment its TSC 1 billion times in a second.
+   */  
+  static inline unsigned long long rdtsc(void)
+  {
+    unsigned long long val;
+
+    __asm__ __volatile__("rdtsc" : "=A" (val));
+
+    return val;
+  }
+  /* The idea of this busyloop comes from Prof. Abeni's RTTest
+   * periodic_thread.c. This is the algorithm to perform busy
+   * loop.
+   */
+  static inline void busyloop(unsigned long long loop_count)
+  {
+    volatile unsigned long long t0 = rdtsc();
+    while (rdtsc() - t0 < loop_count);
+  }
+
   /* III */
   /**
    * @name Collection of functions to use a CPU in a certain way.
@@ -163,11 +185,13 @@ extern "C" {
 
   /** An opaque data type of the object to be passed to run_cpu_busyloop. */
   typedef struct {
-    int which_cpu;
-    unsigned long long frequency;
-    unsigned long long loop_count;
-    utility_time duration;
+    int which_cpu; /* The ID of the CPU on which the measurement took place */
+    unsigned long long frequency; /* The frequency at which the
+				     measurement took place */
+    unsigned long long loop_count; /* The number of loop */
+    utility_time duration; /* The duration that the busyloop should yield */
   } cpu_busyloop;
+
   /**
    * @return the CPU ID that the cpu_busyloop object is associated with.
    */
@@ -211,20 +235,65 @@ extern "C" {
    * the CPU frequency exists. You may want to use cpu_freq_set()
    * before calling this function.
    *
+   * Because searching for the right number of repetitions involves a
+   * trade off between accuracy and computation time, search_tolerance
+   * and search_max_passes are used to bound the search effort. For
+   * example, if the desired duration is 1 s, a search_tolerance of 1
+   * ms will stop the search once a number of repetitions is found to
+   * yield a duration between 0.999 s and 1.001 s, inclusive. Since
+   * the search may involve some repetitions of the search algorithm,
+   * the search will stop after being repeated for search_max_passes
+   * times. That is, the search will stop once either a number of
+   * repetitions is found to yield a duration between (duration -
+   * search_tolerance) and (duration + search_tolerance), inclusive,
+   * or the search algorithm has been repeated for search_max_passes
+   * times.
+   *
+   * Please keep in mind that at worst, this function will
+   * approximately last for the desired duration times
+   * search_max_passes.
+   *
+   * To acquire the most accurate measurement, this function will run
+   * as a real-time thread with the highest priority possible while
+   * disallowing any preemption and CPU migration. Therefore, the
+   * caller must have a sufficient privilege to do the aforementioned
+   * things and, if care is not taken, the caller may freeze the whole
+   * machine.
+   *
+   * The above behavior implies that the number of repetitions to
+   * yield the desired duration is measured without preemption (i.e.,
+   * context-switch) as a real-time thread with the highest possible
+   * real-time priority.
+   *
    * @param which_cpu the CPU ID of the CPU whose number of busy loop
    * repetitions is to be determined.
    * @param duration a pointer to utility_time object specifying the
-   * desired duration of the busy loop. If the utility_time object is
-   * marked for automatic garbage collection, it will be garbage
-   * collected.
+   * desired duration of the busy loop. If this function returns zero
+   * and the utility_time object is marked for automatic garbage
+   * collection, it will be garbage collected.
+   * @param search_tolerance a pointer to utility_time object
+   * specifying the tolerated deviations from the desired duration. If
+   * this function returns zero and the utility_time object is marked
+   * for automatic garbage collection, it will be garbage collected.
+   * @param search_max_passes the maximum number of repetitions that
+   * the search algorithm is allowed to make.
+   * @param result a pointer to a dynamically allocated object to be
+   * passed to run_cpu_busyloop() to keep the CPU busy for the
+   * specified duration at the current frequency of the CPU. The
+   * caller is responsible to free the object using
+   * destroy_cpu_busyloop().
    *
-   * @return a dynamically allocated object to be passed to
-   * run_cpu_busyloop() to keep the CPU busy for the specified
-   * duration at the current frequency of the CPU. The caller is
-   * responsible to free the object using destroy_cpu_busyloop().
+   * @return zero if there is no error and result can be successfully
+   * created, -1 if the caller is not privileged to use a real-time
+   * scheduler, -2 if the duration is too short, or -3 in case of hard
+   * error that requires the investigation of the output of the
+   * logging facility to fix the error. When the return value is not
+   * zero, result is set to NULL.
    */
-  cpu_busyloop *create_cpu_busyloop(int which_cpu,
-				    const utility_time *duration);
+  int create_cpu_busyloop(int which_cpu, const utility_time *duration,
+			  const utility_time *search_tolerance,
+			  unsigned search_max_passes,
+			  cpu_busyloop **result);
 
   /**
    * Destroy a cpu_busyloop object. An already destroyed cpu_busyloop
@@ -238,7 +307,10 @@ extern "C" {
    * duration and the duration itself. An already destroyed
    * cpu_busyloop object must not be passed to this function.
    */
-  void keep_cpu_busy(const cpu_busyloop *arg);
+  static inline void keep_cpu_busy(const cpu_busyloop *arg)
+  {
+    busyloop(arg->loop_count);
+  }
   /** @} End of collection of functions to use a CPU in a certain way */
 
 #ifdef __cplusplus

@@ -253,7 +253,7 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
 
 int cpu_freq_set(int which_cpu, unsigned long long new_freq)
 {
-  /* Select the right governor first */
+  /* Open the necessary files first to ensure caller has enough privilege */
   char linux_governor_file_path[1024];
   snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
 	   LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
@@ -265,11 +265,6 @@ int cpu_freq_set(int which_cpu, unsigned long long new_freq)
     log_syserror("Cannot open '%s' for writing", linux_governor_file_path);
     return -1;
   }
-  fprintf(linux_governor_file, "userspace");
-  utility_file_close(linux_governor_file, linux_governor_file_path);
-  /* End of selecting the right governor */
-
-  /* Set the frequency */
   char linux_set_frequency_file_path[1024];
   snprintf(linux_set_frequency_file_path, sizeof(linux_set_frequency_file_path),
 	   LINUX_SET_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
@@ -281,6 +276,14 @@ int cpu_freq_set(int which_cpu, unsigned long long new_freq)
     log_syserror("Cannot open '%s' for writing", linux_set_frequency_file_path);
     return -1;
   }
+  /* End of opening necessary files */
+
+  /* Select the right governor first */
+  fprintf(linux_governor_file, "userspace");
+  utility_file_close(linux_governor_file, linux_governor_file_path);
+  /* End of selecting the right governor */
+
+  /* Set the frequency */
   fprintf(linux_set_frequency_file, "%llu", new_freq / 1000);
   utility_file_close(linux_set_frequency_file, linux_set_frequency_file_path);
   /* End of setting the frequency*/
@@ -325,5 +328,240 @@ unsigned long long cpu_freq_get(int which_cpu)
   if (buffer != NULL) {
     free(buffer);
   }
+  return 0;
+}
+
+int cpu_busyloop_id(const cpu_busyloop *obj)
+{
+  return obj->which_cpu;
+}
+
+unsigned long long cpu_busyloop_frequency(const cpu_busyloop *obj)
+{
+  return obj->frequency;
+}
+
+utility_time *cpu_busyloop_duration(const cpu_busyloop *obj)
+{
+  return utility_time_to_utility_time_dyn(&obj->duration);
+}
+
+void destroy_cpu_busyloop(cpu_busyloop *arg)
+{
+  utility_time_gc(&arg->duration);
+  free(arg);
+}
+
+#define BILLION 1000000000.0
+static double timespec_to_sec(const struct timespec *t)
+{
+  return t->tv_sec + t->tv_nsec / BILLION;
+}
+static unsigned long long duration_to_loop_count(unsigned long long frequency,
+						 double duration)
+{
+  return (unsigned long long) (frequency * duration);
+}
+
+/* This function is sensitive to timing. All of its data should be in
+   the data cache, all of its instructions should be in the
+   instruction cache, and the instructions should be with the most
+   minimal number of branching possible. */
+static __attribute__((optimize(0)))
+double busyloop_measurement(unsigned long long loop_count)
+{
+  int rc = 0;
+  struct timespec t_begin, t_end;
+#define CLOCK_TYPE CLOCK_THREAD_CPUTIME_ID
+
+  /* Calculate actual duration adjustment */
+  rc += clock_gettime(CLOCK_TYPE, &t_begin);
+  /*    ^    *
+   *    |    *
+   *  delta  * This is used to stabilize the cache first.
+   *    |    *
+   *    V    */
+  rc += clock_gettime(CLOCK_TYPE, &t_end);
+  rc += clock_gettime(CLOCK_TYPE, &t_begin);
+  /*    ^    *
+   *    |    *
+   *  delta  * This is the one used for adjustment.
+   *    |    *
+   *    V    */
+  rc += clock_gettime(CLOCK_TYPE, &t_end);
+  double adjustment = timespec_to_sec(&t_end) - timespec_to_sec(&t_begin);
+  /* End of calculating actual duration adjustment */
+
+  rc += clock_gettime(CLOCK_TYPE, &t_begin);
+  busyloop(loop_count);
+  rc += clock_gettime(CLOCK_TYPE, &t_end);
+  double actual_duration = timespec_to_sec(&t_end) - timespec_to_sec(&t_begin);
+
+  return (rc == 0 ? (actual_duration - adjustment) : -1.0);
+
+#undef CLOCK_TYPE
+}
+
+static int busyloop_search(double duration, double search_tolerance,
+			   unsigned search_max_passes,
+			   unsigned long long curr_freq,
+			   unsigned long long *loop_count)
+{
+  int nth_pass;
+  for (nth_pass = 1; nth_pass <= search_max_passes; nth_pass++) {
+
+    double actual_duration = busyloop_measurement(*loop_count);
+    if (actual_duration < 0.0) {
+      log_error("Not getting t_begin or t_end when measuring actual duration");
+      return -3;
+    }
+
+    log_verbose("Pass %d of %d: %llu loops -> %.9f s\n",
+		nth_pass, search_max_passes, *loop_count, actual_duration);
+
+    if (nth_pass == search_max_passes) {
+      /* Do not modify loop_count */
+      break;
+    }
+
+    double delta = actual_duration - duration;
+    if (delta < 0) {
+      if (-search_tolerance <= delta) {
+	break;
+      }
+
+      *loop_count += duration_to_loop_count(curr_freq, -delta);
+    } else {
+      if (delta <= search_tolerance) {
+	break;
+      }
+
+      unsigned long long loop_count_delta = duration_to_loop_count(curr_freq,
+								   delta);
+      if (*loop_count < loop_count_delta) {
+	return -2;
+      }
+      *loop_count -= loop_count_delta;
+    }
+  }
+
+  return 0;
+}
+
+struct busyloop_search_parameters
+{
+  unsigned long long loop_count;
+  unsigned long long curr_freq;
+  double duration;
+  double search_tolerance;
+  unsigned search_max_passes;
+  int which_cpu;
+  int exit_status;
+};
+static void *busyloop_search_thread(void *args)
+{
+  struct busyloop_search_parameters *params = args;
+  params->exit_status = -3;
+
+  /* Lock to the CPU to be measured */
+  if (lock_me_to_cpu(params->which_cpu) != 0) {
+    log_error("Cannot lock myself to CPU #%d", params->which_cpu);
+    goto out;
+  }
+
+  /* Use RT scheduler without preemption with the maximum priority possible */
+  struct sched_param schedparam = {
+    .sched_priority = sched_get_priority_max(SCHED_FIFO)
+  };
+  if (schedparam.sched_priority == -1) {
+    log_syserror("Cannot obtain the max priority of SCHED_FIFO");
+    goto out;
+  }
+  if ((errno = pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedparam))
+      && errno != 0) {
+    if (errno == EPERM) {
+      params->exit_status = -1;
+    } else {
+      log_syserror("Cannot change scheduler to SCHED_FIFO");
+    }
+    goto out;
+  }
+
+  /* Run the search algorithm */
+  params->exit_status = busyloop_search(params->duration,
+					params->search_tolerance,
+					params->search_max_passes,
+					params->curr_freq,
+					&params->loop_count);
+
+ out:
+  return &params->exit_status;
+}
+
+int create_cpu_busyloop(int which_cpu, const utility_time *duration,
+			const utility_time *search_tolerance,
+			unsigned search_max_passes,
+			cpu_busyloop **result)
+{
+  unsigned long long curr_freq = cpu_freq_get(which_cpu);
+
+  struct timespec timespec_duration;
+  to_timespec(duration, &timespec_duration);
+
+  unsigned long long loop_count
+    = duration_to_loop_count(curr_freq, timespec_to_sec(&timespec_duration));
+
+  /* Refine loop_count if requested */
+  if (search_max_passes > 0) {
+    struct timespec timespec_search_tolerance;
+    to_timespec(search_tolerance, &timespec_search_tolerance);
+
+    pthread_t busyloop_search_tid;
+    struct busyloop_search_parameters busyloop_search_params = {
+      .which_cpu = which_cpu,
+      .duration = timespec_to_sec(&timespec_duration),
+      .search_tolerance = timespec_to_sec(&timespec_search_tolerance),
+      .search_max_passes = search_max_passes,
+      .loop_count = loop_count,
+      .curr_freq = curr_freq,
+      .exit_status = -3,
+    };
+    if (pthread_create(&busyloop_search_tid, NULL, busyloop_search_thread,
+		       &busyloop_search_params) != 0) {
+      log_syserror("Cannot create busyloop search thread");
+      *result = NULL;
+      return -3;
+    }
+    if (pthread_join(busyloop_search_tid, NULL) != 0) {
+      log_syserror("Cannot join busyloop search thread");
+      *result = NULL;
+      return -3;
+    }
+    if (busyloop_search_params.exit_status != 0) {
+      *result = NULL;
+      return busyloop_search_params.exit_status;
+    }
+    loop_count = busyloop_search_params.loop_count;
+  }
+  /* End of refining loop_count */
+
+  /* Create the result */
+  cpu_busyloop *obj = malloc(sizeof(cpu_busyloop));
+  if (obj == NULL) {
+    log_error("Insufficient memory to create cpu_busyloop object");
+    *result = NULL;
+    return -3;
+  }
+
+  obj->which_cpu = which_cpu;
+  obj->frequency = curr_freq;
+  obj->loop_count = loop_count;
+  utility_time_init(&obj->duration);
+  utility_time_to_utility_time_gc(duration, &obj->duration);
+  /* End of creating the result */
+
+  utility_time_gc(search_tolerance);
+
+  *result = obj;
   return 0;
 }
