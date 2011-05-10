@@ -17,7 +17,6 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,11 +24,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <time.h>
+#include "utility_testcase.h"
 #include "utility_time.h"
 #include "utility_log.h"
-
-const char prog_name[] = "utility_log_test";
-FILE *log_stream;
 
 static int in_parent = 1;
 static char tmp_file_name[] = "utility_log_test_XXXXXX";
@@ -87,14 +84,8 @@ void *run_thread(void *args)
   return exit_status;
 }
 
-int main(int argc, char **argv, char **envp)
+MAIN_UNIT_TEST_BEGIN("utility_log_test", "stderr", NULL, cleanup)
 {
-  log_stream = stderr;
-
-  if (atexit(cleanup) != 0) {
-    fatal_syserror("Unable to register cleanup function at exit");
-  }
-
   int tmp_file_fd = mkstemp(tmp_file_name);
   if (tmp_file_fd == -1) {
     fatal_syserror("Unable to create a temporary file");
@@ -102,11 +93,6 @@ int main(int argc, char **argv, char **envp)
   if (close(tmp_file_fd) != 0) {
     fatal_syserror("Unable to close the temporary file");
   }
-
-  /* Allow for the invocation of cleanup() */
-#define gracious_assert(condition) if (!(condition))		\
-    fatal_error("%s:%d: %s: Assertion `" #condition "' failed", \
-		__FILE__, __LINE__, __FUNCTION__)
 
   /* Allow for easy setup of the logging stream of subprocess */
 #define setup_subprocess_log_stream() do {				\
@@ -140,13 +126,37 @@ int main(int argc, char **argv, char **envp)
     }						\
     gracious_assert(*ptr++ == ']');		\
   } while (0)
+#define check_fn_file_ln(rc, fn, file, ln) do {	\
+    gracious_assert(*ptr++ == '[');		\
+    if (fn == NULL) {				\
+      skip_line_section('@');			\
+    } else {					\
+      cmp_token(rc, "%s", fn);			\
+    }						\
+    gracious_assert(*ptr++ == '@');		\
+    if (file == NULL) {				\
+      skip_line_section(':');			\
+    } else {					\
+      cmp_token(rc, "%s", file);		\
+    }						\
+    gracious_assert(*ptr++ == ':');		\
+    if (ln == -1) {				\
+      skip_line_section(']');			\
+    } else {					\
+      cmp_token(rc, "%d", ln);			\
+    }						\
+    gracious_assert(*ptr++ == ']');		\
+  } while (0)
 #define get_next_line(buf, buf_len)				\
   gracious_assert(fgets(buf, buf_len, log_file) != NULL);
-#define test_line(rc, buf, proc_id, thread_id, msg, ...) do {	\
+#define test_line(rc, buf, proc_id, thread_id,			\
+		  fn, file, ln, msg, ...)			\
+  do {								\
     char *ptr = buf;						\
     cmp_token(rc, "utility_log_test");				\
     check_proc_thread_id(rc, proc_id);				\
     check_proc_thread_id(rc, thread_id);			\
+    check_fn_file_ln(rc, fn, file, ln);				\
     cmp_token(rc, ": " msg, ## __VA_ARGS__);			\
   } while (0)
 
@@ -163,6 +173,8 @@ int main(int argc, char **argv, char **envp)
     }									\
     gracious_assert(WEXITSTATUS(child_exit_status)			\
 		    == expected_exit_code);				\
+    fprintf(stderr,							\
+	    "Valgrind 'still reachable' memory leak is expected\n");	\
     log_file = fopen(tmp_file_name, "r");				\
     if (log_file == NULL) {						\
       fatal_syserror("Cannot open subprocess log file for reading");	\
@@ -197,6 +209,7 @@ int main(int argc, char **argv, char **envp)
       int rc = 0;						\
       get_next_line(buffer, sizeof(buffer));			\
       test_line(rc, buffer, child_pid, -1,			\
+		"main", "utility_log_test.c", -1,		\
 		msg, ## __VA_ARGS__);				\
       gracious_assert(rc == 0);					\
     } while (0)
@@ -332,6 +345,7 @@ int main(int argc, char **argv, char **envp)
 	int rc = 0;							\
 	test_line(rc, buffer_interleaved[line_idx],			\
 		  child_pid, thread_id,					\
+		  "run_thread", "utility_log_test.c", -1,		\
 		  msg, ## __VA_ARGS__);					\
 	if (rc == 0) {							\
 	  found = 1;							\
@@ -363,4 +377,5 @@ int main(int argc, char **argv, char **envp)
   }
 
   return EXIT_SUCCESS;
-}
+
+} MAIN_UNIT_TEST_END

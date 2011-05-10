@@ -15,17 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "utility_testcase.h"
 #include "utility_log.h"
 #include "utility_file.h"
-
-const char prog_name[] = "utility_file_test";
-FILE *log_stream;
 
 static char tmp_file_name[] = "utility_file_test_XXXXXX";
 static void cleanup(void)
@@ -35,14 +32,8 @@ static void cleanup(void)
   }
 }
 
-int main(int argc, char **argv, char **envp)
+MAIN_UNIT_TEST_BEGIN("utility_file_test", "stderr", NULL, cleanup)
 {
-  log_stream = stderr;
-
-  if (atexit(cleanup) != 0) {
-    fatal_syserror("Unable to register cleanup function at exit");
-  }
-
   int tmp_file_fd = mkstemp(tmp_file_name);
   if (tmp_file_fd == -1) {
     fatal_syserror("Unable to open a temporary file");
@@ -88,11 +79,6 @@ int main(int argc, char **argv, char **envp)
       fatal_syserror("Unable to close test_in_stream");			\
     }									\
   } while (0)
-
-  /* Allow for the invocation of cleanup() */
-#define gracious_assert(condition) if (!(condition))		\
-    fatal_error("%s:%d: %s: Assertion `" #condition "' failed", \
-		__FILE__, __LINE__, __FUNCTION__)
 
   FILE *test_in_stream;
   char *buffer = NULL;
@@ -207,7 +193,7 @@ int main(int argc, char **argv, char **envp)
     return 0;
   }
   rc = utility_file_read(test_in_stream, 4, read_fn, &line_counter);
-  assert(rc == 0);
+  gracious_assert(rc == 0);
 
   free_buffer();
   rc = utility_file_close(test_in_stream, tmp_file_name);
@@ -227,16 +213,17 @@ int main(int argc, char **argv, char **envp)
     return 1;
   }
   rc = utility_file_read(test_in_stream, 4, read_fn_bailout, &line_counter);
-  assert(rc == -1);
+  gracious_assert(rc == -1);
 
   /* Continuation must be possible */
   line_counter = 1;
   rc = utility_file_read(test_in_stream, 4, read_fn, &line_counter);
-  assert(rc == 0);
+  gracious_assert(rc == 0);
 
   free_buffer();
   rc = utility_file_close(test_in_stream, tmp_file_name);
   gracious_assert(rc == 0);
 
   return EXIT_SUCCESS;
-}
+
+} MAIN_UNIT_TEST_END
