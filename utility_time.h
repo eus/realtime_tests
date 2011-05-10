@@ -74,6 +74,16 @@ extern "C" {
     int dyn_alloc; /* The object was allocated dynamically */
     int manual_gc; /* No automatic garbage collection should be performed */
   } utility_time;
+
+  /**
+   * A utility time object having the semantic of a relative time.
+   */
+  typedef utility_time relative_time;
+
+  /**
+   * A utility time object having the semantic of an absolute time.
+   */
+  typedef utility_time absolute_time;
   /* End of main data structures */
 
   /* II */
