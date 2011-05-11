@@ -313,6 +313,27 @@ extern "C" {
   }
   /** @} End of collection of functions to use a CPU in a certain way */
 
+  /* IV */
+  /**
+   * @name Collection of functions to deal with endianness.
+   * @{
+   */
+  /** Possible byte orders. */
+  enum byte_order {
+    CPU_LITTLE_ENDIAN,
+    CPU_BIG_ENDIAN,
+  };
+  /**
+   * @return the byte order of the host system.
+   */
+  static inline char host_byte_order(void)
+  {
+    int probe = 0xBEEF;
+    char *ptr = (char *) &probe;
+    return (ptr[0] == (char) 0xEF ? CPU_LITTLE_ENDIAN : CPU_BIG_ENDIAN);
+  }
+  /** @} End of */
+
 #ifdef __cplusplus
 }
 #endif

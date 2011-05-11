@@ -399,6 +399,20 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
   used_gov_in_use = 0;
 
+  /* Testcase 7: check host_byte_order()*/
+  int byte_order_test = 0xFEEDBEEF;
+  char byte_order_test_probe = ((char *) &byte_order_test)[0];
+  switch (host_byte_order()) {
+  case CPU_LITTLE_ENDIAN:
+    gracious_assert(byte_order_test_probe == (char) 0xEF);
+    break;
+  case CPU_BIG_ENDIAN:
+    gracious_assert(byte_order_test_probe == (char) 0xFE);
+    break;
+  default:
+    gracious_assert_msg(0, "Unknown endianness");
+  }
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END
