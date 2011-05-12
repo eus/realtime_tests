@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
+#define _GNU_SOURCE /* pthread_getaffinity_np() */
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -76,7 +78,13 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
       fatal_syserror("Cannot register SIGINT handler");
     }
 
-    while (!stop_infinite_loop);
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    while (!stop_infinite_loop) {
+      gracious_assert(pthread_getaffinity_np(pthread_self(), sizeof(cpuset),
+					     &cpuset) == 0);
+      gracious_assert(CPU_ISSET(0, &cpuset));
+    }
 
     return EXIT_SUCCESS;
 
