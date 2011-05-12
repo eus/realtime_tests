@@ -164,15 +164,7 @@ MAIN_UNIT_TEST_BEGIN("utility_log_test", "stderr", NULL, cleanup)
   FILE *log_file = NULL;
   char buffer[1024], expectation[1024];
 #define begin_subprocess_log_inspection(expected_exit_code) do {	\
-    int child_exit_status = 0;						\
-    if (waitpid(child_pid, &child_exit_status, 0) == -1) {		\
-      fatal_syserror("Cannot wait for testcase 1 subprocess");		\
-    }									\
-    if (!WIFEXITED(child_exit_status)) {				\
-      fatal_syserror("Unexpected return of testcase 1 subprocess");	\
-    }									\
-    gracious_assert(WEXITSTATUS(child_exit_status)			\
-		    == expected_exit_code);				\
+    check_subprocess_exit_status(expected_exit_code);			\
     fprintf(stderr,							\
 	    "Valgrind 'still reachable' memory leak is expected\n");	\
     log_file = fopen(tmp_file_name, "r");				\

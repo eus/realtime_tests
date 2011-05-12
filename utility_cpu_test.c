@@ -404,11 +404,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     return EXIT_SUCCESS;
   } else {
     gracious_assert(child_pid != -1);
-
-    int child_exit_status = 0;
-    gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);
-    gracious_assert(WIFEXITED(child_exit_status));
-    gracious_assert(WEXITSTATUS(child_exit_status) == EXIT_SUCCESS);
+    check_subprocess_exit_status(EXIT_SUCCESS);
   }
 
   /* Testcase 7: check host_byte_order()*/

@@ -118,7 +118,16 @@
       }									\
     }
 
+/** This must be used to close MAIN_UNIT_TEST_BEGIN(). */
 #define MAIN_UNIT_TEST_END }
+
+#define check_subprocess_exit_status(expected_exit_code) do {		\
+    int child_exit_status = 0;						\
+    gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);	\
+    gracious_assert(WIFEXITED(child_exit_status));			\
+    gracious_assert(WEXITSTATUS(child_exit_status)			\
+		    == expected_exit_code);				\
+  } while (0)
 
 #ifdef __cplusplus
 extern "C" {
