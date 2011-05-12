@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -297,105 +299,117 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
    * the following parameters of the CPU busyloop object to be
    * created:
    */
-  utility_time duration;
-  utility_time_init(&duration);
-  to_utility_time(1, s, &duration);
-  utility_time search_tolerance;
-  utility_time_init(&search_tolerance);
-  to_utility_time(1, us, &search_tolerance);
-  unsigned search_max_passes = 10;
+  child_pid = fork();
+  if (child_pid == 0) {
+    utility_time duration;
+    utility_time_init(&duration);
+    to_utility_time(1, s, &duration);
+    utility_time search_tolerance;
+    utility_time_init(&search_tolerance);
+    to_utility_time(1, us, &search_tolerance);
+    unsigned search_max_passes = 10;
 
-  /* Save current governor */
-  gracious_assert(enter_UP_mode() == 0);
-  used_gov = cpu_freq_get_governor(0);
-  gracious_assert(used_gov != NULL);
+    /* Save current governor */
+    gracious_assert(enter_UP_mode() == 0);
+    used_gov = cpu_freq_get_governor(0);
+    gracious_assert(used_gov != NULL);
 
-  /* Set the CPU frequency */
-  freqs = cpu_freq_available(0, &freq_count);
-  gracious_assert(freq_count >= 1);
-  gracious_assert(cpu_freq_set(0, freqs[0]) == 0);
-  used_gov_in_use = 1;
+    /* Set the CPU frequency */
+    freqs = cpu_freq_available(0, &freq_count);
+    gracious_assert(freq_count >= 1);
+    gracious_assert(cpu_freq_set(0, freqs[0]) == 0);
+    used_gov_in_use = 1;
 
-  /* Create CPU busyloop object */
-  cpu_busyloop *busyloop_obj = NULL;
-  gracious_assert(create_cpu_busyloop(0, &duration, &search_tolerance,
-				      search_max_passes, &busyloop_obj) == 0);
-  gracious_assert(busyloop_obj != NULL);
+    /* Create CPU busyloop object */
+    cpu_busyloop *busyloop_obj = NULL;
+    gracious_assert(create_cpu_busyloop(0, &duration, &search_tolerance,
+					search_max_passes, &busyloop_obj) == 0);
+    gracious_assert(busyloop_obj != NULL);
 
-  /* Check busyloop_obj properties */
-  gracious_assert(cpu_busyloop_id(busyloop_obj) == 0);
-  gracious_assert(cpu_busyloop_frequency(busyloop_obj) == freqs[0]);
-  gracious_assert(utility_time_eq_gc(cpu_busyloop_duration(busyloop_obj),
-				     to_utility_time_dyn(1, s)));
+    /* Check busyloop_obj properties */
+    gracious_assert(cpu_busyloop_id(busyloop_obj) == 0);
+    gracious_assert(cpu_busyloop_frequency(busyloop_obj) == freqs[0]);
+    gracious_assert(utility_time_eq_gc(cpu_busyloop_duration(busyloop_obj),
+				       to_utility_time_dyn(1, s)));
 
-  /* Save the old scheduler */
-  int sched_policy_old;
-  struct sched_param sched_param_old;
-  gracious_assert(pthread_getschedparam(pthread_self(), &sched_policy_old,
-					&sched_param_old) == 0);
+    /* Save the old scheduler */
+    int sched_policy_old;
+    struct sched_param sched_param_old;
+    gracious_assert(pthread_getschedparam(pthread_self(), &sched_policy_old,
+					  &sched_param_old) == 0);
 
-  /* Use RT scheduler and the highest RT priority */
-  struct sched_param sched_param = {
-    .sched_priority = sched_get_priority_max(SCHED_FIFO),
-  };
-  gracious_assert(sched_param.sched_priority != -1);
-  gracious_assert(pthread_setschedparam(pthread_self(), SCHED_FIFO,
-					&sched_param) == 0);
+    /* Use RT scheduler and the highest RT priority */
+    struct sched_param sched_param = {
+      .sched_priority = sched_get_priority_max(SCHED_FIFO),
+    };
+    gracious_assert(sched_param.sched_priority != -1);
+    gracious_assert(pthread_setschedparam(pthread_self(), SCHED_FIFO,
+					  &sched_param) == 0);
 
-  struct timespec t_begin, t_end;
-  /* Stabilizing the cache */
-  int rc_t_begin = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
-  int rc_t_end = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
-  /* End of stabilizing the cache */
+    struct timespec t_begin, t_end;
+    /* Stabilizing the cache */
+    int rc_t_begin = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
+    int rc_t_end = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
+    /* End of stabilizing the cache */
 
-  /* Time the measurement duration */
+    /* Time the measurement duration */
 #define to_ns(t) (t.tv_sec * 1000000000ULL + t.tv_nsec)
-  rc_t_begin += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
-  rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
-  unsigned long long measurement_duration = to_ns(t_end) - to_ns(t_begin);
+    rc_t_begin += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
+    rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
+    unsigned long long measurement_duration = to_ns(t_end) - to_ns(t_begin);
 #undef to_ns
-  /* End of timing the measurement duration */
+    /* End of timing the measurement duration */
 
-  /* Time keep_cpu_busy() */
-  rc_t_begin += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
-  keep_cpu_busy(busyloop_obj);
-  rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
-  /* End of timing keep_cpu_busy() */
+    /* Time keep_cpu_busy() */
+    rc_t_begin += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_begin);
+    keep_cpu_busy(busyloop_obj);
+    rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
+    /* End of timing keep_cpu_busy() */
 
-  /* Restore the normal scheduler */
-  gracious_assert(pthread_setschedparam(pthread_self(), sched_policy_old,
-					&sched_param_old) == 0);
+    /* Restore the normal scheduler */
+    gracious_assert(pthread_setschedparam(pthread_self(), sched_policy_old,
+					  &sched_param_old) == 0);
 
-  /* Check the accuracy of keep_cpu_busy() */
-  gracious_assert(rc_t_begin == 0);
-  gracious_assert(rc_t_end == 0);
-  utility_time duration_actual;
-  utility_time_init(&duration_actual);
-  utility_time_sub_gc(timespec_to_utility_time_dyn(&t_end),
-		      timespec_to_utility_time_dyn(&t_begin),
-		      &duration_actual);
-  utility_time_sub_gc(&duration_actual,
-		      to_utility_time_dyn(measurement_duration, ns),
-		      &duration_actual);
+    /* Check the accuracy of keep_cpu_busy() */
+    gracious_assert(rc_t_begin == 0);
+    gracious_assert(rc_t_end == 0);
+    utility_time duration_actual;
+    utility_time_init(&duration_actual);
+    utility_time_sub_gc(timespec_to_utility_time_dyn(&t_end),
+			timespec_to_utility_time_dyn(&t_begin),
+			&duration_actual);
+    utility_time_sub_gc(&duration_actual,
+			to_utility_time_dyn(measurement_duration, ns),
+			&duration_actual);
 
-  utility_time *lower_bound = utility_time_sub_dyn(&duration,
-						   &search_tolerance);
-  utility_time *upper_bound = utility_time_add_dyn(&duration,
-						   &search_tolerance);
-  if (utility_time_lt_gc_t2(&duration_actual, lower_bound)
-      || utility_time_gt_gc_t2(&duration_actual, upper_bound)) {
-    /* If this is run under Valgrind, this is expected.  If Valgrind
-      reports no leak, run this again without Valgrind. If this
-      messages persists, this testcase really fails. */
+    utility_time *lower_bound = utility_time_sub_dyn(&duration,
+						     &search_tolerance);
+    utility_time *upper_bound = utility_time_add_dyn(&duration,
+						     &search_tolerance);
+    if (utility_time_lt_gc_t2(&duration_actual, lower_bound)
+	|| utility_time_gt_gc_t2(&duration_actual, upper_bound)) {
+      /* If this is run under Valgrind, this is expected.  If Valgrind
+	 reports no leak, run this again without Valgrind. If this
+	 messages persists, this testcase really fails. */
 
-    gracious_assert(strcmp(argv[1], "1") == 0);
+      gracious_assert(strcmp(argv[1], "1") == 0);
+    }
+
+    /* Clean-up */
+    free(freqs);
+    destroy_cpu_busyloop(busyloop_obj);
+    gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
+    used_gov_in_use = 0;
+
+    return EXIT_SUCCESS;
+  } else {
+    gracious_assert(child_pid != -1);
+
+    int child_exit_status = 0;
+    gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);
+    gracious_assert(WIFEXITED(child_exit_status));
+    gracious_assert(WEXITSTATUS(child_exit_status) == EXIT_SUCCESS);
   }
-
-  /* Clean-up */
-  free(freqs);
-  destroy_cpu_busyloop(busyloop_obj);
-  gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
-  used_gov_in_use = 0;
 
   /* Testcase 7: check host_byte_order()*/
   int byte_order_test = 0xFEEDBEEF;
