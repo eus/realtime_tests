@@ -1,10 +1,5 @@
-test_cases_header_only := utility_time_test utility_log_test
-test_cases_with_source := utility_file_test
-test_cases := $(test_cases_header_only) $(test_cases_with_source)
-
-test_cases_sudo_header_only :=
-test_cases_sudo_with_source := utility_cpu_test
-test_cases_sudo := $(test_cases_sudo_header_only) $(test_cases_sudo_with_source)
+test_cases := utility_time_test utility_log_test utility_file_test
+test_cases_sudo := utility_cpu_test
 
 executables := $(test_cases) $(test_cases_sudo)
 
