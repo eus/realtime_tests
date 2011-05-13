@@ -30,6 +30,7 @@
 
 static int in_parent = 1;
 static char tmp_file_name[] = "utility_log_test_XXXXXX";
+static pid_t child_pid = 0;
 static void cleanup(void)
 {
   if (!in_parent) {
@@ -38,6 +39,10 @@ static void cleanup(void)
 
   if (remove(tmp_file_name) != 0 && errno != ENOENT) {
     log_syserror("Unable to remove the temporary file");
+  }
+
+  if (kill(child_pid, SIGKILL) != 0 && errno != ESRCH) {
+    log_syserror("You must kill child %d yourself", child_pid);
   }
 }
 
@@ -180,7 +185,7 @@ MAIN_UNIT_TEST_BEGIN("utility_log_test", "stderr", NULL, cleanup)
   } while (0)
 
   /* Testcase 1: logging from within a process */
-  pid_t child_pid = fork();
+  child_pid = fork();
   if (child_pid == 0) {
     setup_subprocess_log_stream();
 

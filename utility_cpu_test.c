@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -34,12 +35,18 @@
 
 static cpu_freq_governor *used_gov = NULL;
 static int used_gov_in_use = 0;
+static pid_t child_pid = 0;
 static void cleanup(void)
 {
   if (used_gov_in_use) {
     int rc;
     if ((rc = cpu_freq_restore_governor(used_gov)) != 0) {
       log_error("You must restore the CPU freq governor yourself");
+    }
+  }
+  if (child_pid != 0) {
+    if (kill(child_pid, SIGINT) != 0 && errno != ESRCH) {
+      log_syserror("You must kill child %d yourself", child_pid);
     }
   }
 }
@@ -63,7 +70,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   }
 
   /* Testcase 1: process migration is prevented */
-  pid_t child_pid = fork();
+  child_pid = fork();
   if (child_pid == 0) {
 
     gracious_assert(enter_UP_mode() == 0); /* Enter UP mode ASAP to prevent any
@@ -153,6 +160,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     if (kill(child_pid, SIGINT) != 0) {
       fatal_syserror("Cannot stop child process with pid %u", child_pid);
     }
+    child_pid = 0;
+    check_subprocess_exit_status(EXIT_SUCCESS);
 
     gracious_assert(rc != -2);
     gracious_assert(keyword_hit_mask == 0x7);
@@ -413,6 +422,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   } else {
     gracious_assert(child_pid != -1);
     check_subprocess_exit_status(EXIT_SUCCESS);
+    child_pid = 0;
   }
 
   /* Testcase 7: check host_byte_order()*/
