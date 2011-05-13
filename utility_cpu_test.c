@@ -69,21 +69,17 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     return EXIT_FAILURE;
   }
 
-#define check_that_locking_indeed_happens()                             \
+#define sample_linux_process_info()                                     \
   do {                                                                  \
     sleep(1); /* Sample the statistics after locking has happened */    \
     char linux_process_info_path[1024];                                 \
     snprintf(linux_process_info_path, sizeof(linux_process_info_path),  \
-             "/proc/%u/sched", (unsigned int) child_pid);               \
+             "/proc/%d/sched", (int) child_pid);                        \
     FILE *linux_process_info                                            \
       = utility_file_open_for_reading(linux_process_info_path);         \
-    int keyword_value[] = {-1, -1};                                     \
     unsigned keyword_hit_count = 0;                                     \
-    const char *keywords[] = {                                          \
-      "se.statistics.nr_failed_migrations_running",                     \
-      "se.statistics.nr_forced_migrations",                             \
-      NULL                                                              \
-    };                                                                  \
+    unsigned keyword_hit_count_expected = (sizeof(keyword_value)        \
+                                           / sizeof(*keyword_value));   \
                                                                         \
     int sample_migration_statistics(const char *line, void *args) {     \
       const char **keyword = keywords;                                  \
@@ -112,7 +108,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
                                       sample_migration_statistics,      \
                                       NULL) == 0);                      \
     utility_file_close(linux_process_info, linux_process_info_path);    \
-    gracious_assert(keyword_hit_count == 2);                            \
+    gracious_assert(keyword_hit_count == keyword_hit_count_expected);   \
                                                                         \
     sleep(9); /* Wait for some statistics to build up */                \
     linux_process_info                                                  \
@@ -150,8 +146,30 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
                                       ensure_locked_to_cpu, NULL)       \
                     == 0);                                              \
     utility_file_close(linux_process_info, linux_process_info_path);    \
-    gracious_assert(keyword_hit_count == 2);                            \
-  } while(0)
+    gracious_assert(keyword_hit_count == keyword_hit_count_expected);   \
+  } while (0)
+
+#define check_that_locking_indeed_happens()             \
+  do {                                                  \
+    int keyword_value[] = {-1, -1, -1};                 \
+    const char *keywords[] = {                          \
+      "se.statistics.nr_failed_migrations_running",     \
+      "se.statistics.nr_failed_migrations_hot",         \
+      "se.statistics.nr_forced_migrations",             \
+      NULL                                              \
+    };                                                  \
+    sample_linux_process_info();                        \
+  } while (0)
+
+#define check_that_unlocking_indeed_happens()           \
+  do {                                                  \
+    int keyword_value[] = {-1};                         \
+    const char *keywords[] = {                          \
+      "se.statistics.nr_failed_migrations_affine",      \
+      NULL                                              \
+    };                                                  \
+    sample_linux_process_info();                        \
+  } while (0)
 
   /* Testcase 1: process migration is prevented */
   child_pid = fork();
@@ -513,6 +531,39 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     check_that_locking_indeed_happens();
 
     gracious_assert(kill(child_pid, SIGINT) == 0);
+    child_pid = 0;
+    check_subprocess_exit_status(EXIT_SUCCESS);
+  }
+
+  /* Testcase 9: check unlock_me() */
+  child_pid = fork();
+  if (child_pid == 0) {
+    struct sigaction signal_handler_data = {
+      .sa_handler = signal_handler,
+    };
+    gracious_assert (sigaction(SIGINT, &signal_handler_data, NULL) == 0);
+
+    int last_cpu_id = get_last_cpu();
+    gracious_assert(last_cpu_id != -1);
+
+    gracious_assert(lock_me_to_cpu(last_cpu_id) == 0);
+    while (!stop_infinite_loop) {
+      gracious_assert(sched_getcpu() == last_cpu_id);
+    }
+
+    gracious_assert(unlock_me() == 0);
+    while (!stop_infinite_loop);
+
+    return EXIT_SUCCESS;
+  } else {
+    gracious_assert(child_pid != -1);
+
+    check_that_locking_indeed_happens();
+    gracious_assert(kill(child_pid, SIGINT) == 0);
+
+    check_that_unlocking_indeed_happens();
+    gracious_assert(kill(child_pid, SIGINT) == 0);
+
     child_pid = 0;
     check_subprocess_exit_status(EXIT_SUCCESS);
   }

@@ -44,6 +44,31 @@ int lock_me_to_cpu(int which_cpu)
   return 0;
 }
 
+int unlock_me(void)
+{
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+
+  int last_cpu_id = get_last_cpu();
+  if (last_cpu_id == -1) {
+    log_error("Fail to obtain the ID of the last CPU");
+    return -1;
+  }
+
+  int i;
+  for(i = 0; i <= last_cpu_id; i++) {
+    CPU_SET(i, &cpuset);
+  }
+
+  if ((errno = pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset))
+      != 0) {
+    log_syserror("Fail to set affinity to all CPUs");
+    return -1;
+  }
+
+  return 0;
+}
+
 int get_last_cpu(void)
 {
   const char linux_cpuinfo_path[] = "/proc/cpuinfo";

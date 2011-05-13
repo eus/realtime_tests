@@ -59,6 +59,15 @@ extern "C" {
   }
 
   /**
+   * Set the calling thread to be migrateable to all CPUs.
+   *
+   * @return zero if there is no error or -1 in case of hard error
+   * that requires the investigation of the output of the logging
+   * facility to fix the error
+   */
+  int unlock_me(void);
+
+  /**
    * @return the ID of the last processor in the system as an integer
    * greater than or equal to 0 or -1 in case of hard error that
    * requires the investigation of the output of the logging facility
