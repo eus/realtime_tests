@@ -283,10 +283,12 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   freqs = cpu_freq_available(0, &freq_count);
   gracious_assert(freq_count >= 1);
 
-  sleep(5); /* Allow for visual inspection through GNOME applet, for example */
-  gracious_assert(cpu_freq_set(0, freqs[0]) == 0);
+  /* Set the frequency to the lowest one so that if the frequency
+     gets raised by another computational intensive thread that
+     interferes this thread, the failure of cpu_freq_set() will be
+     obvious. */
+  gracious_assert(cpu_freq_set(0, freqs[freq_count - 1]) == 0);
   used_gov_in_use = 1;
-  sleep(5);
 
   /* Manually read the current frequency */
   const char linux_curr_freq_file_path[]
@@ -301,7 +303,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   utility_file_close(linux_curr_freq_file, linux_curr_freq_file_path);
 
   /* Check that cpu_freq_get() agrees with the manually read frequency */
-  gracious_assert (cpu_freq_get(0) == strtoull(buffer1, NULL, 10) * 1000);
+  gracious_assert(cpu_freq_get(0) == freqs[freq_count - 1]);
+  gracious_assert(cpu_freq_get(0) == strtoull(buffer1, NULL, 10) * 1000);
   
   /* Restore the saved governor */
   gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
@@ -349,19 +352,31 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     gracious_assert(utility_time_eq_gc(cpu_busyloop_duration(busyloop_obj),
 				       to_utility_time_dyn(1, s)));
 
-    /* Save the old scheduler */
+    /* Conveniences to go to and return from being an RT thread with max prio */
     int sched_policy_old;
     struct sched_param sched_param_old;
-    gracious_assert(pthread_getschedparam(pthread_self(), &sched_policy_old,
-					  &sched_param_old) == 0);
+#define go_rt_prio_max() do {						\
+      gracious_assert(pthread_getschedparam(pthread_self(),		\
+					    &sched_policy_old,		\
+					    &sched_param_old) == 0);	\
+									\
+      /* Use RT scheduler and the highest RT priority */		\
+      struct sched_param sched_param = {				\
+	.sched_priority = sched_get_priority_max(SCHED_FIFO),		\
+      };								\
+      gracious_assert(sched_param.sched_priority != -1);		\
+      gracious_assert(pthread_setschedparam(pthread_self(), SCHED_FIFO,	\
+					    &sched_param) == 0);	\
+    } while (0)
+#define leave_rt_prio_max() do {					\
+      gracious_assert(pthread_setschedparam(pthread_self(),		\
+					    sched_policy_old,		\
+					    &sched_param_old) == 0);	\
+    } while (0)
+    /* End of conveniences */
 
-    /* Use RT scheduler and the highest RT priority */
-    struct sched_param sched_param = {
-      .sched_priority = sched_get_priority_max(SCHED_FIFO),
-    };
-    gracious_assert(sched_param.sched_priority != -1);
-    gracious_assert(pthread_setschedparam(pthread_self(), SCHED_FIFO,
-					  &sched_param) == 0);
+    /* Prevent interference on the following time-sensitive section */
+    go_rt_prio_max();
 
     struct timespec t_begin, t_end;
     /* Stabilizing the cache */
@@ -383,9 +398,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
     /* End of timing keep_cpu_busy() */
 
-    /* Restore the normal scheduler */
-    gracious_assert(pthread_setschedparam(pthread_self(), sched_policy_old,
-					  &sched_param_old) == 0);
+    leave_rt_prio_max();
+    /* End of time-sensitive section */
 
     /* Check the accuracy of keep_cpu_busy() */
     gracious_assert(rc_t_begin == 0);
