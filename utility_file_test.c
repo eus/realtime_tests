@@ -224,6 +224,38 @@ MAIN_UNIT_TEST_BEGIN("utility_file_test", "stderr", NULL, cleanup)
   rc = utility_file_close(test_in_stream, tmp_file_name);
   gracious_assert(rc == 0);
 
+  /* Testcase 8: test binary file write and read */
+  FILE *binary_file = utility_file_open_for_writing_bin(tmp_file_name);
+  gracious_assert(binary_file != NULL);
+  double fdata = 777.777;
+  gracious_assert(fwrite(&fdata, sizeof(fdata), 1, binary_file) == 1);
+  gracious_assert(utility_file_close(binary_file, tmp_file_name) == 0);
+
+  binary_file = utility_file_open_for_reading_bin(tmp_file_name);
+  gracious_assert(binary_file != NULL);
+
+  /* Read the data back */
+  double fdata_read = 0.0;
+  size_t fdata_len = sizeof(fdata_read);
+  gracious_assert(utility_file_read_bin(binary_file, &fdata_read, &fdata_len)
+		  == 0);
+  gracious_assert(fdata_len == sizeof(fdata_read));
+  gracious_assert(fdata_read == fdata);
+  /* End of reading the data back */
+
+  /* EOF has been reached but the EOF indicator has not been set */
+  gracious_assert(utility_file_read_bin(binary_file, &fdata_read, &fdata_len)
+		  == -2);
+  gracious_assert(fdata_len == 0);
+  /* End of reaching EOF */
+
+  /* EOF is hit */
+  gracious_assert(utility_file_read_bin(binary_file, &fdata_read, &fdata_len)
+		  == -1);
+  /* End of hitting EOF */
+  
+  gracious_assert(utility_file_close(binary_file, tmp_file_name) == 0);
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END

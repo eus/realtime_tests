@@ -130,6 +130,55 @@ extern "C" {
 			void *args);
   /** @} End of collection of functions to deal with textual files */
 
+  /* II */
+  /**
+   * @name Collection of functions to deal with binary files.
+   * @{
+   */
+
+  /**
+   * Open a binary file for reading.
+   *
+   * @param path a pointer to the string containing the file path.
+   *
+   * @return a pointer to the opened file stream. If there is an I/O
+   * error to open the file for reading, the error is @ref
+   * utility_log.h "logged" and NULL is returned.
+   */
+  FILE *utility_file_open_for_reading_bin(const char *path);
+
+  /**
+   * Open a binary file for writing.
+   *
+   * @param path a pointer to the string containing the file path.
+   *
+   * @return a pointer to the opened file stream. If there is an I/O
+   * error to open the file for writing, the error is @ref
+   * utility_log.h "logged" and NULL is returned.
+   */
+  FILE *utility_file_open_for_writing_bin(const char *path);
+
+  /**
+   * Read the specified amount of byte(s) from the binary file stream
+   * and store the bytes at the located pointed by buffer.
+   *
+   * @param file_stream a pointer to the file stream to read.
+   * @param buffer the location at which the read byte(s) should be stored.
+   * @param len a pointer to the location storing the amount of
+   * byte(s) to be read from the stream. The value in the pointed
+   * location is only changed when -2 is returned.
+   *
+   * @return zero if the specified amount of byte(s) can be read and
+   * stored successfully, -1 if the end of the stream has been
+   * reached, -2 if the number of bytes read is less than the one
+   * specified in len (the actual number of bytes read is stored in
+   * the location specified in len), or -3 if there is an I/O error
+   * while reading (the error itself is @ref utility_log.h "logged"
+   * directly).
+   */
+  int utility_file_read_bin(FILE *file_stream, void *buffer, size_t *len);
+  /** @} End of collection of functions to deal with binary files */
+
 #ifdef __cplusplus
 }
 #endif

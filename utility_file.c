@@ -139,3 +139,42 @@ int utility_file_read(FILE *file_stream, size_t buffer_inc,
   }
   return exit_status;
 }
+
+FILE *utility_file_open_for_reading_bin(const char *path)
+{
+  FILE *result = fopen(path, "rb");
+  if (result == NULL) {
+    log_syserror("Cannot open %s for binary reading", path);
+  }
+
+  return result;
+}
+
+FILE *utility_file_open_for_writing_bin(const char *path)
+{
+  FILE *result = fopen(path, "wb");
+  if (result == NULL) {
+    log_syserror("Cannot open %s for binary writing", path);
+  }
+
+  return result;
+}
+
+int utility_file_read_bin(FILE *file_stream, void *buffer, size_t *len)
+{
+  if (feof(file_stream)) {
+    return -1;
+  }
+
+  size_t byte_read = fread(buffer, 1, *len, file_stream);
+  if (byte_read != *len) {
+    if (ferror(file_stream)) {
+      log_syserror("Fail to read %u byte(s)", *len);
+      return -3;
+    }
+    *len = byte_read;
+    return -2;
+  }
+
+  return 0;
+}
