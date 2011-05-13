@@ -430,7 +430,16 @@ static int busyloop_search(double duration, double search_tolerance,
 	break;
       }
 
-      *loop_count += duration_to_loop_count(curr_freq, -delta);
+      unsigned long long loop_count_delta = duration_to_loop_count(curr_freq,
+      								   -delta);
+      if (loop_count_delta > (*loop_count / 10)) {
+      	log_error("busyloop_measurement deviates too much;"
+		  " it is 90%% faster than the predicted duration"
+		  " (try to use cpu_set_freq()"
+		  " or to do clean compilation of the codebase)");
+      	return -3;
+      }
+      *loop_count += loop_count_delta;
     } else {
       if (delta <= search_tolerance) {
 	break;
