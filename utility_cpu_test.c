@@ -69,6 +69,90 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     return EXIT_FAILURE;
   }
 
+#define check_that_locking_indeed_happens()                             \
+  do {                                                                  \
+    sleep(1); /* Sample the statistics after locking has happened */    \
+    char linux_process_info_path[1024];                                 \
+    snprintf(linux_process_info_path, sizeof(linux_process_info_path),  \
+             "/proc/%u/sched", (unsigned int) child_pid);               \
+    FILE *linux_process_info                                            \
+      = utility_file_open_for_reading(linux_process_info_path);         \
+    int keyword_value[] = {-1, -1};                                     \
+    unsigned keyword_hit_count = 0;                                     \
+    const char *keywords[] = {                                          \
+      "se.statistics.nr_failed_migrations_running",                     \
+      "se.statistics.nr_forced_migrations",                             \
+      NULL                                                              \
+    };                                                                  \
+                                                                        \
+    int sample_migration_statistics(const char *line, void *args) {     \
+      const char **keyword = keywords;                                  \
+      while (*keyword != NULL) {                                        \
+        size_t keyword_len = strlen(*keyword);                          \
+                                                                        \
+        if (strncmp(line, *keyword, keyword_len) == 0                   \
+            && (isspace(line[keyword_len])                              \
+                || line[keyword_len] == ':')) {                         \
+          char *ptr = strchr(line + keyword_len, ':');                  \
+          gracious_assert(ptr != NULL);                                 \
+          ptr++;                                                        \
+          while (isspace(*ptr)) {                                       \
+            ptr++;                                                      \
+          }                                                             \
+          keyword_value[keyword - keywords] = atoi(ptr);                \
+          keyword_hit_count++;                                          \
+        }                                                               \
+                                                                        \
+        keyword++;                                                      \
+      }                                                                 \
+                                                                        \
+      return 0;                                                         \
+    }                                                                   \
+    gracious_assert(utility_file_read(linux_process_info, 1024,         \
+                                      sample_migration_statistics,      \
+                                      NULL) == 0);                      \
+    utility_file_close(linux_process_info, linux_process_info_path);    \
+    gracious_assert(keyword_hit_count == 2);                            \
+                                                                        \
+    sleep(9); /* Wait for some statistics to build up */                \
+    linux_process_info                                                  \
+      = utility_file_open_for_reading(linux_process_info_path);         \
+    keyword_hit_count = 0;                                              \
+    int ensure_locked_to_cpu(const char *line, void *args) {            \
+      const char **keyword = keywords;                                  \
+      while (*keyword != NULL) {                                        \
+        size_t keyword_len = strlen(*keyword);                          \
+                                                                        \
+        if (strncmp(line, *keyword, keyword_len) == 0                   \
+            && (isspace(line[keyword_len])                              \
+                || line[keyword_len] == ':')) {                         \
+          char *ptr = strchr(line + keyword_len, ':');                  \
+          gracious_assert(ptr != NULL);                                 \
+          ptr++;                                                        \
+          while (isspace(*ptr)) {                                       \
+            ptr++;                                                      \
+          }                                                             \
+                                                                        \
+          unsigned expected_value = keyword_value[keyword - keywords];  \
+          gracious_assert_msg(atoi(ptr) == expected_value,              \
+                              "%s: %d != %d",                           \
+                              *keyword, atoi(ptr), expected_value);     \
+                                                                        \
+          keyword_hit_count++;                                          \
+        }                                                               \
+                                                                        \
+        keyword++;                                                      \
+      }                                                                 \
+                                                                        \
+      return 0;                                                         \
+    }                                                                   \
+    gracious_assert(utility_file_read(linux_process_info, 1024,         \
+                                      ensure_locked_to_cpu, NULL)       \
+                    == 0);                                              \
+    utility_file_close(linux_process_info, linux_process_info_path);    \
+    gracious_assert(keyword_hit_count == 2);                            \
+  } while(0)
+
   /* Testcase 1: process migration is prevented */
   child_pid = fork();
   if (child_pid == 0) {
@@ -90,80 +174,16 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     }
 
     return EXIT_SUCCESS;
-
-  } else if (child_pid == -1) {
-    fatal_syserror("[Testcase 1] Cannot do fork()");
   } else {
+    gracious_assert(child_pid != -1);
 
-    sleep(10); /* Wait for some statistics to build up */
+    check_that_locking_indeed_happens();
 
-    char linux_process_info_path[1024];
-    snprintf(linux_process_info_path, sizeof(linux_process_info_path),
-	     "/proc/%u/sched", (unsigned int) child_pid);
-    FILE *linux_process_info
-      = utility_file_open_for_reading(linux_process_info_path);
-
-    char *buffer = NULL;
-    size_t buffer_len = 0;
-    int rc = 0;
-    const char keyword1[] = "se.statistics.nr_failed_migrations_affine";
-    const size_t keyword1_len = strlen(keyword1);
-    int keyword1_count = -1;
-    const char keyword2[] = "se.statistics.nr_failed_migrations_running";
-    const size_t keyword2_len = strlen(keyword2);
-    int keyword2_count = -1;
-    const char keyword3[] = "se.statistics.nr_forced_migrations";
-    const size_t keyword3_len = strlen(keyword3);
-    int keyword3_count = -1;
-    unsigned int keyword_hit_mask = 0;
-    while ((rc = utility_file_readln(linux_process_info, &buffer, &buffer_len,
-				     1024)) == 0) {
-#define get_keyword_count(keyword_no) do {				\
-	if (strncmp(buffer, keyword ## keyword_no,			\
-		    keyword ## keyword_no ## _len) == 0			\
-	    && (isspace(buffer[keyword ## keyword_no ## _len])		\
-		|| buffer[keyword ## keyword_no ## _len] == ':')) {	\
-	  char *ptr = buffer + keyword ## keyword_no ## _len;		\
-	  while (*ptr != ':' && *ptr != '\0') {				\
-	    ptr++;							\
-	  }								\
-	  if (*ptr != ':') {						\
-	    break; /* the format is unexpected */			\
-	  }								\
-	  ptr++;							\
-	  while (isspace(*ptr)) {					\
-	    ptr++;							\
-	  }								\
-	  keyword ## keyword_no ## _count = atoi(ptr);			\
-	  keyword_hit_mask |= 1 << (keyword_no - 1);			\
-	}								\
-      } while (0)
-
-      get_keyword_count(1);
-      get_keyword_count(2);
-      get_keyword_count(3);
-
-      if (keyword_hit_mask == 0x7) {
-	break;
-      }
-
-#undef get_keyword_count
-    }
-    if (buffer != NULL) {
-      free(buffer);
-    }
-    utility_file_close(linux_process_info, linux_process_info_path);
     if (kill(child_pid, SIGINT) != 0) {
       fatal_syserror("Cannot stop child process with pid %u", child_pid);
     }
     child_pid = 0;
     check_subprocess_exit_status(EXIT_SUCCESS);
-
-    gracious_assert(rc != -2);
-    gracious_assert(keyword_hit_mask == 0x7);
-    gracious_assert(keyword1_count != 0);
-    gracious_assert(keyword2_count == 0);
-    gracious_assert(keyword3_count == 0);
   }
 
   /* Testcase 2: check that the last CPU ID is correct */
@@ -467,6 +487,16 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     unsigned long long max_freq = freqs[0];
     free(freqs);
 
+    /* This checking of max_freq is not robust because if there is
+       another cpu-bound thread that elevates the frequency of the
+       CPU, there is no way to know whether enter_UP_mode_freq_max()
+       really sets the frequency to the maximum one. Provided that the
+       elevation of CPU frequency is only determined by the volume of
+       instructions executed, this problem can be solved by having a
+       kernel patch that pegs the status of this thread to RUNNING for
+       a certain duration of time. In this way, this thread will not
+       execute any instruction while preventing another cpu-bound
+       thread for taking the CPU and elevating the frequency. */
     gracious_assert(cpu_freq_get(0) == max_freq);
 
     while (!stop_infinite_loop) {
@@ -480,57 +510,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   } else {
     gracious_assert(child_pid != -1);
 
-    sleep(10); /* Wait for some statistics to build up */
+    check_that_locking_indeed_happens();
 
-    char linux_process_info_path[1024];
-    snprintf(linux_process_info_path, sizeof(linux_process_info_path),
-	     "/proc/%u/sched", (unsigned int) child_pid);
-    FILE *linux_process_info
-      = utility_file_open_for_reading(linux_process_info_path);
-
-    unsigned keyword_hit_mask = 0;
-    int ensure_locked_to_cpu(const char *line, void *args) {
-      const char *keywords[] = {
-	/* count != 0 */
-	"se.statistics.nr_failed_migrations_affine",
-
-	/* count == 0 */
-	"se.statistics.nr_failed_migrations_running",
-	"se.statistics.nr_forced_migrations",
-	NULL
-      };
-
-      const char **keyword = keywords;
-      while (*keyword != NULL) {
-	size_t keyword_len = strlen(*keyword);
-
-	if (strncmp(line, *keyword, keyword_len) == 0
-	    && (isspace(line[keyword_len])
-		|| line[keyword_len] == ':')) {
-	  char *ptr = strchr(line + keyword_len, ':');
-	  gracious_assert(ptr != NULL);
-	  ptr++;
-	  while (isspace(*ptr)) {
-	    ptr++;
-	  }
-	  if (keyword - keywords < 1) {
-	    gracious_assert_msg(atoi(ptr) != 0, "%s = %d", *keyword, atoi(ptr));
-	  } else {
-	    gracious_assert_msg(atoi(ptr) == 0, "%s = %d", *keyword, atoi(ptr));
-	  }
-	  keyword_hit_mask |= 1 << (keyword - keywords);
-	}
-
-	keyword++;
-      }
-
-      return 0;
-    }
-    gracious_assert(utility_file_read(linux_process_info, 1024,
-				      ensure_locked_to_cpu, NULL) == 0);
-    gracious_assert(utility_file_close(linux_process_info,
-				       linux_process_info_path) == 0);
-    gracious_assert(keyword_hit_mask == 0x7);
     gracious_assert(kill(child_pid, SIGINT) == 0);
     child_pid = 0;
     check_subprocess_exit_status(EXIT_SUCCESS);
