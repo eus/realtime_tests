@@ -453,6 +453,97 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     gracious_assert_msg(0, "Unknown endianness");
   }
 
+  /* Testcase 8: check enter_UP_mode_freq_max() */
+  child_pid = fork();
+  if (child_pid == 0) {
+
+    gracious_assert(enter_UP_mode_freq_max(&used_gov) == 0);
+    used_gov_in_use = 1;
+
+    struct sigaction signal_handler_data = {
+      .sa_handler = signal_handler,
+    };
+    gracious_assert (sigaction(SIGINT, &signal_handler_data, NULL) == 0);
+
+    ssize_t freqs_len = 0;
+    unsigned long long *freqs = cpu_freq_available(0, &freqs_len);
+    gracious_assert(freqs_len >= 1);
+    unsigned long long max_freq = freqs[0];
+    free(freqs);
+
+    gracious_assert(cpu_freq_get(0) == max_freq);
+
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    while (!stop_infinite_loop) {
+      gracious_assert(pthread_getaffinity_np(pthread_self(), sizeof(cpuset),
+					     &cpuset) == 0);
+      gracious_assert(CPU_ISSET(0, &cpuset));
+    }
+    
+    gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
+    used_gov_in_use = 0;
+
+    return EXIT_SUCCESS;
+  } else {
+    gracious_assert(child_pid != -1);
+
+    sleep(10); /* Wait for some statistics to build up */
+
+    char linux_process_info_path[1024];
+    snprintf(linux_process_info_path, sizeof(linux_process_info_path),
+	     "/proc/%u/sched", (unsigned int) child_pid);
+    FILE *linux_process_info
+      = utility_file_open_for_reading(linux_process_info_path);
+
+    unsigned keyword_hit_mask = 0;
+    int ensure_locked_to_cpu(const char *line, void *args) {
+      const char *keywords[] = {
+	/* count != 0 */
+	"se.statistics.nr_failed_migrations_affine",
+
+	/* count == 0 */
+	"se.statistics.nr_failed_migrations_running",
+	"se.statistics.nr_forced_migrations",
+	NULL
+      };
+
+      const char **keyword = keywords;
+      while (*keyword != NULL) {
+	size_t keyword_len = strlen(*keyword);
+
+	if (strncmp(line, *keyword, keyword_len) == 0
+	    && (isspace(line[keyword_len])
+		|| line[keyword_len] == ':')) {
+	  char *ptr = strchr(line + keyword_len, ':');
+	  gracious_assert(ptr != NULL);
+	  ptr++;
+	  while (isspace(*ptr)) {
+	    ptr++;
+	  }
+	  if (keyword - keywords < 1) {
+	    gracious_assert_msg(atoi(ptr) != 0, "%s = %d", *keyword, atoi(ptr));
+	  } else {
+	    gracious_assert_msg(atoi(ptr) == 0, "%s = %d", *keyword, atoi(ptr));
+	  }
+	  keyword_hit_mask |= 1 << (keyword - keywords);
+	}
+
+	keyword++;
+      }
+
+      return 0;
+    }
+    gracious_assert(utility_file_read(linux_process_info, 1024,
+				      ensure_locked_to_cpu, NULL) == 0);
+    gracious_assert(utility_file_close(linux_process_info,
+				       linux_process_info_path) == 0);
+    gracious_assert(keyword_hit_mask == 0x7);
+    gracious_assert(kill(child_pid, SIGINT) == 0);
+    child_pid = 0;
+    check_subprocess_exit_status(EXIT_SUCCESS);
+  }
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END

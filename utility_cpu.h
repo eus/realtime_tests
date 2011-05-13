@@ -311,6 +311,27 @@ extern "C" {
   {
     busyloop(arg->loop_count);
   }
+
+  /**
+   * Convenient function to lock the caller to CPU 0 and set the CPU
+   * frequency to the maximum.
+   *
+   * @param default_gov the location of a pointer to the governor of
+   * the CPU before the frequency is manually set to the highest. The
+   * caller must restore the default_gov using
+   * cpu_freq_restore_governor() before ending the program because
+   * otherwise, the system governor for the CPU will completely be
+   * altered. If the return value is not zero, default_gov is set to
+   * NULL.
+   *
+   * @return zero if the thread is successfully bound to CPU 0 and the
+   * CPU frequency can be successfully set to the maximum one, -1 if
+   * the caller has insufficient privilege to do one of the
+   * aforementioned things, or -2 in case of hard error that requires
+   * the investigation of the output of the logging facility to fix
+   * the error.
+   */
+  int enter_UP_mode_freq_max(cpu_freq_governor **default_gov);
   /** @} End of collection of functions to use a CPU in a certain way */
 
   /* IV */

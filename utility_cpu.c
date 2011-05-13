@@ -565,3 +565,50 @@ int create_cpu_busyloop(int which_cpu, const utility_time *duration,
   *result = obj;
   return 0;
 }
+
+int enter_UP_mode_freq_max(cpu_freq_governor **default_gov)
+{
+  if (enter_UP_mode() == -1) {
+    log_error("Cannot enter UP mode");
+    *default_gov = NULL;
+    return -2;
+  }
+
+  unsigned long long *freqs;
+  ssize_t freqs_len;
+  freqs = cpu_freq_available(0, &freqs_len);
+  if (freqs_len <= 0) {
+    log_error("CPU 0 has no available frequency for selection");
+    *default_gov = NULL;
+    return -2;
+  }
+  unsigned long long max_freq = freqs[0];
+  free(freqs);
+
+  *default_gov = cpu_freq_get_governor(0);
+  if (*default_gov == NULL) {
+    log_error("Cannot obtain the current governor of CPU 0");
+    *default_gov = NULL;
+    return -2;
+  }
+
+  int rc = -2;
+  switch (cpu_freq_set(0, max_freq)) {
+  case -2:
+    rc = -1;
+    /* No break since this must jump to label error */
+  case -1:
+    goto error;
+  }
+  
+  return 0;
+
+ error:
+  if (cpu_freq_restore_governor(*default_gov) != 0) {
+    log_error("You have to restore the governor of CPU 0 yourself");
+    *default_gov = NULL;
+    return -2;
+  }
+  *default_gov = NULL;
+  return rc;
+}
