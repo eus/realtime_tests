@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#define _GNU_SOURCE /* pthread_getaffinity_np() */
+#define _GNU_SOURCE /* sched_getcpu(), pthread_getaffinity_np() */
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -85,12 +85,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
       fatal_syserror("Cannot register SIGINT handler");
     }
 
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
     while (!stop_infinite_loop) {
-      gracious_assert(pthread_getaffinity_np(pthread_self(), sizeof(cpuset),
-					     &cpuset) == 0);
-      gracious_assert(CPU_ISSET(0, &cpuset));
+      gracious_assert(sched_getcpu() == 0);
     }
 
     return EXIT_SUCCESS;
@@ -473,12 +469,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
 
     gracious_assert(cpu_freq_get(0) == max_freq);
 
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
     while (!stop_infinite_loop) {
-      gracious_assert(pthread_getaffinity_np(pthread_self(), sizeof(cpuset),
-					     &cpuset) == 0);
-      gracious_assert(CPU_ISSET(0, &cpuset));
+      gracious_assert(sched_getcpu() == 0);
     }
     
     gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
