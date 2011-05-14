@@ -480,6 +480,64 @@ extern "C" {
     to_file_string(internal_t, out_stream);
     utility_time_gc_auto(internal_t);
   }
+
+  /**
+   * Convert the internal representation of time to a string in the
+   * form of "SECOND.NANOSECOND" where NANOSECOND is a fixed 9 digit
+   * integer and write the NULL-terminated string to the given buffer.
+   *
+   * @param internal_t a pointer to the internal representation of time.
+   * @param buffer the location at which the string should be written.
+   * @param buffer_len the size in bytes of the location.
+   *
+   * @return zero if the buffer is big enough or a positive integer
+   * indicating the minimum size of the buffer.
+   */
+  static inline int to_string(const utility_time *internal_t,
+			      char *buffer, size_t buffer_len)
+  {
+    int req_len = snprintf(buffer, buffer_len, "%lu.%09lu",
+			   internal_t->t.tv_sec, internal_t->t.tv_nsec);
+    return (req_len < buffer_len ? 0 : req_len + 1);
+  }
+  /**
+   * Work just like to_string() but the given internal representation
+   * object is garbage collected if automatic garbage collection is
+   * permitted.
+   */
+  static inline int to_string_gc(const utility_time *internal_t,
+				 char *buffer, size_t buffer_len)
+  {
+    int rc = to_string(internal_t, buffer, buffer_len);
+    utility_time_gc_auto(internal_t);
+    return rc;
+  }
+  /**
+   * Work just like to_string() except that it returns the result as a
+   * dynamically allocated NULL-terminated string buffer that the
+   * caller is responsible for freeing. Beware that NULL is returned
+   * if there is not enough memory to allocate the string buffer.
+   */
+  static inline char *to_string_dyn(const utility_time *internal_t)
+  {
+    char probe;
+    size_t result_len = to_string(internal_t, &probe, sizeof(probe));
+    char *result = malloc(result_len);
+    if (result != NULL) {
+      to_string(internal_t, result, result_len);
+    }
+    return result;
+  }
+  /**
+   * Work just like to_string_dyn() except that the operand is garbage
+   * collected if it is subject to automatic garbage collection.
+   */
+  static inline char *to_string_dyn_gc(const utility_time *internal_t)
+  {
+    char *result = to_string_dyn(internal_t);
+    utility_time_gc_auto(internal_t);
+    return result;
+  }
   /** @} End of collection of conversion functions to other types */
 
   /* VI */

@@ -220,6 +220,16 @@ MAIN_UNIT_TEST_BEGIN("utility_time_test", "stderr", NULL, NULL)
   to_timespec_gc(utility_time_to_utility_time_dyn(&internal_t), &t);
   gracious_assert((t.tv_sec == 7) && (t.tv_nsec == 777000000));
 
+  /* Testcase 29 */
+  char probe;
+  gracious_assert(to_string_gc(to_utility_time_dyn(10777, ms),
+			       &probe, sizeof(probe)) == (12 + 1));
+
+  /* Testcase 30 */
+  char *time_str = to_string_dyn_gc(to_utility_time_dyn(12777888, us));
+  gracious_assert(strcmp(time_str, "12.777888000") == 0);
+  free(time_str);
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END
