@@ -48,8 +48,10 @@ int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
   }
   /* End of setting SCHED_FIFO RT */
 
-  old_scheduler->policy = old_policy;
-  memcpy(&old_scheduler->param, &old_sched, sizeof(old_scheduler->param));
+  if (old_scheduler != NULL) {
+    old_scheduler->policy = old_policy;
+    memcpy(&old_scheduler->param, &old_sched, sizeof(old_scheduler->param));
+  }
   return 0;
 }
 

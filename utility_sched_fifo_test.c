@@ -15,14 +15,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sched.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
 #include "utility_testcase.h"
+#include "utility_log.h"
 #include "utility_sched_fifo.h"
 
-MAIN_UNIT_TEST_BEGIN("utility_sched_fifo_test", "stderr", NULL, NULL)
+static pid_t child_pid = 0;
+static void cleanup(void)
+{
+  if (child_pid != 0) {
+    if (kill(child_pid, SIGINT) != 0 && errno != ESRCH) {
+      log_syserror("You must kill child %d yourself", child_pid);
+    }
+  }
+}
+
+MAIN_UNIT_TEST_BEGIN("utility_sched_fifo_test", "stderr", NULL, cleanup)
 {
   const int max_prio = sched_get_priority_max(SCHED_FIFO);
   const int min_prio = sched_get_priority_min(SCHED_FIFO);
@@ -62,6 +78,23 @@ MAIN_UNIT_TEST_BEGIN("utility_sched_fifo_test", "stderr", NULL, NULL)
   gracious_assert(sched_getparam(0, &old_param) == 0);
   gracious_assert(memcmp(&old_param, &expected_old_param,
 			 sizeof(struct sched_param)) == 0);
+
+  /* Testcase 4: sched_fifo_enter_max(NULL) must work */
+  child_pid = fork();
+  if (child_pid == 0) {
+    gracious_assert(sched_fifo_enter_max(NULL) == 0);
+
+    gracious_assert(sched_getscheduler(0) == SCHED_FIFO);
+    struct sched_param new_param;
+    gracious_assert(sched_getparam(0, &new_param) == 0);
+    gracious_assert(new_param.sched_priority
+		    == sched_get_priority_max(SCHED_FIFO));
+
+    return EXIT_SUCCESS;
+  } else {
+    gracious_assert(child_pid != -1);
+    check_subprocess_exit_status(EXIT_SUCCESS);
+  }
 
   return EXIT_SUCCESS;
 
