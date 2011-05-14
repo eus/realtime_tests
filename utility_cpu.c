@@ -397,6 +397,10 @@ double busyloop_measurement(unsigned long long loop_count)
 {
   int rc = 0;
   struct timespec t_begin, t_end;
+
+  /* The use of CLOCK_THREAD_CPUTIME_ID is justified because this
+     measurement is expected to be done in one thread without any
+     preemption. */
 #define CLOCK_TYPE CLOCK_THREAD_CPUTIME_ID
 
   /* Calculate actual duration adjustment */
