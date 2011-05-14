@@ -125,6 +125,9 @@ extern "C" {
   static inline void utility_time_gc(const utility_time *internal_t)
   {
     if (internal_t->dyn_alloc) {
+      /* Warning about attempting to free a non-heap object
+	 `internal_t' in the following line must be ignored because a
+	 non-heap utility_time object will never be freed here */
       free((void *) internal_t);
     }
   }
@@ -906,6 +909,63 @@ extern "C" {
     utility_time *internal_t = utility_time_sub_dyn(t1, t2);
     utility_time_gc_auto(t1);
     utility_time_gc_auto(t2);
+    return internal_t;
+  }
+
+  /* 3. utility_time_mul and variants
+   * Overlap is allowed (i.e., res can also be t1)
+   */
+  /**
+   * Perform (t1 * n). Overlap is allowed (i.e., any of the operand
+   * object and the object to store the result can be the same memory
+   * location).
+   *
+   * @param t1 a pointer to the utility_time object to be multiplied.
+   * @param n a positive integer serving as the multiplier.
+   * @param res a pointer to an <strong>initialized</strong>
+   * utility_time object to store the result.
+   */
+  static inline void utility_time_mul(const utility_time *t1, unsigned n,
+				      utility_time *res)
+  {
+    to_utility_time(0, s, res);
+    while (n-- > 0) {
+      utility_time_inc(res, t1);
+    }
+  }
+  /**
+   * Work just like utility_time_mul() except that the operand is
+   * garbage collected if it is subject to automatic garbage
+   * collection.
+   */
+  static inline void utility_time_mul_gc(const utility_time *t1, unsigned n,
+					 utility_time *res)
+  {
+    utility_time_mul(t1, n, res);
+    utility_time_gc_auto(t1);
+  }
+  /**
+   * Work just like utility_time_mul() except that it returns the result
+   * as dynamic utility_time object subject to automatic garbage collection.
+   */
+  static inline utility_time *utility_time_mul_dyn(const utility_time *t1,
+						   unsigned n)
+  {
+    utility_time *internal_t = utility_time_make_dyn();
+    if (internal_t != NULL) {
+      utility_time_mul(t1, n, internal_t);
+    }
+    return internal_t;
+  }
+  /**
+   * Work just like utility_time_mul_dyn() except that both the operand is
+   * garbage collected if it is subject to automatic garbage collection.
+   */
+  static inline utility_time *utility_time_mul_dyn_gc(const utility_time *t1,
+						      unsigned n)
+  {
+    utility_time *internal_t = utility_time_mul_dyn(t1, n);
+    utility_time_gc_auto(t1);
     return internal_t;
   }
   /** @} End of collection of operational functions */

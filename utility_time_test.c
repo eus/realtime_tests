@@ -230,6 +230,18 @@ MAIN_UNIT_TEST_BEGIN("utility_time_test", "stderr", NULL, NULL)
   gracious_assert(strcmp(time_str, "12.777888000") == 0);
   free(time_str);
 
+  /* Testcase 31 */
+  to_utility_time(200, ms, &internal_t);
+  gracious_assert(utility_time_eq_gc(utility_time_mul_dyn(&internal_t, 0),
+				     to_utility_time_dyn(0, s)));
+  gracious_assert(utility_time_eq_gc(&internal_t,
+				     to_utility_time_dyn(200, ms)));
+
+  /* Testcase 32 */
+  internal_t_dyn = utility_time_mul_dyn_gc(to_utility_time_dyn(500, ms), 10);
+  gracious_assert(utility_time_eq_gc(internal_t_dyn,
+				     to_utility_time_dyn(5, s)));
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END
