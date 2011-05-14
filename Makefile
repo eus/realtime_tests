@@ -1,10 +1,10 @@
 test_cases := utility_time_test utility_log_test utility_file_test
-test_cases_sudo := utility_cpu_test
+test_cases_sudo := utility_cpu_test job_test utility_sched_fifo_test
 
 executables := $(test_cases) $(test_cases_sudo)
 
-cond_for_pthread := utility_log.h utility_cpu.h
-cond_for_rt := utility_cpu.h
+cond_for_pthread := utility_log.h utility_cpu.h utility_sched_fifo.h
+cond_for_rt := utility_cpu.h job.h
 
 # The part that follows should need no modification
 

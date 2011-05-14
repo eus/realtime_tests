@@ -32,6 +32,7 @@
 #include "utility_log.h"
 #include "utility_file.h"
 #include "utility_time.h"
+#include "utility_sched_fifo.h"
 
 static cpu_freq_governor *used_gov = NULL;
 static int used_gov_in_use = 0;
@@ -386,31 +387,9 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     gracious_assert(utility_time_eq_gc(cpu_busyloop_duration(busyloop_obj),
 				       to_utility_time_dyn(1, s)));
 
-    /* Conveniences to go to and return from being an RT thread with max prio */
-    int sched_policy_old;
-    struct sched_param sched_param_old;
-#define go_rt_prio_max() do {						\
-      gracious_assert(pthread_getschedparam(pthread_self(),		\
-					    &sched_policy_old,		\
-					    &sched_param_old) == 0);	\
-									\
-      /* Use RT scheduler and the highest RT priority */		\
-      struct sched_param sched_param = {				\
-	.sched_priority = sched_get_priority_max(SCHED_FIFO),		\
-      };								\
-      gracious_assert(sched_param.sched_priority != -1);		\
-      gracious_assert(pthread_setschedparam(pthread_self(), SCHED_FIFO,	\
-					    &sched_param) == 0);	\
-    } while (0)
-#define leave_rt_prio_max() do {					\
-      gracious_assert(pthread_setschedparam(pthread_self(),		\
-					    sched_policy_old,		\
-					    &sched_param_old) == 0);	\
-    } while (0)
-    /* End of conveniences */
-
     /* Prevent interference on the following time-sensitive section */
-    go_rt_prio_max();
+    struct scheduler default_scheduler;
+    gracious_assert(sched_fifo_enter_max(&default_scheduler) == 0);
 
     struct timespec t_begin, t_end;
     /* Stabilizing the cache */
@@ -432,7 +411,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     rc_t_end += clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end);
     /* End of timing keep_cpu_busy() */
 
-    leave_rt_prio_max();
+    gracious_assert(sched_fifo_leave(&default_scheduler) == 0);
     /* End of time-sensitive section */
 
     /* Check the accuracy of keep_cpu_busy() */
