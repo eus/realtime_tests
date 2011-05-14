@@ -426,12 +426,14 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
 			to_utility_time_dyn(measurement_duration, ns),
 			&duration_actual);
 
-    utility_time *lower_bound = utility_time_sub_dyn(&duration,
-						     &search_tolerance);
-    utility_time *upper_bound = utility_time_add_dyn(&duration,
-						     &search_tolerance);
-    if (utility_time_lt_gc_t2(&duration_actual, lower_bound)
-	|| utility_time_gt_gc_t2(&duration_actual, upper_bound)) {
+    utility_time lower_bound;
+    utility_time_init(&lower_bound);
+    utility_time_sub(&duration, &search_tolerance, &lower_bound);
+    utility_time upper_bound;
+    utility_time_init(&upper_bound);
+    utility_time_add(&duration, &search_tolerance, &upper_bound);
+    if (utility_time_lt(&duration_actual, &lower_bound)
+	|| utility_time_gt(&duration_actual, &upper_bound)) {
       /* If this is run under Valgrind, this is expected.  If Valgrind
 	 reports no leak, run this again without Valgrind. If this
 	 messages persists, this testcase really fails. */
