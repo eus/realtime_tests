@@ -598,7 +598,7 @@ int create_cpu_busyloop(int which_cpu, const utility_time *duration,
   utility_time_to_utility_time_gc(duration, &obj->duration);
   /* End of creating the result */
 
-  utility_time_gc(search_tolerance);
+  utility_time_gc_auto(search_tolerance);
 
   *result = obj;
   return 0;

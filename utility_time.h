@@ -117,18 +117,26 @@ extern "C" {
     internal_t->dyn_alloc = 1;
   }
   /**
-   * Deallocate the given utility_time object if it is applicable (i.e., the
-   * object was dynamically allocated).
+   * Deallocate the given utility_time object if it was dynamically
+   * allocated regardless of whether the the object is subject to
+   * manual or automatic garbage collection.
    *
    * @param internal_t a pointer to the object to be garbage collected.
    */
   static inline void utility_time_gc(const utility_time *internal_t)
   {
     if (internal_t->dyn_alloc) {
-      /* Warning about attempting to free a non-heap object
-	 `internal_t' in the following line must be ignored because a
-	 non-heap utility_time object will never be freed here */
       free((void *) internal_t);
+    }
+  }
+  /**
+   * Garbage collect the given utility_time object if the object allows for
+   * automatic garbage collection and it was dynamically allocated.
+   */
+  static inline void utility_time_gc_auto(const utility_time *internal_t)
+  {
+    if (!internal_t->manual_gc) {
+      utility_time_gc(internal_t);
     }
   }
   /**
@@ -178,16 +186,6 @@ extern "C" {
 						   const utility_time *t2)
   {
     return (t1->t.tv_nsec + t2->t.tv_nsec) % BILLION;
-  }
-
-  /* Garbage collect the given utility_time object if the object allows for
-   * automatic garbage collection.
-   */
-  static inline void utility_time_gc_auto(const utility_time *internal_t)
-  {
-    if (!internal_t->manual_gc) {
-      utility_time_gc(internal_t);
-    }
   }
 
   /* Dynamically allocate a utility_time object. */
