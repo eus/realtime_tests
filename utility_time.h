@@ -126,6 +126,13 @@ extern "C" {
   static inline void utility_time_gc(const utility_time *internal_t)
   {
     if (internal_t->dyn_alloc) {
+      /* If a warning about attempting to free a non-heap object 'XXX'
+	 is issued, the warning can be real but can also be bogus. To
+	 check, find the offending line that causes the warning and
+	 put a code that read 'XXX' below the offending
+	 line. Afterwards, run the program under Valgrind. If Valgrind
+	 reports no invalid read, then the warning is
+	 bogus. Otherwise, the warning is real. */
       free((void *) internal_t);
     }
   }
