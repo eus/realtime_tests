@@ -60,15 +60,7 @@ static void signal_handler(int signo)
 
 MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
 {
-  if (argc != 2) {
-    fprintf(stderr,
-	    "Usage: %s UNDER_VALGRIND\n"
-	    "Set UNDER_VALGRIND to 1 if this is run under Valgrind.\n"
-	    "Otherwise, set it to 0. This is because some testcases\n"
-	    "are expected to fail under Valgrind but not when run\n"
-	    "normally.\n", prog_name);
-    return EXIT_FAILURE;
-  }
+  require_valgrind_indicator();
 
 #define sample_linux_process_info()                                     \
   do {                                                                  \

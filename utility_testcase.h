@@ -113,7 +113,7 @@
         fprintf(stderr,                                                 \
                 "Cannot start unit test"                                \
                 " (fail to register %s() at exit)\n",                   \
-                "eus");                                                 \
+                #cleanup_fn);                                           \
         return EXIT_FAILURE;                                            \
       }                                                                 \
     }
@@ -121,12 +121,28 @@
 /** This must be used to close MAIN_UNIT_TEST_BEGIN(). */
 #define MAIN_UNIT_TEST_END }
 
+/** Conveniences to check the exit status of a subprocess. */
 #define check_subprocess_exit_status(expected_exit_code) do {           \
     int child_exit_status = 0;                                          \
     gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);   \
     gracious_assert(WIFEXITED(child_exit_status));                      \
     gracious_assert(WEXITSTATUS(child_exit_status)                      \
                     == expected_exit_code);                             \
+  } while (0)
+
+/** A statement must be made whether the test unit is run under
+    Valgrind or not. */
+#define require_valgrind_indicator()                                    \
+  do {                                                                  \
+    if (argc != 2) {                                                    \
+      fprintf(stderr,                                                   \
+              "Usage: %s UNDER_VALGRIND\n"                              \
+              "Set UNDER_VALGRIND to 1 if this is run under Valgrind.\n" \
+              "Otherwise, set it to 0. This is because some testcases\n" \
+              "are expected to fail under Valgrind but not when run\n"  \
+              "normally.\n", prog_name);                                \
+      return EXIT_FAILURE;                                              \
+    }                                                                   \
   } while (0)
 
 #ifdef __cplusplus
