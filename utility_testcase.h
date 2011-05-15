@@ -31,10 +31,10 @@
  * Allow for the invocation of functions registered with atexit() when
  * condition evaluates to false (i.e., equals to 0).
  */
-#define gracious_assert(condition) if (!(condition)) {			\
-    fprintf(stderr, "%s@%s:%d: Assertion `" #condition "' failed\n",	\
-	    __FUNCTION__, __FILE__, __LINE__);				\
-    exit(EXIT_FAILURE);							\
+#define gracious_assert(condition) if (!(condition)) {                  \
+    fprintf(stderr, "%s@%s:%d: Assertion `" #condition "' failed\n",    \
+            __FUNCTION__, __FILE__, __LINE__);                          \
+    exit(EXIT_FAILURE);                                                 \
   }
 
 /**
@@ -42,22 +42,22 @@
  * supplied to give an explanation as to why the condition fails as
  * well as a hint to fix the problem.
  */
-#define gracious_assert_msg(condition, msg, ...)		\
-  if (!(condition)) {						\
-    fprintf(stderr, "%s@%s:%d: Assertion `"			\
-	    #condition "' failed (" msg ")\n",			\
-	    __FUNCTION__, __FILE__, __LINE__, ## __VA_ARGS__);	\
-    exit(EXIT_FAILURE);						\
+#define gracious_assert_msg(condition, msg, ...)                \
+  if (!(condition)) {                                           \
+    fprintf(stderr, "%s@%s:%d: Assertion `"                     \
+            #condition "' failed (" msg ")\n",                  \
+            __FUNCTION__, __FILE__, __LINE__, ## __VA_ARGS__);  \
+    exit(EXIT_FAILURE);                                         \
   }
 
 /**
  * Work like gracious_assert_msg() but the program is not exited.
  */
-#define gracious_assert_msg_noquit(condition, msg, ...)		\
-  if (!(condition)) {						\
-    fprintf(stderr, "%s@%s:%d: Assertion `"			\
-	    #condition "' failed (" msg ")\n",			\
-	    __FUNCTION__, __FILE__, __LINE__, ## __VA_ARGS__);	\
+#define gracious_assert_msg_noquit(condition, msg, ...)         \
+  if (!(condition)) {                                           \
+    fprintf(stderr, "%s@%s:%d: Assertion `"                     \
+            #condition "' failed (" msg ")\n",                  \
+            __FUNCTION__, __FILE__, __LINE__, ## __VA_ARGS__);  \
   }
 
 /**
@@ -76,57 +76,57 @@
  * @param cleanup_fn a function to be registered using atexit(). Set
  * this to NULL if no function needs to be registered using atexit().
  */
-#define MAIN_UNIT_TEST_BEGIN(unit_name, log_stream_path,		\
-			     write_mode, cleanup_fn)			\
-  const char prog_name[] = unit_name;					\
-  FILE *log_stream;							\
-  int main(int argc, char **argv, char **envp)				\
-  {									\
-    if (write_mode == NULL) {						\
-      if (strcmp(log_stream_path, "stdout") == 0) {			\
-	log_stream = stdout;						\
-      } else if (strcmp(log_stream_path, "stderr") == 0) {		\
-	log_stream = stderr;						\
-      } else {								\
-	fprintf(stderr,							\
-		"Cannot start unit test"				\
-		" ('%s' is neither stderr nor stdout)\n",		\
-		log_stream_path);					\
-	return EXIT_FAILURE;						\
-      }									\
-    } else {								\
-      log_stream = fopen(log_stream_path, write_mode);			\
-      if (log_stream == NULL) {						\
-	fprintf(stderr,							\
-		"Cannot start unit test"				\
-		" (fail to open log stream '%s')\n",			\
-		log_stream_path);					\
-	return EXIT_FAILURE;						\
-      }									\
-    }									\
-    if (cleanup_fn != NULL) {						\
+#define MAIN_UNIT_TEST_BEGIN(unit_name, log_stream_path,                \
+                             write_mode, cleanup_fn)                    \
+  const char prog_name[] = unit_name;                                   \
+  FILE *log_stream;                                                     \
+  int main(int argc, char **argv, char **envp)                          \
+  {                                                                     \
+    if (write_mode == NULL) {                                           \
+      if (strcmp(log_stream_path, "stdout") == 0) {                     \
+        log_stream = stdout;                                            \
+      } else if (strcmp(log_stream_path, "stderr") == 0) {              \
+        log_stream = stderr;                                            \
+      } else {                                                          \
+        fprintf(stderr,                                                 \
+                "Cannot start unit test"                                \
+                " ('%s' is neither stderr nor stdout)\n",               \
+                log_stream_path);                                       \
+        return EXIT_FAILURE;                                            \
+      }                                                                 \
+    } else {                                                            \
+      log_stream = fopen(log_stream_path, write_mode);                  \
+      if (log_stream == NULL) {                                         \
+        fprintf(stderr,                                                 \
+                "Cannot start unit test"                                \
+                " (fail to open log stream '%s')\n",                    \
+                log_stream_path);                                       \
+        return EXIT_FAILURE;                                            \
+      }                                                                 \
+    }                                                                   \
+    if (cleanup_fn != NULL) {                                           \
       int muffle_warning_passing_NULL_to_atexit(void (*function)(void)) \
-      {									\
-	return atexit(function);					\
-      }									\
-      if (muffle_warning_passing_NULL_to_atexit(cleanup_fn) != 0) {	\
-	fprintf(stderr,							\
-		"Cannot start unit test"				\
-		" (fail to register %s() at exit)\n",			\
-		"eus");							\
-	return EXIT_FAILURE;						\
-      }									\
+      {                                                                 \
+        return atexit(function);                                        \
+      }                                                                 \
+      if (muffle_warning_passing_NULL_to_atexit(cleanup_fn) != 0) {     \
+        fprintf(stderr,                                                 \
+                "Cannot start unit test"                                \
+                " (fail to register %s() at exit)\n",                   \
+                "eus");                                                 \
+        return EXIT_FAILURE;                                            \
+      }                                                                 \
     }
 
 /** This must be used to close MAIN_UNIT_TEST_BEGIN(). */
 #define MAIN_UNIT_TEST_END }
 
-#define check_subprocess_exit_status(expected_exit_code) do {		\
-    int child_exit_status = 0;						\
-    gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);	\
-    gracious_assert(WIFEXITED(child_exit_status));			\
-    gracious_assert(WEXITSTATUS(child_exit_status)			\
-		    == expected_exit_code);				\
+#define check_subprocess_exit_status(expected_exit_code) do {           \
+    int child_exit_status = 0;                                          \
+    gracious_assert(waitpid(child_pid, &child_exit_status, 0) != -1);   \
+    gracious_assert(WIFEXITED(child_exit_status));                      \
+    gracious_assert(WEXITSTATUS(child_exit_status)                      \
+                    == expected_exit_code);                             \
   } while (0)
 
 #ifdef __cplusplus
