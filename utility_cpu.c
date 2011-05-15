@@ -27,6 +27,7 @@
 #include "utility_log.h"
 #include "utility_file.h"
 #include "utility_time.h"
+#include "utility_sched_fifo.h"
 
 int lock_me_to_cpu(int which_cpu)
 {
@@ -508,20 +509,14 @@ static void *busyloop_search_thread(void *args)
   }
 
   /* Use RT scheduler without preemption with the maximum priority possible */
-  struct sched_param schedparam = {
-    .sched_priority = sched_get_priority_max(SCHED_FIFO)
-  };
-  if (schedparam.sched_priority == -1) {
-    log_syserror("Cannot obtain the max priority of SCHED_FIFO");
+  switch (sched_fifo_enter_max(NULL)) {
+  case 0:
+    break;
+  case -1:
+    params->exit_status = -1;
     goto out;
-  }
-  if ((errno = pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedparam))
-      && errno != 0) {
-    if (errno == EPERM) {
-      params->exit_status = -1;
-    } else {
-      log_syserror("Cannot change scheduler to SCHED_FIFO");
-    }
+  default: /* Anticipate further addition of exit status */
+    log_error("Cannot change scheduler to SCHED_FIFO with max priority");
     goto out;
   }
 
