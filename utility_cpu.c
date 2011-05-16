@@ -627,7 +627,7 @@ int enter_UP_mode_freq_max(cpu_freq_governor **default_gov)
   return 0;
 
  error:
-  if (cpu_freq_restore_governor(*default_gov) != 0) {
+  if (rc != -1 && cpu_freq_restore_governor(*default_gov) != 0) {
     log_error("You have to restore the governor of CPU 0 yourself");
     *default_gov = NULL;
     return -2;
