@@ -39,7 +39,7 @@ clean:
 
 # Automatic dependency generation based on GNU Make documentation
 define gen_shell_cmd_to_inline_prereq_hdrs
-sed -n -e '1 {h;D}' -e 'H' -e '$$ {x;s%[\\\n]%%g;p}'
+sed -n -e '1 {h;D}' -e 'H' -e '$$ {x;s%\\\n%%g;p}'
 endef
 
 extract_prerequisites := 's%^[^:]\+:% %'
