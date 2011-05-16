@@ -15,10 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "utility_log.h"
 #include "utility_file.h"
 
 FILE *utility_file_open_for_reading(const char *path)
@@ -52,7 +48,7 @@ int utility_file_close(FILE *file_stream, const char *path)
 }
 
 int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
-			size_t buffer_inc)
+                        size_t buffer_inc)
 {
   /* Detect EOF */
   if (feof(file_stream)) {
@@ -84,8 +80,8 @@ int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
       size_t enlarged_buffer_len = *buffer_len + buffer_inc;
       char *enlarged_buffer = realloc(*buffer, enlarged_buffer_len);
       if (enlarged_buffer == NULL) {
-	log_error("Insufficient memory to read the whole line");
-	return -2;
+        log_error("Insufficient memory to read the whole line");
+        return -2;
       }
       *buffer = enlarged_buffer;
       ptr = *buffer + *buffer_len;
@@ -107,8 +103,8 @@ int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
 }
 
 int utility_file_read(FILE *file_stream, size_t buffer_inc,
-		      int (*read_fn)(const char *line, void *args),
-		      void *args)
+                      int (*read_fn)(const char *line, void *args),
+                      void *args)
 {
   unsigned int nth_line = 0;
   char *buffer = NULL;

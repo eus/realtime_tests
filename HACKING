@@ -1,0 +1,44 @@
+[CLOCK_MONOTONIC should be used for timing recording]
+* This is because each thread is subject to preemption, and therefore,
+CLOCK_THREAD_CPUTIME_ID will not give the right timing information
+when recording timing statistics of, for example, a stream of jobs.
+
+[Guaranteeing timing accuracy]
+* Whenever there is a need to measure timing, the thread that does the
+measurement should be scheduled using the real-time scheduler of the
+host that permits a monopoly of the CPU (i.e., disallowing preemption
+by any other userspace thread). In a host supporting POSIX RT API, for
+example, this is achieved by using SCHED_FIFO real-time scheduling
+policy and setting the priority of the thread to
+sched_get_priority_max(SCHED_FIFO). By allowing such a monopoly, the
+accuracy of the measurement can be improved because the measurement
+will not include any delay introduced by interference from other
+userspace threads.
+* Example of doing a timing measurement can be seen in function
+create_cpu_busyloop in file utility_cpu.c as well as in function
+job_statistics_overhead in file job.c.
+
+[Creating a new job programs]
+* Add the job program and parameter under section II of file job.h.
+* An example job program is function busyloop_exact.
+
+[Creating a new infrastructure component]
+* Let X be the name of the new infrastructure component. Then, two
+files should be developed: X.h and X_test.c. Another file named X.c
+should be developed if not all functions specified in X.h are
+inlined. Afterwards, add X_test to variable test_cases or, if the test
+unit needs a root privilege, to variable test_cases_sudo in the
+Makefile.
+
+* The file X.c must only include X.h and only that. In other words,
+all includes must be done in X.h. This is so that any executable that
+includes X.h can automatically determine its library dependencies when
+the executable source file is linked with X.o.
+
+[Creating a new experimentation component]
+* Execute `make new_experiment EXP_NAME=DESIRED_EXPERIMENT_NAME'
+replacing DESIRED_EXPERIMENT_NAME with the actual name of the new
+experimentation component. Then, go to directory
+"DESIRED_EXPERIMENT_NAME" and edit README describing the purpose of
+the experiment. Afterwards, main.c and Makefile found in the directory
+can be adjusted accordingly.

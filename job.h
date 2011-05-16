@@ -28,8 +28,17 @@
 #ifndef JOB_H
 #define JOB_H
 
+#include <sched.h>
 #include <stdio.h>
+#include <errno.h>
+#include <time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include "utility_log.h"
 #include "utility_time.h"
+#include "utility_file.h"
+#include "utility_sched_fifo.h"
 #include "utility_cpu.h"
 
 #ifdef __cplusplus
@@ -44,7 +53,7 @@ extern "C" {
   {
     void (*run_program)(void *args); /**< Pointer to the job program. */
     void *args; /**< Pointer to the data passed as the argument to
-		   run_program. */
+                   run_program. */
   };
 
   /**
@@ -70,8 +79,8 @@ extern "C" {
   struct busyloop_exact_args
   {
     cpu_busyloop *busyloop_obj; /**< Pointer to the object needed to
-				  keep a CPU busy for a certain
-				  duration */
+                                  keep a CPU busy for a certain
+                                  duration */
   };
   /**
    * Run a busy loop program for the specified duration of time.

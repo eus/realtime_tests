@@ -24,7 +24,10 @@
 #ifndef UTILITY_SCHED_FIFO
 #define UTILITY_SCHED_FIFO
 
+#include <errno.h>
 #include <sched.h>
+#include <pthread.h>
+#include "utility_log.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -25,7 +25,16 @@
 #ifndef UTILITY_CPU
 #define UTILITY_CPU
 
+#include <sched.h>
+#include <pthread.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <stdlib.h>
+#include "utility_log.h"
+#include "utility_file.h"
 #include "utility_time.h"
+#include "utility_sched_fifo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -196,7 +205,7 @@ extern "C" {
   typedef struct {
     int which_cpu; /* The ID of the CPU on which the measurement took place */
     unsigned long long frequency; /* The frequency at which the
-				     measurement took place */
+                                     measurement took place */
     unsigned long long loop_count; /* The number of loop */
     utility_time duration; /* The duration that the busyloop should yield */
   } cpu_busyloop;
@@ -300,9 +309,9 @@ extern "C" {
    * zero, result is set to NULL.
    */
   int create_cpu_busyloop(int which_cpu, const utility_time *duration,
-			  const utility_time *search_tolerance,
-			  unsigned search_max_passes,
-			  cpu_busyloop **result);
+                          const utility_time *search_tolerance,
+                          unsigned search_max_passes,
+                          cpu_busyloop **result);
 
   /**
    * Destroy a cpu_busyloop object. An already destroyed cpu_busyloop

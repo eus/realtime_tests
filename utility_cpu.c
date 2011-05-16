@@ -17,17 +17,7 @@
 
 #define _GNU_SOURCE /* pthread_setaffinity_np(), CPU_*, etc. */
 
-#include <sched.h>
-#include <pthread.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <stdlib.h>
 #include "utility_cpu.h"
-#include "utility_log.h"
-#include "utility_file.h"
-#include "utility_time.h"
-#include "utility_sched_fifo.h"
 
 int lock_me_to_cpu(int which_cpu)
 {
@@ -37,7 +27,7 @@ int lock_me_to_cpu(int which_cpu)
   CPU_SET(which_cpu, &affinity_mask);
 
   if (pthread_setaffinity_np(pthread_self(),
-			     sizeof(affinity_mask), &affinity_mask) != 0) {
+                             sizeof(affinity_mask), &affinity_mask) != 0) {
     log_syserror("Cannot set CPU affinity");
     return -1;
   }
@@ -87,9 +77,9 @@ int get_last_cpu(void)
   const size_t keyword_len = strlen(keyword);
 
   while ((rc = utility_file_readln(linux_cpuinfo, &buffer, &buffer_len, 1024))
-	 == 0) {
+         == 0) {
     if (strncmp(buffer, keyword, keyword_len) == 0
-	&& (isspace(buffer[keyword_len]) || buffer[keyword_len] == ':')) {
+        && (isspace(buffer[keyword_len]) || buffer[keyword_len] == ':')) {
       proc_count++;
     }
   }
@@ -113,7 +103,7 @@ int get_last_cpu(void)
   return proc_count;
 }
 
-#define LINUX_GOVERNOR_FILE_PATH_FORMAT				\
+#define LINUX_GOVERNOR_FILE_PATH_FORMAT                         \
   "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor"
 
 cpu_freq_governor *cpu_freq_get_governor(int which_cpu)
@@ -127,7 +117,7 @@ cpu_freq_governor *cpu_freq_get_governor(int which_cpu)
 
   char linux_governor_file_path[1024];
   snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
-	   LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
+           LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
   FILE *linux_governor_file
     = utility_file_open_for_reading(linux_governor_file_path);
   if (linux_governor_file == NULL) {
@@ -161,7 +151,7 @@ int cpu_freq_restore_governor(cpu_freq_governor *governor)
 {
   char linux_governor_file_path[1024];
   snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
-	   LINUX_GOVERNOR_FILE_PATH_FORMAT, governor->which_cpu);
+           LINUX_GOVERNOR_FILE_PATH_FORMAT, governor->which_cpu);
 
   FILE *linux_governor_file = fopen(linux_governor_file_path, "w");
   if (linux_governor_file == NULL) {
@@ -190,7 +180,7 @@ void destroy_cpu_freq_governor(cpu_freq_governor *governor)
   free(governor);
 }
 
-#define LINUX_FREQUENCIES_FILE_PATH_FORMAT				\
+#define LINUX_FREQUENCIES_FILE_PATH_FORMAT                              \
   "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_frequencies"
 
 unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
@@ -200,7 +190,7 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
   /* Set the correct file path */
   char linux_frequencies_file_path[1024];
   snprintf(linux_frequencies_file_path, sizeof(linux_frequencies_file_path),
-	   LINUX_FREQUENCIES_FILE_PATH_FORMAT, which_cpu);
+           LINUX_FREQUENCIES_FILE_PATH_FORMAT, which_cpu);
   /* End of setting the correct file path */
 
   /* Open the frequency file */
@@ -216,7 +206,7 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
   char *buffer = NULL;
   size_t buffer_len = 0;
   int rc = utility_file_readln(linux_frequencies_file,
-			       &buffer, &buffer_len, 256);
+                               &buffer, &buffer_len, 256);
   if (rc == -2) {
     log_error("Cannot read '%s'", linux_frequencies_file_path);
     goto error;
@@ -249,12 +239,12 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
     char *ptr_start = buffer;
     while (*ptr != '\0') {
       if (isspace(*ptr)) {
-	*ptr = '\0';
-	result[result_idx++] = strtoull(ptr_start, NULL, 10) * 1000;
-	ptr++;
-	ptr_start = ptr;
+        *ptr = '\0';
+        result[result_idx++] = strtoull(ptr_start, NULL, 10) * 1000;
+        ptr++;
+        ptr_start = ptr;
       } else {
-	ptr++;
+        ptr++;
       }
     }
   }
@@ -274,7 +264,7 @@ unsigned long long *cpu_freq_available(int which_cpu, ssize_t *list_len)
   return NULL;
 }
 
-#define LINUX_SET_FREQUENCY_FILE_PATH_FORMAT			\
+#define LINUX_SET_FREQUENCY_FILE_PATH_FORMAT                    \
   "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed"
 
 int cpu_freq_set(int which_cpu, unsigned long long new_freq)
@@ -282,7 +272,7 @@ int cpu_freq_set(int which_cpu, unsigned long long new_freq)
   /* Open the necessary files first to ensure caller has enough privilege */
   char linux_governor_file_path[1024];
   snprintf(linux_governor_file_path, sizeof(linux_governor_file_path),
-	   LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
+           LINUX_GOVERNOR_FILE_PATH_FORMAT, which_cpu);
   FILE *linux_governor_file = fopen(linux_governor_file_path, "w");
   if (linux_governor_file == NULL) {
     if (errno == EACCES) {
@@ -293,7 +283,7 @@ int cpu_freq_set(int which_cpu, unsigned long long new_freq)
   }
   char linux_set_frequency_file_path[1024];
   snprintf(linux_set_frequency_file_path, sizeof(linux_set_frequency_file_path),
-	   LINUX_SET_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
+           LINUX_SET_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
   FILE *linux_set_frequency_file = fopen(linux_set_frequency_file_path, "w");
   if (linux_set_frequency_file == NULL) {
     if (errno == EACCES) {
@@ -317,14 +307,14 @@ int cpu_freq_set(int which_cpu, unsigned long long new_freq)
   return 0;
 }
 
-#define LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT			\
+#define LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT                    \
   "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq"
 
 unsigned long long cpu_freq_get(int which_cpu)
 {
   char linux_cur_frequency_file_path[1024];
   snprintf(linux_cur_frequency_file_path, sizeof(linux_cur_frequency_file_path),
-	   LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
+           LINUX_CUR_FREQUENCY_FILE_PATH_FORMAT, which_cpu);
   FILE *linux_cur_frequency_file
     = utility_file_open_for_reading(linux_cur_frequency_file_path);
   if (linux_cur_frequency_file == NULL) {
@@ -335,7 +325,7 @@ unsigned long long cpu_freq_get(int which_cpu)
   char *buffer = NULL;
   size_t buffer_len = 0;
   int rc = utility_file_readln(linux_cur_frequency_file,
-			       &buffer, &buffer_len, 32);
+                               &buffer, &buffer_len, 32);
   if (rc == -1) {
     log_error("'%s' is empty", linux_cur_frequency_file_path);
     goto error;
@@ -384,7 +374,7 @@ static double timespec_to_sec(const struct timespec *t)
   return t->tv_sec + t->tv_nsec / BILLION;
 }
 static unsigned long long duration_to_loop_count(unsigned long long frequency,
-						 double duration)
+                                                 double duration)
 {
   return (unsigned long long) (frequency * duration);
 }
@@ -433,9 +423,9 @@ double busyloop_measurement(unsigned long long loop_count)
 }
 
 static int busyloop_search(double duration, double search_tolerance,
-			   unsigned search_max_passes,
-			   unsigned long long curr_freq,
-			   unsigned long long *loop_count)
+                           unsigned search_max_passes,
+                           unsigned long long curr_freq,
+                           unsigned long long *loop_count)
 {
   int nth_pass;
   for (nth_pass = 1; nth_pass <= search_max_passes; nth_pass++) {
@@ -447,7 +437,7 @@ static int busyloop_search(double duration, double search_tolerance,
     }
 
     log_verbose("Pass %d of %d: %llu loops -> %.9f s\n",
-		nth_pass, search_max_passes, *loop_count, actual_duration);
+                nth_pass, search_max_passes, *loop_count, actual_duration);
 
     if (nth_pass == search_max_passes) {
       /* Do not modify loop_count */
@@ -457,28 +447,28 @@ static int busyloop_search(double duration, double search_tolerance,
     double delta = actual_duration - duration;
     if (delta < 0) {
       if (-search_tolerance <= delta) {
-	break;
+        break;
       }
 
       unsigned long long loop_count_delta = duration_to_loop_count(curr_freq,
-      								   -delta);
+                                                                   -delta);
       if (loop_count_delta > (*loop_count / 10)) {
-      	log_error("busyloop_measurement deviates too much;"
-		  " it is 90%% faster than the predicted duration"
-		  " (try to use cpu_set_freq()"
-		  " or to do clean compilation of the codebase)");
-      	return -3;
+        log_error("busyloop_measurement deviates too much;"
+                  " it is 90%% faster than the predicted duration"
+                  " (try to use cpu_set_freq()"
+                  " or to do clean compilation of the codebase)");
+        return -3;
       }
       *loop_count += loop_count_delta;
     } else {
       if (delta <= search_tolerance) {
-	break;
+        break;
       }
 
       unsigned long long loop_count_delta = duration_to_loop_count(curr_freq,
-								   delta);
+                                                                   delta);
       if (*loop_count < loop_count_delta) {
-	return -2;
+        return -2;
       }
       *loop_count -= loop_count_delta;
     }
@@ -522,19 +512,19 @@ static void *busyloop_search_thread(void *args)
 
   /* Run the search algorithm */
   params->exit_status = busyloop_search(params->duration,
-					params->search_tolerance,
-					params->search_max_passes,
-					params->curr_freq,
-					&params->loop_count);
+                                        params->search_tolerance,
+                                        params->search_max_passes,
+                                        params->curr_freq,
+                                        &params->loop_count);
 
  out:
   return &params->exit_status;
 }
 
 int create_cpu_busyloop(int which_cpu, const utility_time *duration,
-			const utility_time *search_tolerance,
-			unsigned search_max_passes,
-			cpu_busyloop **result)
+                        const utility_time *search_tolerance,
+                        unsigned search_max_passes,
+                        cpu_busyloop **result)
 {
   unsigned long long curr_freq = cpu_freq_get(which_cpu);
 
@@ -560,7 +550,7 @@ int create_cpu_busyloop(int which_cpu, const utility_time *duration,
       .exit_status = -3,
     };
     if (pthread_create(&busyloop_search_tid, NULL, busyloop_search_thread,
-		       &busyloop_search_params) != 0) {
+                       &busyloop_search_params) != 0) {
       log_syserror("Cannot create busyloop search thread");
       *result = NULL;
       return -3;

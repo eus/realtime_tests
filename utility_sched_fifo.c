@@ -15,10 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#include <errno.h>
-#include <sched.h>
-#include <pthread.h>
-#include "utility_log.h"
 #include "utility_sched_fifo.h"
 
 int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
@@ -28,7 +24,7 @@ int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
 
   /* Save the old scheduler */
   if ((errno = pthread_getschedparam(pthread_self(),
-				     &old_policy, &old_sched)) != 0) {
+                                     &old_policy, &old_sched)) != 0) {
     log_syserror("Cannot obtain current scheduler");
     return -2;
   }
@@ -39,7 +35,7 @@ int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
     .sched_priority = prio,
   };
   if ((errno = pthread_setschedparam(pthread_self(),
-				     SCHED_FIFO, &new_sched)) != 0) {
+                                     SCHED_FIFO, &new_sched)) != 0) {
     if (errno == EPERM) {
       return -1;
     }
@@ -69,7 +65,7 @@ int sched_fifo_enter_max(struct scheduler *old_scheduler)
 int sched_fifo_leave(struct scheduler *sched)
 {
   if ((errno = pthread_setschedparam(pthread_self(),
-				     sched->policy, &sched->param)) != 0) {
+                                     sched->policy, &sched->param)) != 0) {
     log_syserror("Cannot restore the given scheduler");
     return -1;
   }

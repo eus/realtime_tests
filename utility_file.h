@@ -25,7 +25,9 @@
 #define UTILITY_FILE_H
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
+#include "utility_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,7 +106,7 @@ extern "C" {
    * directly).
    */
   int utility_file_readln(FILE *file_stream, char **buffer, size_t *buffer_len,
-			  size_t buffer_inc);
+                          size_t buffer_inc);
 
   /**
    * Use utility_file_readln() to read a textual file stream
@@ -126,8 +128,8 @@ extern "C" {
    * itself is @ref utility_log.h "logged" directly).
    */
   int utility_file_read(FILE *file_stream, size_t buffer_inc,
-			int (*read_fn)(const char *line, void *args),
-			void *args);
+                        int (*read_fn)(const char *line, void *args),
+                        void *args);
   /** @} End of collection of functions to deal with textual files */
 
   /* II */

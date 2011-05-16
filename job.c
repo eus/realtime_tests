@@ -15,17 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#include <sched.h>
-#include <stdio.h>
-#include <errno.h>
-#include <time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include "utility_log.h"
-#include "utility_time.h"
-#include "utility_file.h"
-#include "utility_sched_fifo.h"
 #include "job.h"
 
 int job_start(FILE *stats_log, struct job *job)
@@ -92,7 +81,7 @@ struct overhead_measurement_parameters
 };
 static __attribute__((noinline,optimize(0)))
 int overhead_measurement(FILE *probing_file, struct job *probing_job,
-			 struct timespec *t_begin, struct timespec *t_end)
+                         struct timespec *t_begin, struct timespec *t_end)
 {
   int rc = 0;
   rc += clock_gettime(CLOCK_MONOTONIC, t_begin);
@@ -152,7 +141,7 @@ static void *overhead_measurement_thread(void *args)
 
   params->result
     = utility_time_sub_dyn_gc(timespec_to_utility_time_dyn(&t_end),
-			      timespec_to_utility_time_dyn(&t_begin));
+                              timespec_to_utility_time_dyn(&t_begin));
   params->exit_status = 0;
 
  out:
@@ -171,8 +160,8 @@ int job_statistics_overhead(int which_cpu, relative_time **result)
     .which_cpu = which_cpu,
   };
   if ((errno = pthread_create(&measurement_thread, NULL,
-			      overhead_measurement_thread,
-			      &params)) != 0) {
+                              overhead_measurement_thread,
+                              &params)) != 0) {
     log_syserror("Cannot create measurement thread");
     return -2;
   }
