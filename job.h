@@ -93,7 +93,7 @@ extern "C" {
     struct busyloop_exact_args *params = args;
     keep_cpu_busy(params->busyloop_obj);
   }
-  /** @} End of collection of task programs */
+  /** @} End of collection of job programs */
 
   /* III */
   /**
@@ -102,14 +102,14 @@ extern "C" {
    */
 
   /**
-   * Run the program text of the job while recording the release time
+   * Run the program text of the job while recording the starting time
    * and the finishing time of the job in stats_log as a
    * job_statistics object.
    *
    * This function itself has an overhead that cannot be accounted in
-   * the difference between the finishing time and the release
+   * the difference between the finishing time and the starting
    * time. For example, if the overhead is 777 us and the recorded
-   * difference between the finishing time and the release time is 100
+   * difference between the finishing time and the starting time is 100
    * ms, then this function would actually have run for 100.777
    * ms. The 777 us overhead can be calculated by invoking this
    * function like:
@@ -122,7 +122,7 @@ extern "C" {
    * (t_end - t_begin) - (overhead of invoking clock_gettime) - 100.
    *
    * Beside the aformentioned unaccounted overhead, the recorded
-   * release time and finishing time of the job actually records the
+   * starting time and finishing time of the job actually records the
    * timing and function call overhead (overhead of invoking
    * clock_gettime and calling the callback function run_program found
    * in the passed struct job object). The worst-case overhead can be

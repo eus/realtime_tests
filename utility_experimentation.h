@@ -30,7 +30,8 @@
 #include "utility_cpu.h"
 
 /**
- * Conveniently begin the main function of an experimentation utilizing only one CPU core with the maximum frequency.
+ * Conveniently begin the main function of an experimentation
+ * utilizing only one CPU core with the maximum frequency.
  *
  * @param experiment_name the name of the experimentation program.
  * @param log_stream_path the path to the file used for logging. To
