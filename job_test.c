@@ -67,7 +67,7 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
       [20 - job_statistics_overhead() - loop_tolerance, 20 + loop_tolerance] */
   relative_time loop_tolerance;
   utility_time_init(&loop_tolerance);
-  to_utility_time(5, us, &loop_tolerance);
+  to_utility_time(10, us, &loop_tolerance);
 
   /** Change this to /dev/stdout to see the job statistics */
   const char *report_path = "/dev/null";
@@ -167,7 +167,7 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   const size_t abs_t_len = sizeof(abs_t);
 
   gracious_assert(to_string(&job_duration_overhead, abs_t, abs_t_len) == 0);
-  fprintf(report, "Worst-case job duration overhead = %s\n", abs_t);
+  log_verbose("Worst-case job duration overhead = %s\n", abs_t);
 
   job_statistics job_stats;
   int rc = -2;

@@ -17,19 +17,25 @@
 
 #include "job.h"
 
+/* CLOCK_MONOTONIC must be used because function job->run_program may
+   be subject to preemption, and therefore, CLOCK_THREAD_CPUTIME_ID
+   will not give the right timing information. */
+#define CLOCK_TYPE CLOCK_MONOTONIC
+
+/* The following code section must be the same in function job_start
+   and in function overhead_measurement used by function
+   job_statistics_overhead. */
+#define common_code_section(rc, job, t_begin, t_end)    \
+  rc -= clock_gettime(CLOCK_TYPE, t_begin);             \
+  job->run_program(job->args);                          \
+  rc -= clock_gettime(CLOCK_TYPE, t_end)
+
 int job_start(FILE *stats_log, struct job *job)
 {
   int rc = 0;
   job_statistics stats;
 
-  /* CLOCK_MONOTONIC must be used because function run_program may be
-     subject to preemption, and therefore, CLOCK_THREAD_CPUTIME_ID
-     will not give the right timing information. */
-#define CLOCK_TYPE CLOCK_MONOTONIC
-  rc -= clock_gettime(CLOCK_TYPE, &stats.t_begin);
-  job->run_program(job->args);
-  rc -= clock_gettime(CLOCK_TYPE, &stats.t_end);
-#undef CLOCK_TYPE
+  common_code_section(rc, job, &stats.t_begin, &stats.t_end);
 
   /* Log the job statistics (this is the biggest unaccountable overhead) */
   if (stats_log != NULL) {      
@@ -80,13 +86,11 @@ struct overhead_measurement_parameters
   int exit_status;
 };
 static __attribute__((noinline,optimize(0)))
-int overhead_measurement(FILE *probing_file, struct job *probing_job,
+int overhead_measurement(struct job *probing_job,
                          struct timespec *t_begin, struct timespec *t_end)
 {
   int rc = 0;
-  rc += clock_gettime(CLOCK_MONOTONIC, t_begin);
-  job_start(probing_file, probing_job);
-  rc += clock_gettime(CLOCK_MONOTONIC, t_end);
+  common_code_section(rc, probing_job, t_begin, t_end);
   return rc;
 }
 static void *overhead_measurement_thread(void *args)
@@ -94,15 +98,6 @@ static void *overhead_measurement_thread(void *args)
   struct overhead_measurement_parameters *params = args;
   params->result = NULL;
   params->exit_status = -2;
-
-  /* Open the job statistics logging stream */
-  const char *probing_file_path = "/dev/null";
-  FILE *probing_file = utility_file_open_for_writing_bin(probing_file_path);
-  if (probing_file == NULL) {
-    log_error("Fail to open %s for binary writing", probing_file_path);
-    goto out;
-  }
-  /* End of opening the job statistcs logging stream */
 
   /* Prepare the job object */
   struct job probing_job = {
@@ -133,7 +128,7 @@ static void *overhead_measurement_thread(void *args)
 
   /* Do measurement */
   struct timespec t_begin, t_end;
-  if (overhead_measurement(probing_file, &probing_job, &t_begin, &t_end) != 0) {
+  if (overhead_measurement(&probing_job, &t_begin, &t_end) != 0) {
     log_error("Fail to get either t_begin or t_end or both");
     goto out;
   }
@@ -145,9 +140,6 @@ static void *overhead_measurement_thread(void *args)
   params->exit_status = 0;
 
  out:
-  if (probing_file != NULL) {
-    utility_file_close(probing_file, probing_file_path);
-  }
   return &params->exit_status;
 }
 
