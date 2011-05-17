@@ -26,7 +26,7 @@
 #include "utility_sched_fifo.h"
 #include "job.h"
 
-static char tmp_file_name[] = "utility_file_test_XXXXXX";
+static char tmp_file_name[] = "job_test_XXXXXX";
 static cpu_freq_governor *used_gov = NULL;
 static int used_gov_in_use = 0;
 static void cleanup(void)
@@ -47,23 +47,29 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   require_valgrind_indicator();
 
   /* Adjustable test parameters */
-  /* The worst-case duration that is accountable including timing and
-     function call overhead. */
+  /** The worst-case duration that is accountable including timing and
+      function call overhead. */
   relative_time job_duration;
   utility_time_init(&job_duration);
-  to_utility_time(50, ms, &job_duration);
+  to_utility_time(20, ms, &job_duration);
 
-  /* This controls how much the busy loop can deviate from the range
-     of [50 - job_statistics_overhead(), 50]. Such a range arises
-     because job_statistics_overhead() returns the worst-case
-     overhead. This test unit checks that the actual duration of each
-     job as recorded is in the range of
-     [50 - job_statistics_overhead() - loop_tolerance, 50 + loop_tolerance] */
+  /** The number of jobs to be generated and checked. Beware that a
+      large number of samples may cause memory swapping invalidating
+      the worst-case assumption given by function
+      job_statistics_overhead. */
+  int sample_count = 1000;
+
+  /** This controls how much the busy loop can deviate from the range
+      of [20 - job_statistics_overhead(), 20] ms. Such a range arises
+      because job_statistics_overhead() returns the worst-case
+      overhead. This test unit checks that the actual duration of each
+      job as recorded is in the range of
+      [20 - job_statistics_overhead() - loop_tolerance, 20 + loop_tolerance] */
   relative_time loop_tolerance;
   utility_time_init(&loop_tolerance);
   to_utility_time(5, us, &loop_tolerance);
 
-  /* Change this to /dev/stdout to see the job statistics */
+  /** Change this to /dev/stdout to see the job statistics */
   const char *report_path = "/dev/null";
   FILE *report = utility_file_open_for_writing(report_path);
   /* End of adjustable test parameters */
@@ -126,7 +132,7 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   /* Execute the job one after another */
   int nth_job;
   int job_start_rc = 0;
-  for (nth_job = 1; nth_job <= 300; nth_job++) {
+  for (nth_job = 1; nth_job <= sample_count; nth_job++) {
     job_start_rc += job_start(job_stats_log_stream, &job);
   }
   gracious_assert(job_start_rc == 0);
@@ -182,6 +188,7 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   char char_lower_bound[32];
   char char_upper_bound[32];
 
+  int err_job_statistics_overhead = 0;
   absolute_time t_0;
   utility_time_init(&t_0);
   while ((rc = job_statistics_read(job_stats_log_stream, &job_stats)) == 0) {
@@ -286,11 +293,12 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
       }
       char char_delta[32];
       gracious_assert(to_string(&delta, char_delta, sizeof(char_delta)) == 0);
-      gracious_assert_msg(strcmp(argv[1], "1") == 0,
-                          "job_statistics_overhead() is incorrect for job #%d:"
-                          " %s not in [%s, %s]",
-                          nth_job, char_delta, char_lower_bound,
-                          char_upper_bound);
+      if (strcmp(argv[1], "1") != 0) {
+        err_job_statistics_overhead = 1;
+        log_error("job_statistics_overhead() is incorrect for job #%d:"
+                  " %s not in [%s, %s]",
+                  nth_job, char_delta, char_lower_bound, char_upper_bound);
+      }
     }
     /* End of execution time */
 
@@ -307,6 +315,8 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
           "\tbecause this test unit only tests the functionalities provided\n"
           "\tby infrastructure component job.h.\n",
          char_lower_bound, char_upper_bound);
+
+  gracious_assert(!err_job_statistics_overhead);
 
   gracious_assert(rc != -2);
   gracious_assert(utility_file_close(job_stats_log_stream, tmp_file_name) == 0);
