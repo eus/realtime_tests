@@ -121,7 +121,7 @@ extern "C" {
    * If my_job runs for 100 ms, then 777 us is obtained by
    * (t_end - t_begin) - (overhead of invoking clock_gettime) - 100.
    *
-   * Beside the aformentioned unaccounted overhead, the recorded
+   * Beside the aforementioned unaccounted overhead, the recorded
    * starting time and finishing time of the job actually records the
    * timing and function call overhead (overhead of invoking
    * clock_gettime and calling the callback function run_program found
@@ -142,14 +142,14 @@ extern "C" {
    *
    * @param stats_log a pointer to the FILE object to which the
    * statistics of each job is to be logged. Set this to NULL to
-   * disable job statistics logging that can avoid a logging overhead
-   * making the finishing time statistics more reliable.
+   * disable job statistics logging that can reduce the amount of
+   * unaccountable overhead.
    * @param job a pointer to the job to be started.
    *
    * @return zero if there is no error. Otherwise, return a negative
    * value in case of hard error (the error is not @ref utility_log.h
    * "logged" if the fix will require a change in the code of this
-   * function to reduce overhead; otherwise, the error is @ref
+   * function to keep the overhead low; otherwise, the error is @ref
    * utility_log.h "logged"). Even in case of hard error, the job
    * statistics are still written to stats_log.
    */
@@ -181,8 +181,8 @@ extern "C" {
 
   /**
    * Measure the worst-case timing and function call overhead that is
-   * included in the measured start time and finishing time of a job
-   * (c.f., job_start()).
+   * included within the recorded start time and finishing time of a
+   * job (c.f., job_start()).
    *
    * It is highly recommended to fix the frequency of the CPU at which
    * the overhead is to be measured to a fix value using
