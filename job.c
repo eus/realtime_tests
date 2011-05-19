@@ -25,20 +25,23 @@
 /* The following code section must be the same in function job_start
    and in function overhead_measurement used by function
    job_statistics_overhead. */
-#define common_code_section(rc, job, t_begin, t_end)    \
-  rc -= clock_gettime(CLOCK_TYPE, t_begin);             \
+#define common_code_section(rc, logging_enabled,        \
+                            job, t_begin, t_end)        \
+  if (logging_enabled)                                  \
+    rc -= clock_gettime(CLOCK_TYPE, t_begin);           \
   job->run_program(job->args);                          \
-  rc -= clock_gettime(CLOCK_TYPE, t_end)
+  if (logging_enabled)                                  \
+    rc -= clock_gettime(CLOCK_TYPE, t_end)
 
 int job_start(FILE *stats_log, struct job *job)
 {
   int rc = 0;
   job_statistics stats;
 
-  common_code_section(rc, job, &stats.t_begin, &stats.t_end);
+  common_code_section(rc, stats_log != NULL, job, &stats.t_begin, &stats.t_end);
 
   /* Log the job statistics (this is the biggest unaccountable overhead) */
-  if (stats_log != NULL) {      
+  if (stats_log != NULL) {
     if (fwrite(&stats, sizeof(stats), 1, stats_log) == 0) {
       log_syserror("Cannot write job statistics");
       rc--;
@@ -90,7 +93,7 @@ int overhead_measurement(struct job *probing_job,
                          struct timespec *t_begin, struct timespec *t_end)
 {
   int rc = 0;
-  common_code_section(rc, probing_job, t_begin, t_end);
+  common_code_section(rc, 1, probing_job, t_begin, t_end);
   return rc;
 }
 static void *overhead_measurement_thread(void *args)
