@@ -16,8 +16,9 @@
  *****************************************************************************/
 
 /**
- * @file utility_testcase.h
- * @brief Various functionalities commonly used when making a test unit.
+ * @file utility_experimentation.h
+ * @brief Various functionalities commonly used when making an
+ * experimentation component.
  * @author Tadeus Prastowo <eus@member.fsf.org>
  */
 
