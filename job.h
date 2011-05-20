@@ -125,20 +125,19 @@ extern "C" {
    * starting time and finishing time of the job actually records the
    * timing and function call overhead (overhead of invoking
    * clock_gettime and calling the callback function run_program found
-   * in the passed struct job object). The worst-case overhead can be
-   * obtained by invoking function job_statistics_overhead(). This
+   * in the passed struct job object). The approximated overhead can
+   * be obtained by invoking function job_statistics_overhead(). This
    * means that if a job must complete within 100 ms, the program of
-   * the job must complete within 100 ms - (unaccounted overhead) -
-   * job_statistics_overhead(). Since job_statistics_overhead()
-   * returns the worst-case, the job can actually completes faster
-   * than 100 ms. Since the worst-case overhead differs from one host
-   * to another, it is strongly recommended to serialize the result of
-   * invoking function job_statistics_overhead() to stats_log before
-   * releasing the first job so that a more accurate analysis of the
-   * job statistics can be made at a later time by taking into account
-   * the recorded worst-case overhead for a particular collection of
-   * job statistics. An example of such an analysis can be found in
-   * the unit test.
+   * the job must complete within approximately 100 ms - (unaccounted
+   * overhead) - job_statistics_overhead(). Since the approximated
+   * overhead differs from one host to another, it is strongly
+   * recommended to serialize the result of invoking function
+   * job_statistics_overhead() to stats_log before releasing the first
+   * job so that a more accurate analysis of the job statistics can be
+   * made at a later time by taking into account the recorded
+   * approximated overhead for a particular collection of job
+   * statistics. An example of such an analysis can be found in the
+   * unit test.
    *
    * @param stats_log a pointer to the FILE object to which the
    * statistics of each job is to be logged. Set this to NULL to
@@ -180,7 +179,7 @@ extern "C" {
   int job_statistics_read(FILE *stats_log, job_statistics *stats);
 
   /**
-   * Measure the worst-case timing and function call overhead that is
+   * Measure the approximate timing and function call overhead that is
    * included within the recorded start time and finishing time of a
    * job (c.f., job_start()).
    *
