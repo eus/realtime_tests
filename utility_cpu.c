@@ -436,8 +436,9 @@ static int busyloop_search(double duration, double search_tolerance,
       return -3;
     }
 
-    log_verbose("Pass %d of %d: %llu loops -> %.9f s\n",
-                nth_pass, search_max_passes, *loop_count, actual_duration);
+    log_verbose("Pass %d of %d: %llu loops -> %.9f s [%.9f s, %.9f s]\n",
+                nth_pass, search_max_passes, *loop_count, actual_duration,
+                duration - search_tolerance, duration + search_tolerance);
 
     if (nth_pass == search_max_passes) {
       /* Do not modify loop_count */
