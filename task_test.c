@@ -405,6 +405,44 @@ static void testcase_1_periodic_task(FILE *report,
   }
   /* END: Check task timeliness */
 
+  /* Check EOF */
+  int task_stats_nocall(task *tau, void *args)
+  {
+    gracious_assert_msg(0, "task_stats_nocall must never be executed");
+  }
+  int job_stats_nocall(job_statistics *stats, void *args)
+  {
+    gracious_assert_msg(0, "job_stats_nocall must never be executed");
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_nocall, NULL,
+                                       job_stats_nocall, NULL) == -4);
+  /* END: Check EOF */
+
+  /* Check early bailout from task_statistics_fn */
+  gracious_assert(fseek(stats_file, 0, SEEK_SET) == 0);
+  int task_stats_bailout(task *tau, void *args)
+  {
+    return -1;
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_bailout, NULL,
+                                       job_stats_nocall, NULL) == -1);
+  /* END: Check early bailout from task_statistics_fn */
+
+  /* Check early bailout from job_statistics_fn */
+  gracious_assert(fseek(stats_file, 0, SEEK_SET) == 0);
+  int job_stats_bailout(job_statistics *stats, void *args)
+  {
+    return -1;
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_checker,
+                                       &expected_task_params,
+                                       job_stats_bailout, NULL) == -2);
+  gracious_assert(!feof(stats_file));
+  /* END: Check early bailout from job_statistics_fn */
+
   /* Clean-up */
   gracious_assert(utility_file_close(stats_file, tmp_file_name) == 0);
   utility_time_gc(release_time);
@@ -464,7 +502,7 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
       and function call overhead is included in this WCET). */
   relative_time job_duration;
   utility_time_init(&job_duration);
-  to_utility_time(20, ms, &job_duration);
+  to_utility_time(1, ms, &job_duration);
 
   /** This controls how many times the overhead can be larger than the
       one returned by function job_statistics_overhead. Specifically,

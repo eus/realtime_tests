@@ -374,9 +374,10 @@ extern "C" {
    *
    * @return zero if the task_statistics object can be deserialized
    * successfully, -1 if task_statistics_fn returns a non-zero value,
-   * -2 if job_statistics_fn returns a non-zero value, or -3 if there
-   * is an I/O error while deserializing (the error itself is @ref
-   * utility_log.h "logged" directly).
+   * -2 if job_statistics_fn returns a non-zero value, -3 if there is
+   * an I/O error while deserializing (the error itself is @ref
+   * utility_log.h "logged" directly), or -4 if end of file has been
+   * reached (no callback function is called).
    */
   int task_statistics_read(FILE *stats_log,
                            int (*task_statistics_fn)(task *tau, void *args),

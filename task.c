@@ -210,11 +210,11 @@ static void *overhead_measurement_thread(void *args)
     log_error("Error during overhead measurement");
     goto out;
   }
+  params->exit_status = -2;
 
   /* Read the stats log */
   if (fseek(tau.stats_log, 0, SEEK_SET) != 0) {
     log_syserror("Cannot rewind stats log");
-    params->exit_status = -2;
     goto out;
   }
   /* END: Read the stats log */
@@ -486,13 +486,21 @@ int task_statistics_read(FILE *stats_log,
   int exit_code = -3;
   char *task_name = NULL;
 
+  if (feof(stats_log)) {
+    exit_code = -4;
+    goto out;
+  }
+
   /* Read task statistics */
   task_statistics task_stats;
-  if (fread(&task_stats, 1, sizeof(task_stats), stats_log)
-      != sizeof(task_stats))
+  size_t byte_read = fread(&task_stats, 1, sizeof(task_stats), stats_log);
+  if (byte_read != sizeof(task_stats))
     {
       if (ferror(stats_log)) {
         log_syserror("Cannot read task stats log stream");
+      } else if (byte_read == 0 && feof(stats_log)) {
+        exit_code = -4;
+        goto out;
       } else {
         log_error("Corrupted task stats log");
       }
