@@ -127,12 +127,12 @@ extern "C" {
   {
     if (internal_t->dyn_alloc) {
       /* If a warning about attempting to free a non-heap object 'XXX'
-	 is issued, the warning can be real but can also be bogus. To
-	 check, find the offending line that causes the warning and
-	 put a code that read 'XXX' below the offending
-	 line. Afterwards, run the program under Valgrind. If Valgrind
-	 reports no invalid read, then the warning is
-	 bogus. Otherwise, the warning is real. */
+         is issued, the warning can be real but can also be bogus. To
+         check, find the offending line that causes the warning and
+         put a code that read 'XXX' below the offending
+         line. Afterwards, run the program under Valgrind. If Valgrind
+         reports no invalid read, then the warning is
+         bogus. Otherwise, the warning is real. */
       free((void *) internal_t);
     }
   }
@@ -183,14 +183,14 @@ extern "C" {
    * objects.
    */
   static inline unsigned long combined_ns_in_s(const utility_time *t1,
-					       const utility_time *t2)
+                                               const utility_time *t2)
   {
     return (t1->t.tv_nsec + t2->t.tv_nsec) / BILLION;
   }
   /* Return the ns parts of the sum of the ns parts of the two internal objects.
    */
   static inline unsigned long combined_ns_leftover(const utility_time *t1,
-						   const utility_time *t2)
+                                                   const utility_time *t2)
   {
     return (t1->t.tv_nsec + t2->t.tv_nsec) % BILLION;
   }
@@ -229,8 +229,8 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void to_utility_time(unsigned long long t,
-				     enum time_unit t_unit,
-				     utility_time *internal_t)
+                                     enum time_unit t_unit,
+                                     utility_time *internal_t)
   {
     switch (t_unit) {
     case s:
@@ -256,7 +256,7 @@ extern "C" {
    * a dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *to_utility_time_dyn(unsigned long long t,
-						  enum time_unit t_unit)
+                                                  enum time_unit t_unit)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -274,7 +274,7 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void timespec_to_utility_time(const struct timespec *t,
-					      utility_time *internal_t)
+                                              utility_time *internal_t)
   {
     internal_t->t.tv_sec = t->tv_sec;
     internal_t->t.tv_nsec = t->tv_nsec;
@@ -284,7 +284,7 @@ extern "C" {
    * as dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *timespec_to_utility_time_dyn(const
-							   struct timespec *t)
+                                                           struct timespec *t)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -318,11 +318,11 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void string_to_utility_time(const char *str,
-					    char **endptr,
-					    utility_time *internal_t)
+                                            char **endptr,
+                                            utility_time *internal_t)
   {
     const int longest_second_digit_count = (sizeof(internal_t->t.tv_sec) * 8
-					    / 10 * 3);
+                                            / 10 * 3);
     /* can be calculated based on 2^10 ~ 10^3 */
     const char delimiter = '.';
 
@@ -340,7 +340,7 @@ extern "C" {
     /* End of getting the second part */
 
     if (second_digit_count == 0
-	|| second_digit_count > longest_second_digit_count) {
+        || second_digit_count > longest_second_digit_count) {
       /* Special cases */
       internal_t->t.tv_sec = 0;
       internal_t->t.tv_nsec = 0;
@@ -350,31 +350,31 @@ extern "C" {
 
       /* Extract the nanosecond part */
       if (*ptr == delimiter) {
-	char buffer[9 + 1];
-	memset(buffer, '0', sizeof(buffer) - 1);
-	buffer[sizeof(buffer) - 1] = '\0';
+        char buffer[9 + 1];
+        memset(buffer, '0', sizeof(buffer) - 1);
+        buffer[sizeof(buffer) - 1] = '\0';
 
-	++ptr;
-	unsigned int nanosecond_digit_count = 0;
-	while (isdigit(*ptr) && nanosecond_digit_count < sizeof(buffer) - 1) {
-	  buffer[nanosecond_digit_count] = *ptr;
-	  ptr++;
-	  nanosecond_digit_count++;
-	}
+        ++ptr;
+        unsigned int nanosecond_digit_count = 0;
+        while (isdigit(*ptr) && nanosecond_digit_count < sizeof(buffer) - 1) {
+          buffer[nanosecond_digit_count] = *ptr;
+          ptr++;
+          nanosecond_digit_count++;
+        }
 
-	/* Handle case like: "The lap time is 45. It is the fastest." */
-	if (nanosecond_digit_count == 0) {
-	  ptr--;
-	}
-	/* End of handling special case */
+        /* Handle case like: "The lap time is 45. It is the fastest." */
+        if (nanosecond_digit_count == 0) {
+          ptr--;
+        }
+        /* End of handling special case */
 
-	internal_t->t.tv_nsec = strtoull(buffer, NULL, 10);
+        internal_t->t.tv_nsec = strtoull(buffer, NULL, 10);
       } else {
-	internal_t->t.tv_nsec = 0;
+        internal_t->t.tv_nsec = 0;
       }
 
       if (endptr != NULL) {
-	*endptr = (char *) ptr;
+        *endptr = (char *) ptr;
       }
     }
   }
@@ -383,7 +383,7 @@ extern "C" {
    * as dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *string_to_utility_time_dyn(const char *str,
-							 char **endptr)
+                                                         char **endptr)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -400,7 +400,7 @@ extern "C" {
    * utility_time object to store the result
    */
   static inline void utility_time_to_utility_time(const utility_time *src,
-						  utility_time *dst)
+                                                  utility_time *dst)
   {
     dst->t.tv_sec = src->t.tv_sec;
     dst->t.tv_nsec = src->t.tv_nsec;
@@ -410,7 +410,7 @@ extern "C" {
    * collected if automatic garbage collection is permitted.
    */
   static inline void utility_time_to_utility_time_gc(const utility_time *src,
-						     utility_time *dst)
+                                                     utility_time *dst)
   {
     utility_time_to_utility_time(src, dst);
     utility_time_gc_auto(src);
@@ -421,8 +421,8 @@ extern "C" {
    * automatic garbage collection.
    */
   static inline utility_time *utility_time_to_utility_time_dyn(const
-							       utility_time *
-							       src)
+                                                               utility_time *
+                                                               src)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -445,7 +445,7 @@ extern "C" {
    * @param t a pointer to the timespec object to store the result.
    */
   static inline void to_timespec(const utility_time *internal_t,
-				 struct timespec *t)
+                                 struct timespec *t)
   {
     t->tv_sec = internal_t->t.tv_sec;
     t->tv_nsec = internal_t->t.tv_nsec;
@@ -455,7 +455,7 @@ extern "C" {
    * is garbage collected if automatic garbage collection is permitted.
    */
   static inline void to_timespec_gc(const utility_time *internal_t,
-				    struct timespec *t)
+                                    struct timespec *t)
   {
     to_timespec(internal_t, t);
     utility_time_gc_auto(internal_t);
@@ -472,10 +472,10 @@ extern "C" {
    * @param out_stream a pointer to the FILE object opened for writing.
    */
   static inline void to_file_string(const utility_time *internal_t,
-				    FILE *out_stream)
+                                    FILE *out_stream)
   {
     fprintf(out_stream, "%lu.%09lu",
-	    internal_t->t.tv_sec, internal_t->t.tv_nsec);
+            internal_t->t.tv_sec, internal_t->t.tv_nsec);
   }
   /**
    * Work just like to_file_string() but the given internal
@@ -483,7 +483,7 @@ extern "C" {
    * collection is permitted.
    */
   static inline void to_file_string_gc(const utility_time *internal_t,
-				       FILE *out_stream)
+                                       FILE *out_stream)
   {
     to_file_string(internal_t, out_stream);
     utility_time_gc_auto(internal_t);
@@ -502,10 +502,10 @@ extern "C" {
    * indicating the minimum size of the buffer.
    */
   static inline int to_string(const utility_time *internal_t,
-			      char *buffer, size_t buffer_len)
+                              char *buffer, size_t buffer_len)
   {
     int req_len = snprintf(buffer, buffer_len, "%lu.%09lu",
-			   internal_t->t.tv_sec, internal_t->t.tv_nsec);
+                           internal_t->t.tv_sec, internal_t->t.tv_nsec);
     return (req_len < buffer_len ? 0 : req_len + 1);
   }
   /**
@@ -514,7 +514,7 @@ extern "C" {
    * permitted.
    */
   static inline int to_string_gc(const utility_time *internal_t,
-				 char *buffer, size_t buffer_len)
+                                 char *buffer, size_t buffer_len)
   {
     int rc = to_string(internal_t, buffer, buffer_len);
     utility_time_gc_auto(internal_t);
@@ -557,17 +557,17 @@ extern "C" {
    * @return non-zero if t1 is equal to t2. Return zero, otherwise.
    */
   static inline int utility_time_eq(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return ((t1->t.tv_sec == t2->t.tv_sec)
-	    && (t1->t.tv_nsec == t2->t.tv_nsec));
+            && (t1->t.tv_nsec == t2->t.tv_nsec));
   }
   /**
    * Work just like utility_time_eq() except that t2 is garbage
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_eq_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_eq(t1, t2);
     utility_time_gc_auto(t2);
@@ -579,7 +579,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_eq_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_eq_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -590,18 +590,18 @@ extern "C" {
    * @return non-zero if t1 is less than t2. Return zero, otherwise.
    */
   static inline int utility_time_lt(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return ((t1->t.tv_sec < t2->t.tv_sec)
-	    || ((t1->t.tv_sec == t2->t.tv_sec)
-		&& (t1->t.tv_nsec < t2->t.tv_nsec)));
+            || ((t1->t.tv_sec == t2->t.tv_sec)
+                && (t1->t.tv_nsec < t2->t.tv_nsec)));
   }
   /**
    * Work just like utility_time_lt() except that t2 is garbage
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_lt_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_lt(t1, t2);
     utility_time_gc_auto(t2);
@@ -613,7 +613,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_lt_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_lt_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -625,7 +625,7 @@ extern "C" {
    * otherwise.
    */
   static inline int utility_time_le(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return (utility_time_eq(t1, t2) || utility_time_lt(t1, t2));
   }
@@ -634,7 +634,7 @@ extern "C" {
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_le_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_le(t1, t2);
     utility_time_gc_auto(t2);
@@ -646,7 +646,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_le_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_le_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -658,7 +658,7 @@ extern "C" {
    * otherwise.
    */
   static inline int utility_time_gt(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return !utility_time_le(t1, t2);
   }
@@ -667,7 +667,7 @@ extern "C" {
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_gt_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_gt(t1, t2);
     utility_time_gc_auto(t2);
@@ -679,7 +679,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_gt_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_gt_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -691,7 +691,7 @@ extern "C" {
    * zero, otherwise.
    */
   static inline int utility_time_ge(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return !utility_time_lt(t1, t2);
   }
@@ -700,7 +700,7 @@ extern "C" {
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_ge_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_ge(t1, t2);
     utility_time_gc_auto(t2);
@@ -712,7 +712,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_ge_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_ge_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -724,7 +724,7 @@ extern "C" {
    * otherwise.
    */
   static inline int utility_time_ne(const utility_time *t1,
-				    const utility_time *t2)
+                                    const utility_time *t2)
   {
     return !utility_time_eq(t1, t2);
   }
@@ -733,7 +733,7 @@ extern "C" {
    * collected if it is subject to automatic garbage collection.
    */
   static inline int utility_time_ne_gc_t2(const utility_time *t1,
-					  const utility_time *t2)
+                                          const utility_time *t2)
   {
     int res = utility_time_ne(t1, t2);
     utility_time_gc_auto(t2);
@@ -745,7 +745,7 @@ extern "C" {
    * collection.
    */
   static inline int utility_time_ne_gc(const utility_time *t1,
-				       const utility_time *t2)
+                                       const utility_time *t2)
   {
     int res = utility_time_ne_gc_t2(t1, t2);
     utility_time_gc_auto(t1);
@@ -773,8 +773,8 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void utility_time_add(const utility_time *t1,
-				      const utility_time *t2,
-				      utility_time *res)
+                                      const utility_time *t2,
+                                      utility_time *res)
   {
     res->t.tv_sec = t1->t.tv_sec + t2->t.tv_sec + combined_ns_in_s(t1, t2);
     res->t.tv_nsec = combined_ns_leftover(t1, t2);
@@ -784,8 +784,8 @@ extern "C" {
    * garbage collected if they are subject to automatic garbage collection.
    */
   static inline void utility_time_add_gc(const utility_time *t1,
-					 const utility_time *t2,
-					 utility_time *res)
+                                         const utility_time *t2,
+                                         utility_time *res)
   {
     utility_time_add(t1, t2, res);
     utility_time_gc_auto(t1);
@@ -796,7 +796,7 @@ extern "C" {
    * as dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_add_dyn(const utility_time *t1,
-						   const utility_time *t2)
+                                                   const utility_time *t2)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -809,7 +809,7 @@ extern "C" {
    * garbage collected if they are subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_add_dyn_gc(const utility_time *t1,
-						      const utility_time *t2)
+                                                      const utility_time *t2)
   {
     utility_time *internal_t = utility_time_add_dyn(t1, t2);
     utility_time_gc_auto(t1);
@@ -831,7 +831,7 @@ extern "C" {
    * increment.
    */
   static inline void utility_time_inc(utility_time *target,
-				      const utility_time *inc)
+                                      const utility_time *inc)
   {
     utility_time_add(target, inc, target);
   }
@@ -841,7 +841,7 @@ extern "C" {
    * collection.
    */
   static inline void utility_time_inc_gc(utility_time *target,
-					 const utility_time *inc)
+                                         const utility_time *inc)
   {
     utility_time_inc(target, inc);
     utility_time_gc_auto(inc);
@@ -864,18 +864,18 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void utility_time_sub(const utility_time *t1,
-				      const utility_time *t2,
-				      utility_time *res)
+                                      const utility_time *t2,
+                                      utility_time *res)
   {
     if (utility_time_le(t1, t2)) {
       utility_time_zero_t(res);
     } else {
       if (t1->t.tv_nsec < t2->t.tv_nsec) {
-	res->t.tv_sec = t1->t.tv_sec - 1 - t2->t.tv_sec;
-	res->t.tv_nsec = BILLION + t1->t.tv_nsec - t2->t.tv_nsec;
+        res->t.tv_sec = t1->t.tv_sec - 1 - t2->t.tv_sec;
+        res->t.tv_nsec = BILLION + t1->t.tv_nsec - t2->t.tv_nsec;
       } else {
-	res->t.tv_sec = t1->t.tv_sec - t2->t.tv_sec;
-	res->t.tv_nsec = t1->t.tv_nsec - t2->t.tv_nsec;
+        res->t.tv_sec = t1->t.tv_sec - t2->t.tv_sec;
+        res->t.tv_nsec = t1->t.tv_nsec - t2->t.tv_nsec;
       }
     }
   }
@@ -884,8 +884,8 @@ extern "C" {
    * garbage collected if they are subject to automatic garbage collection.
    */
   static inline void utility_time_sub_gc(const utility_time *t1,
-					 const utility_time *t2,
-					 utility_time *res)
+                                         const utility_time *t2,
+                                         utility_time *res)
   {
     utility_time_sub(t1, t2, res);
     utility_time_gc_auto(t1);
@@ -896,7 +896,7 @@ extern "C" {
    * as dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_sub_dyn(const utility_time *t1,
-						   const utility_time *t2)
+                                                   const utility_time *t2)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -909,7 +909,7 @@ extern "C" {
    * garbage collected if they are subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_sub_dyn_gc(const utility_time *t1,
-						      const utility_time *t2)
+                                                      const utility_time *t2)
   {
     utility_time *internal_t = utility_time_sub_dyn(t1, t2);
     utility_time_gc_auto(t1);
@@ -931,12 +931,15 @@ extern "C" {
    * utility_time object to store the result.
    */
   static inline void utility_time_mul(const utility_time *t1, unsigned n,
-				      utility_time *res)
+                                      utility_time *res)
   {
-    to_utility_time(0, s, res);
+    utility_time t;
+    utility_time_init(&t);
+    to_utility_time(0, s, &t);
     while (n-- > 0) {
-      utility_time_inc(res, t1);
+      utility_time_inc(&t, t1);
     }
+    utility_time_to_utility_time(&t, res);
   }
   /**
    * Work just like utility_time_mul() except that the operand is
@@ -944,7 +947,7 @@ extern "C" {
    * collection.
    */
   static inline void utility_time_mul_gc(const utility_time *t1, unsigned n,
-					 utility_time *res)
+                                         utility_time *res)
   {
     utility_time_mul(t1, n, res);
     utility_time_gc_auto(t1);
@@ -954,7 +957,7 @@ extern "C" {
    * as dynamic utility_time object subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_mul_dyn(const utility_time *t1,
-						   unsigned n)
+                                                   unsigned n)
   {
     utility_time *internal_t = utility_time_make_dyn();
     if (internal_t != NULL) {
@@ -967,7 +970,7 @@ extern "C" {
    * garbage collected if it is subject to automatic garbage collection.
    */
   static inline utility_time *utility_time_mul_dyn_gc(const utility_time *t1,
-						      unsigned n)
+                                                      unsigned n)
   {
     utility_time *internal_t = utility_time_mul_dyn(t1, n);
     utility_time_gc_auto(t1);
