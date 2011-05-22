@@ -68,6 +68,10 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   /** Change this to /dev/stdout to see the job statistics */
   const char *report_path = "/dev/null";
   FILE *report = utility_file_open_for_writing(report_path);
+
+  /** This controls how much the busyloop can deviate **/
+  relative_time *error = to_utility_time_dyn(50, us);
+  utility_time_set_gc_manual(error);
   /* End of adjustable test parameters */
 
   /* Prepare the stream to log job statistics */
@@ -119,8 +123,6 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
                                                       &job_stats_overhead);
 
   struct busyloop_exact_args busyloop_exact_args;
-  relative_time *error = to_utility_time_dyn(1, us);
-  utility_time_set_gc_manual(error);
   gracious_assert(create_cpu_busyloop(0,
                                       utility_time_sub_dyn_gc(loop_duration,
                                                               error),

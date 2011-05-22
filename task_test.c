@@ -116,7 +116,8 @@ static void testcase_1_periodic_task(FILE *report,
                                      unsigned overhead_approximation_scaling,
                                      const relative_time *job_stats_overhead,
                                      unsigned sample_count,
-                                     int under_valgrind)
+                                     int under_valgrind,
+                                     const relative_time *error)
 {
   /* Get and print finish-to-start overhead */
   relative_time *finish_to_start;
@@ -142,14 +143,11 @@ static void testcase_1_periodic_task(FILE *report,
                                                       &periodic_overhead);
 
   struct busyloop_exact_args busyloop_periodic;
-  relative_time *error = to_utility_time_dyn(1, us);
-  utility_time_set_gc_manual(error);
   gracious_assert(create_cpu_busyloop(0,
                                       utility_time_sub_dyn_gc(loop_duration,
                                                               error),
                                       error, 10,
                                       &busyloop_periodic.busyloop_obj) == 0);
-  utility_time_gc(error);
   /* End of preparing the job object using program busyloop_exact */
 
   /* Calculate task offset */
@@ -457,7 +455,8 @@ static void testcase_2_aperiodic_task(FILE *report,
                                       unsigned overhead_approximation_scaling,
                                       const relative_time *job_stats_overhead,
                                       unsigned sample_count,
-                                      int under_valgrind)
+                                      int under_valgrind,
+                                      const relative_time *error)
 {
   /* Subtracting the aperiodic overhead from the given job duration */
   relative_time *aperiodic_overhead_ptr;
@@ -519,6 +518,10 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
   /** Change this to /dev/stdout to see the job statistics */
   const char *report_path = "/dev/null";
   FILE *report = utility_file_open_for_writing(report_path);
+
+  /** This controls how much the busyloop can deviate **/
+  relative_time *error = to_utility_time_dyn(20, us);
+  utility_time_set_gc_manual(error);
   /* End of adjustable test parameters */
   
   /* Setup the environment to have a stable CPU frequency */
@@ -535,15 +538,16 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
   testcase_1_periodic_task(report, &job_duration,
                            overhead_approximation_scaling,
                            job_overhead, sample_count,
-                           strcmp(argv[1], "1") == 0);
+                           strcmp(argv[1], "1") == 0, error);
 
   /* [TODO] Testcase 2: Aperiodic task */
   testcase_2_aperiodic_task(report, &job_duration,
                             overhead_approximation_scaling,
                             job_overhead, sample_count,
-                            strcmp(argv[1], "1") == 0);
+                            strcmp(argv[1], "1") == 0, error);
 
   /* Clean-up */
+  utility_time_gc(error);
   gracious_assert(utility_file_close(report, report_path) == 0);
   utility_time_gc(job_overhead);
 
