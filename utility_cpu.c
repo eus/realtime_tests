@@ -384,7 +384,7 @@ static unsigned long long duration_to_loop_count(unsigned long long frequency,
    instruction cache, and the instructions should be with the most
    minimal number of branching possible. */
 static __attribute__((optimize(0)))
-double busyloop_measurement(unsigned long long loop_count)
+double busyloop_measurement(unsigned long loop_count)
 {
   int rc = 0;
   struct timespec t_begin, t_end;
@@ -422,10 +422,14 @@ double busyloop_measurement(unsigned long long loop_count)
 #undef CLOCK_TYPE
 }
 
+static inline int loop_count_too_long(unsigned long long loop_count)
+{
+  return (loop_count > ((1ULL << (sizeof(unsigned long) * 8)) - 1));
+}
 static int busyloop_search(double duration, double search_tolerance,
                            unsigned search_max_passes,
                            unsigned long long curr_freq,
-                           unsigned long long *loop_count)
+                           unsigned long *loop_count)
 {
   int nth_pass;
   for (nth_pass = 1; nth_pass <= search_max_passes; nth_pass++) {
@@ -436,7 +440,7 @@ static int busyloop_search(double duration, double search_tolerance,
       return -3;
     }
 
-    log_verbose("Pass %d of %d: %llu loops -> %.9f s [%.9f s, %.9f s]\n",
+    log_verbose("Pass %d of %d: %lu loops -> %.9f s [%.9f s, %.9f s]\n",
                 nth_pass, search_max_passes, *loop_count, actual_duration,
                 duration - search_tolerance, duration + search_tolerance);
 
@@ -460,7 +464,12 @@ static int busyloop_search(double duration, double search_tolerance,
                   " or to do clean compilation of the codebase)");
         return -3;
       }
+      if (loop_count_too_long(*loop_count)) {
+        return -4;
+      }
+
       *loop_count += loop_count_delta;
+
     } else {
       if (delta <= search_tolerance) {
         break;
@@ -480,7 +489,7 @@ static int busyloop_search(double duration, double search_tolerance,
 
 struct busyloop_search_parameters
 {
-  unsigned long long loop_count;
+  unsigned long loop_count;
   unsigned long long curr_freq;
   double duration;
   double search_tolerance;
@@ -534,6 +543,9 @@ int create_cpu_busyloop(int which_cpu, const utility_time *duration,
 
   unsigned long long loop_count
     = duration_to_loop_count(curr_freq, timespec_to_sec(&timespec_duration));
+  if (loop_count_too_long(loop_count)) {
+    return -4;
+  }
 
   /* Refine loop_count if requested */
   if (search_max_passes > 0) {

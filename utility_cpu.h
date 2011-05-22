@@ -173,26 +173,13 @@ extern "C" {
   unsigned long long cpu_freq_get(int which_cpu);
   /** @} End of collection of functions to deal with CPU frequency */
 
-  /* This function is copied from Prof. Abeni's RTTest cputime.c. The
-   * TSC (Timestamp Counter) is incremented once at every tick. So, a
-   * 1 GHz core will increment its TSC 1 billion times in a second.
-   */  
-  static inline unsigned long long rdtsc(void)
+  static inline void busyloop(unsigned long loop_count)
   {
-    unsigned long long val;
-
-    __asm__ __volatile__("rdtsc" : "=A" (val));
-
-    return val;
-  }
-  /* The idea of this busyloop comes from Prof. Abeni's RTTest
-   * periodic_thread.c. This is the algorithm to perform busy
-   * loop.
-   */
-  static inline void busyloop(unsigned long long loop_count)
-  {
-    volatile unsigned long long t0 = rdtsc();
-    while (rdtsc() - t0 < loop_count);
+    unsigned long i = 0;
+    asm("0:\n\t"
+        "addl $1, %0\n\t"
+        "cmpl %1, %0\n\t"
+        "jne 0b" : : "r" (i), "r" (loop_count));
   }
 
   /* III */
@@ -206,7 +193,7 @@ extern "C" {
     int which_cpu; /* The ID of the CPU on which the measurement took place */
     unsigned long long frequency; /* The frequency at which the
                                      measurement took place */
-    unsigned long long loop_count; /* The number of loop */
+    unsigned long loop_count; /* The number of loop */
     utility_time duration; /* The duration that the busyloop should yield */
   } cpu_busyloop;
 
@@ -303,10 +290,10 @@ extern "C" {
    *
    * @return zero if there is no error and result can be successfully
    * created, -1 if the caller is not privileged to use a real-time
-   * scheduler, -2 if the duration is too short, or -3 in case of hard
+   * scheduler, -2 if the duration is too short, -3 in case of hard
    * error that requires the investigation of the output of the
    * logging facility to fix the error. When the return value is not
-   * zero, result is set to NULL.
+   * zero, result is set to NULL, or -4 if the duration is too long.
    */
   int create_cpu_busyloop(int which_cpu, const utility_time *duration,
                           const utility_time *search_tolerance,

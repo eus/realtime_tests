@@ -169,8 +169,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   if (child_pid == 0) {
 
     gracious_assert(enter_UP_mode() == 0); /* Enter UP mode ASAP to prevent any
-					      migration statistics to be larger
-					      than 0 */
+                                              migration statistics to be larger
+                                              than 0 */
 
     struct sigaction signal_handler_data = {
       .sa_handler = signal_handler,
@@ -205,8 +205,8 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   int cpu_count = 0;
   while (fgets(buffer, sizeof(buffer), linux_cpuinfo) != NULL) {
     if (strncmp(buffer, keyword, strlen(keyword)) == 0
-	&& (isspace(buffer[strlen(keyword)])
-	    || buffer[strlen(keyword)] == ':')) {
+        && (isspace(buffer[strlen(keyword)])
+            || buffer[strlen(keyword)] == ':')) {
       cpu_count++;
     }
   }
@@ -224,7 +224,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   char *buffer1 = NULL;
   size_t buffer1_len = 0;
   gracious_assert(utility_file_readln(linux_governor_file,
-				      &buffer1, &buffer1_len, 32) == 0);
+                                      &buffer1, &buffer1_len, 32) == 0);
   utility_file_close(linux_governor_file, linux_governor_file_path);
 
   /* Use the library function to keep the current governor */
@@ -237,7 +237,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   used_gov_in_use = 1;
   fprintf(linux_governor_file, "performance");
   gracious_assert(utility_file_close(linux_governor_file,
-				     linux_governor_file_path) == 0);
+                                     linux_governor_file_path) == 0);
 
   /* Use the library function to restore the governor */
   gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
@@ -249,7 +249,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   char *buffer2 = NULL;
   size_t buffer2_len = 0;
   gracious_assert(utility_file_readln(linux_governor_file,
-				      &buffer2, &buffer2_len, 32) == 0);
+                                      &buffer2, &buffer2_len, 32) == 0);
   utility_file_close(linux_governor_file, linux_governor_file_path);
   gracious_assert(strcmp(buffer1, buffer2) == 0);
 
@@ -268,9 +268,9 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   buffer1 = NULL;
   buffer1_len = 0;
   gracious_assert(utility_file_readln(linux_freq_file,
-				      &buffer1, &buffer1_len, 32) == 0);
+                                      &buffer1, &buffer1_len, 32) == 0);
   gracious_assert(utility_file_close(linux_freq_file, linux_freq_file_path)
-		  == 0);
+                  == 0);
 
   /* Count the frequencies */
   const char delim[] = " ";
@@ -326,7 +326,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
   buffer1 = NULL;
   buffer1_len = 0;
   gracious_assert(utility_file_readln(linux_curr_freq_file,
-				      &buffer1, &buffer1_len, 32) == 0);
+                                      &buffer1, &buffer1_len, 32) == 0);
   utility_file_close(linux_curr_freq_file, linux_curr_freq_file_path);
 
   /* Check that cpu_freq_get() agrees with the manually read frequency */
@@ -353,7 +353,7 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     to_utility_time(1, s, &duration);
     utility_time search_tolerance;
     utility_time_init(&search_tolerance);
-    to_utility_time(1, us, &search_tolerance);
+    to_utility_time(200, us, &search_tolerance);
     unsigned search_max_passes = 10;
 
     /* Save current governor */
@@ -370,14 +370,14 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     /* Create CPU busyloop object */
     cpu_busyloop *busyloop_obj = NULL;
     gracious_assert(create_cpu_busyloop(0, &duration, &search_tolerance,
-					search_max_passes, &busyloop_obj) == 0);
+                                        search_max_passes, &busyloop_obj) == 0);
     gracious_assert(busyloop_obj != NULL);
 
     /* Check busyloop_obj properties */
     gracious_assert(cpu_busyloop_id(busyloop_obj) == 0);
     gracious_assert(cpu_busyloop_frequency(busyloop_obj) == freqs[0]);
     gracious_assert(utility_time_eq_gc(cpu_busyloop_duration(busyloop_obj),
-				       to_utility_time_dyn(1, s)));
+                                       to_utility_time_dyn(1, s)));
 
     /* Prevent interference on the following time-sensitive section */
     struct scheduler default_scheduler;
@@ -412,11 +412,11 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     utility_time duration_actual;
     utility_time_init(&duration_actual);
     utility_time_sub_gc(timespec_to_utility_time_dyn(&t_end),
-			timespec_to_utility_time_dyn(&t_begin),
-			&duration_actual);
+                        timespec_to_utility_time_dyn(&t_begin),
+                        &duration_actual);
     utility_time_sub_gc(&duration_actual,
-			to_utility_time_dyn(measurement_duration, ns),
-			&duration_actual);
+                        to_utility_time_dyn(measurement_duration, ns),
+                        &duration_actual);
 
     utility_time lower_bound;
     utility_time_init(&lower_bound);
@@ -425,12 +425,24 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     utility_time_init(&upper_bound);
     utility_time_add(&duration, &search_tolerance, &upper_bound);
     if (utility_time_lt(&duration_actual, &lower_bound)
-	|| utility_time_gt(&duration_actual, &upper_bound)) {
+        || utility_time_gt(&duration_actual, &upper_bound)) {
       /* If this is run under Valgrind, this is expected.  If Valgrind
-	 reports no leak, run this again without Valgrind. If this
-	 messages persists, this testcase really fails. */
+         reports no leak, run this again without Valgrind. If this
+         messages persists, this testcase really fails. */
 
-      gracious_assert(strcmp(argv[1], "1") == 0);
+      char duration_actual_str[32];
+      gracious_assert(to_string(&duration_actual, duration_actual_str,
+                                sizeof(duration_actual_str)) == 0);
+      char lower_bound_str[32];
+      gracious_assert(to_string(&lower_bound, lower_bound_str,
+                                sizeof(lower_bound_str)) == 0);
+      char upper_bound_str[32];
+      gracious_assert(to_string(&upper_bound, upper_bound_str,
+                                sizeof(upper_bound_str)) == 0);
+
+      gracious_assert_msg(strcmp(argv[1], "1") == 0,
+                          "%s not in [%s, %s]", duration_actual_str,
+                          lower_bound_str, upper_bound_str);
     }
 
     /* Clean-up */
@@ -540,6 +552,131 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
     child_pid = 0;
     check_subprocess_exit_status(EXIT_SUCCESS);
   }
+
+  /* Testcase 10: Check busyloop resistance against preemption */
+  /* MAX_PRIO     ---0---50---100+++150---200--- busyloop_duration = 50
+     (MAX_PRIO-1) ---0---50+++100---150+++200--- busyloop_duration = 100
+     If busyloop is resistant, (MAX_PRIO-1) will end at 20
+     (i.e., the t_finish - t_start will be larger than 140).
+     Otherwise, it will end at 15 (i.e., the t_finish - t_start will be
+     less than 140). */
+  gracious_assert(enter_UP_mode_freq_max(&used_gov) == 0);
+  used_gov_in_use = 1;
+
+  struct busyloop_thread_params {
+    cpu_busyloop *busyloop_obj;
+    int sched_fifo_prio;
+    struct timespec t_release;
+    struct timespec t_finish;
+    int exit_status;
+  };
+
+  struct busyloop_thread_params max;
+  gracious_assert(create_cpu_busyloop(0, to_utility_time_dyn(50, ms),
+                                      to_utility_time_dyn(1, us), 10,
+                                      &max.busyloop_obj) == 0);
+  gracious_assert(sched_fifo_prio(0, &max.sched_fifo_prio) == 0);
+
+  struct busyloop_thread_params second_max;
+  gracious_assert(create_cpu_busyloop(0, to_utility_time_dyn(100, ms),
+                                      to_utility_time_dyn(1, us), 10,
+                                      &second_max.busyloop_obj) == 0);
+  gracious_assert(sched_fifo_prio(1, &second_max.sched_fifo_prio) == 0);
+
+  struct timespec t_now;
+  clock_gettime(CLOCK_MONOTONIC, &t_now);
+  to_timespec_gc(utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
+                                         to_utility_time_dyn(1000 + 100, ms)),
+                 &max.t_release);
+  to_timespec_gc(utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
+                                         to_utility_time_dyn(1000 + 50, ms)),
+                 &second_max.t_release);  
+
+  void *busyloop_thread(void *args)
+  {
+    struct busyloop_thread_params *prms = args;
+
+    gracious_assert(sched_fifo_enter(prms->sched_fifo_prio, NULL) == 0);
+
+    gracious_assert(clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                                    &prms->t_release, NULL) == 0);
+
+    keep_cpu_busy(prms->busyloop_obj);
+
+    gracious_assert(clock_gettime(CLOCK_MONOTONIC, &prms->t_finish) == 0);
+
+    prms->exit_status = 0;
+    return &prms->exit_status;
+  }
+  pthread_t max_tid;
+  gracious_assert(pthread_create(&max_tid, NULL, busyloop_thread, &max) == 0);
+  pthread_t second_max_tid;
+  gracious_assert(pthread_create(&second_max_tid, NULL,
+                                 busyloop_thread, &second_max) == 0);
+
+  gracious_assert(pthread_join(max_tid, NULL) == 0);
+  destroy_cpu_busyloop(max.busyloop_obj);
+  gracious_assert(pthread_join(second_max_tid, NULL) == 0);
+  destroy_cpu_busyloop(second_max.busyloop_obj);
+
+  gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
+  used_gov_in_use = 0;
+
+  /* Analyzing thread with max priority */
+  relative_time *max_t_start
+    = utility_time_sub_dyn_gc(timespec_to_utility_time_dyn(&max.t_release),
+                              timespec_to_utility_time_dyn(&t_now));
+  char max_t_start_str[32];
+  gracious_assert(to_string(max_t_start,
+                            max_t_start_str, sizeof(max_t_start_str)) == 0);
+
+  relative_time *max_t_finish
+    = utility_time_sub_dyn_gc(timespec_to_utility_time_dyn(&max.t_finish),
+                              timespec_to_utility_time_dyn(&t_now));
+  char max_t_finish_str[32];
+  gracious_assert(to_string(max_t_finish,
+                            max_t_finish_str, sizeof(max_t_finish_str)) == 0);
+
+  char max_delta[32];
+  gracious_assert(to_string_gc(utility_time_sub_dyn_gc(max_t_finish,
+                                                       max_t_start),
+                               max_delta, sizeof(max_delta)) == 0);
+
+  log_verbose("[Max] t_start: %s t_finish: %s delta: %s\n",
+              max_t_start_str, max_t_finish_str, max_delta);
+
+  /* END: Analyzing thread with max priority */
+
+  /* Analyzing thread with second max priority */
+  relative_time *second_max_t_start
+    = utility_time_sub_dyn_gc(timespec_to_utility_time_dyn(&second_max
+                                                           .t_release),
+                              timespec_to_utility_time_dyn(&t_now));
+  char second_max_t_start_str[32];
+  gracious_assert(to_string(second_max_t_start, second_max_t_start_str,
+                            sizeof(second_max_t_start_str)) == 0);
+
+  relative_time *second_max_t_finish
+    = utility_time_sub_dyn_gc(timespec_to_utility_time_dyn(&second_max
+                                                           .t_finish),
+                              timespec_to_utility_time_dyn(&t_now));
+  char second_max_t_finish_str[32];
+  gracious_assert(to_string(second_max_t_finish, second_max_t_finish_str,
+                            sizeof(second_max_t_finish_str)) == 0);
+
+  relative_time *second_max_delta = utility_time_sub_dyn_gc(second_max_t_finish,
+                                                            second_max_t_start);
+  char second_max_delta_str[32];
+  gracious_assert(to_string(second_max_delta, second_max_delta_str,
+                            sizeof(second_max_delta_str)) == 0);
+
+  log_verbose("[Second_Max] t_start: %s t_finish: %s delta: %s\n",
+              second_max_t_start_str, second_max_t_finish_str,
+              second_max_delta_str);
+
+  gracious_assert(utility_time_gt_gc(second_max_delta,
+                                     to_utility_time_dyn(140, ms)));
+  /* END: Analyzing thread with second max priority */
 
   return EXIT_SUCCESS;
 
