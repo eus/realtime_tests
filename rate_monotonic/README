@@ -1,0 +1,62 @@
+		   Implementation and Evaluation of
+	      a Task Set Scheduled Using Rate Monotonic
+----------------------------------------------------------------------
+
+The following task set is to be scheduled using Rate Monotonic (RM)
+scheduling algorithm:
+
++-----+------+------+
+|Task |C (ms)|T (ms)|
++-----+------+------+
+|1    |2     |10    |
++-----+------+------+
+|2    |3     |15    |
++-----+------+------+
+|3    |6     |26    |
++-----+------+------+
+|4    |6     |36    |
++-----+------+------+
+
+The task set is schedulable according to the sufficient and necessary
+test proposed by Audsley et. al that is demonstrated below:
+
+Task 1:
+	R^0 = 2
+	R^1 = 2
+R_1 = 2 <= 10
+
+Task 2:
+	R^0 = 2 + 3
+	    = 5
+	R^1 = 3 + (ceil(5/10) * 2)
+	    = 3 + 2
+	    = 5
+R_2 = 5 <= 10
+
+Task 3:
+	R^0 = 2 + 3 + 6
+	    = 11
+	R^1 = 6 + (ceil(11/10) * 2) + (ceil(11/15) * 3)
+	    = 6 + 4 + 3
+	    = 13
+	R^2 = 6 + (ceil(13/10) * 2) + (ceil(13/15) * 3)
+	    = 6 + 4 + 3
+	    = 13
+R_3 = 13 <= 26
+
+Task 4:
+	R^0 = 2 + 3 + 6 + 6
+	    = 17
+	R^1 = 6 + (ceil(17/10) * 2) + (ceil(17/15) * 3) + (ceil(17/26) * 6)
+	    = 6 + 4 + 6 + 6
+	    = 22
+	R^2 = 6 + (ceil(22/10) * 2) + (ceil(22/15) * 3) + (ceil(22/26) * 6)
+	    = 6 + 6 + 6 + 6
+	    = 24
+	R^3 = 6 + (ceil(24/10) * 2) + (ceil(24/15) * 3) + (ceil(24/26) * 6)
+	    = 6 + 6 + 6 + 6
+	    = 24
+R_4 = 24 <= 26
+
+This experiment component will run the task set using POSIX RT
+SCHED_FIFO and check that no job of any of the tasks is ever late.

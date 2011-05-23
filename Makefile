@@ -2,7 +2,7 @@ test_cases := utility_time_test utility_log_test utility_file_test
 test_cases_sudo := utility_cpu_test job_test utility_sched_fifo_test \
     task_test
 
-executables := $(test_cases) $(test_cases_sudo)
+executables := $(test_cases) $(test_cases_sudo) read_task_stats_file
 
 cond_for_pthread := utility_log.h utility_cpu.h utility_sched_fifo.h task.h
 cond_for_rt := utility_cpu.h job.h task.h
