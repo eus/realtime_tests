@@ -118,6 +118,8 @@ extern "C" {
 
     FILE *stats_log; /* The file to which the statistics of this
                         task is to be logged. */
+    unsigned fail_to_close_stats_log; /* Non-zero if stats_log cannot
+                                         be closed. */
     char *stats_log_path; /* NULL-terminated file name of stats_log. */
     int disable_job_statistics; /* Non-zero will disable the recording
                                    of job starting and finishing times*/

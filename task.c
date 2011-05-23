@@ -82,11 +82,27 @@
                                  most rare to the most likely to
                                  happen */
 
+static void close_logging_file(void *args)
+{
+  task *tau = args;
+
+  if (tau->stats_log != NULL) {
+    if (utility_file_close(tau->stats_log, tau->stats_log_path) != 0) {
+      log_error("Cannot close task statistics log file");
+      tau->fail_to_close_stats_log++;
+    } else {
+      tau->stats_log = NULL;
+      free(tau->stats_log_path);
+      tau->stats_log_path = NULL;
+    }
+  }
+}
 int task_start(task *tau)
 {
   int rc = 0;
 
   tau->thread_id = pthread_self();
+  pthread_cleanup_push(close_logging_file, tau);
 
   if (tau->aperiodic) {
     task_start_aperiodic(tau);
@@ -94,18 +110,8 @@ int task_start(task *tau)
     task_start_periodic(tau);
   }
 
-  /* Close logging file */
-  if (tau->stats_log != NULL) {
-    if (utility_file_close(tau->stats_log, tau->stats_log_path) != 0) {
-      log_error("Cannot close task statistics log file");
-      rc--;
-    } else {
-      tau->stats_log = NULL;
-      free(tau->stats_log_path);
-      tau->stats_log_path = NULL;
-    }
-  }  
-  /* END: Close logging file */
+  pthread_cleanup_pop(1);
+  rc -= tau->fail_to_close_stats_log;
 
   return rc;
 }
@@ -373,6 +379,7 @@ int task_create(const char *name,
     rc = -2;
     goto error;
   }
+  result->fail_to_close_stats_log = 0;
   /* End of opening stats log's name */
 
   /* Handle all utility_time objects */
