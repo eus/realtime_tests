@@ -470,8 +470,8 @@ void task_stop(task *tau)
       }
     }
 
-    if ((errno = pthread_kill(tau->thread_id, SIGKILL)) != 0) {
-      log_syserror("Cannot kill thread %u", (unsigned) tau->thread_id);
+    if ((errno = pthread_cancel(tau->thread_id)) != 0) {
+      log_syserror("Cannot cancel thread %u", (unsigned) tau->thread_id);
     }
   }
 }
