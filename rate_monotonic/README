@@ -59,4 +59,6 @@ Task 4:
 R_4 = 24 <= 26
 
 This experiment component will run the task set using POSIX RT
-SCHED_FIFO and check that no job of any of the tasks is ever late.
+SCHED_FIFO and check that no job of any of the tasks is ever
+late. Specifically, compile main.c, run it as ./main and see that no
+jobs in the resulting .bin files is marked as LATE.
