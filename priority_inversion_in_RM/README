@@ -1,0 +1,28 @@
+		   Illustrating Priority Inversion
+			  in Rate Monotonic
+----------------------------------------------------------------------
+    0   10  20      40        540 550     570
+T1 ---------++++------------------oooo++++-----
+T2 -----------------++++++++++-----------------
+T3 -++++oooo----oooo----------oooo--------++++-
+
+Legend
++++: normal execution
+ooo: execution in the critical section of resource R1
+
+Priority inversion happens at t = 40 up to t = 540. If the deadline of
+T1 is at t = 70, T1 misses its deadline. Once priority inheritance
+protocol is used, T1 will not miss its deadline at t = 70 as
+illustrated below:
+
+    0   10  20  30      50  60  70        570
+T1 ---------++++--------oooo++++---------------
+T2 -----------------------------++++++++++-----
+T3 -++++oooo----oooooooo------------------++++-
+
+To see both cases concretely, compile main.c, run it as ./main 0 and
+read the resulting .bin files to observe the real case of priority
+inversion in which the job of T1 will be late by around 480 ms. Then,
+run main.c as ./main 1 and read the resulting .bin files to observe
+the real case of priority inheritance. No job should be late in the
+case of priority inheritance.
