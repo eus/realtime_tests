@@ -160,6 +160,7 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
                    tau_ ## id ## _period,                               \
                    tau_ ## id ## _period,                               \
                    timespec_to_utility_time_dyn(&t_release),            \
+                   to_utility_time_dyn(0, ms),                          \
                    NULL, NULL,                                          \
                    "tau_" #id "_stats.bin", job_stats_overhead,         \
                    task_overhead,                                       \

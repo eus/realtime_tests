@@ -203,10 +203,14 @@ static void *overhead_measurement_thread(void *args)
     goto out;
   }
   /** clock_nanosleep takes longer when it really has to sleep **/
+  utility_time_init(&tau.t_0);
+  timespec_to_utility_time(&tau.next_release_time, &tau.t_0);
+
   utility_time_init(&tau.offset);
-  timespec_to_utility_time(&tau.next_release_time, &tau.offset);
-  utility_time_add_gc(&tau.offset, to_utility_time_dyn(100, ms), &tau.offset);
-  to_timespec(&tau.offset, &tau.next_release_time);
+  to_utility_time(100, ms, &tau.offset);
+
+  to_timespec_gc(utility_time_add_dyn(&tau.t_0, &tau.offset),
+                 &tau.next_release_time);
   /** END: clock_nanosleep takes longer when it really has to sleep **/
   /* END: Prepare argument for overhead measurement */
 
@@ -238,7 +242,7 @@ static void *overhead_measurement_thread(void *args)
   }
 
   /** Calculate release-to-start overhead when clock_nanosleep really sleeps **/
-  absolute_time *t_release = &tau.offset;
+  absolute_time *t_release = utility_time_add_dyn(&tau.t_0, &tau.offset);
   absolute_time *t_start_1 = job_statistics_time_start(&job_stats_1);
 
   /** Calculate finish-to-start overhead that includes the overhead
@@ -301,7 +305,8 @@ int task_create(const char *name,
                 const relative_time *wcet,
                 const relative_time *period,
                 const relative_time *deadline,
-                const absolute_time *offset,
+                const absolute_time *t_0,
+                const relative_time *offset,
                 void (*aperiodic_release)(void *args),
                 void *aperiodic_release_args,
                 const char *stats_file_path,
@@ -397,8 +402,11 @@ int task_create(const char *name,
   arg_to_task_and_task_stats(period);
   arg_to_task_and_task_stats(deadline);
 
+  arg_to_task_and_task_stats(t_0);
   arg_to_task_and_task_stats(offset);
-  to_timespec(&result->offset, &result->next_release_time);
+  to_timespec_gc(utility_time_add_dyn(&result->t_0,
+                                      &result->offset),
+                 &result->next_release_time);
 
   arg_to_task_and_task_stats(job_statistics_overhead);
   arg_to_task_and_task_stats(finish_to_start_overhead);
@@ -572,6 +580,7 @@ int task_statistics_read(FILE *stats_log,
   task_stats_arg_to_task(wcet);
   task_stats_arg_to_task(period);
   task_stats_arg_to_task(deadline);
+  task_stats_arg_to_task(t_0);
   task_stats_arg_to_task(offset);
   task_stats_arg_to_task(job_statistics_overhead);
   task_stats_arg_to_task(finish_to_start_overhead);
@@ -637,7 +646,12 @@ relative_time *task_statistics_deadline(const task *tau)
   return utility_time_to_utility_time_dyn(&tau->deadline);
 }
 
-absolute_time *task_statistics_offset(const task *tau)
+absolute_time *task_statistics_t0(const task *tau)
+{
+  return utility_time_to_utility_time_dyn(&tau->t_0);
+}
+
+relative_time *task_statistics_offset(const task *tau)
 {
   return utility_time_to_utility_time_dyn(&tau->offset);
 }

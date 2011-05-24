@@ -150,14 +150,16 @@ static void testcase_1_periodic_task(FILE *report,
                                       &busyloop_periodic.busyloop_obj) == 0);
   /* End of preparing the job object using program busyloop_exact */
 
-  /* Calculate task offset */
   struct timespec t_now;
   gracious_assert(clock_gettime(CLOCK_MONOTONIC, &t_now) == 0);
 
-  absolute_time *release_time
-    = utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
-                              to_utility_time_dyn(1, s));
-  utility_time_set_gc_manual(release_time);
+  /* Calculate task offset */
+  absolute_time *t_0 = timespec_to_utility_time_dyn(&t_now);
+  t_0 = utility_time_add_dyn_gc(t_0, to_utility_time_dyn(1, s));
+  utility_time_set_gc_manual(t_0);
+
+  relative_time *offset = to_utility_time_dyn(0, s);
+  utility_time_set_gc_manual(offset);
   /* END: Calculate task offset */
 
   /* Calculate task period */
@@ -172,7 +174,8 @@ static void testcase_1_periodic_task(FILE *report,
                               job_duration,
                               task_period,
                               task_period,
-                              release_time,
+                              t_0,
+                              offset,
                               NULL, NULL,
                               tmp_file_name,
                               job_stats_overhead,
@@ -193,7 +196,8 @@ static void testcase_1_periodic_task(FILE *report,
     const relative_time *wcet;
     relative_time *period;
     relative_time *deadline;
-    absolute_time *offset;
+    absolute_time *t_0;
+    relative_time *offset;
     int aperiodic;
     int job_statistics_disabled;
     const relative_time *job_stats_overhead;
@@ -203,7 +207,8 @@ static void testcase_1_periodic_task(FILE *report,
     .wcet = job_duration,
     .period = task_period,
     .deadline = task_period,
-    .offset = release_time,
+    .t_0 = t_0,
+    .offset = offset,
     .aperiodic = 0,
     .job_statistics_disabled = 0,
     .job_stats_overhead = job_stats_overhead,
@@ -220,6 +225,8 @@ static void testcase_1_periodic_task(FILE *report,
                                         task_statistics_period(tau)));
     gracious_assert(utility_time_eq_gc_t2(prms->deadline,
                                           task_statistics_deadline(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->t_0,
+                                          task_statistics_t0(tau)));
     gracious_assert(utility_time_eq_gc_t2(prms->offset,
                                           task_statistics_offset(tau)));
     gracious_assert(task_statistics_aperiodic(tau) == prms->aperiodic);
@@ -241,7 +248,7 @@ static void testcase_1_periodic_task(FILE *report,
   struct task_manager_params params = {
     .tau = periodic_task,
   };
-  to_timespec_gc(utility_time_add_dyn_gc(release_time,
+  to_timespec_gc(utility_time_add_dyn_gc(task_statistics_t0(periodic_task),
                                          utility_time_mul_dyn(task_period,
                                                               sample_count + 1)
                                          ),
@@ -262,14 +269,14 @@ static void testcase_1_periodic_task(FILE *report,
   {
     unsigned nth_job;
     unsigned sample_count;
-    absolute_time *t_release;
+    absolute_time *t_0;
     relative_time *period;
     unsigned late_count;
     FILE *report;
     const relative_time *job_stats_overhead;
   } expected_job_params = {
     .nth_job = 1,
-    .t_release = release_time,
+    .t_0 = t_0,
     .period = task_period,
     .sample_count = sample_count,
     .report = report,
@@ -314,7 +321,7 @@ static void testcase_1_periodic_task(FILE *report,
 
     absolute_time time_start_expected;
     utility_time_init(&time_start_expected);
-    utility_time_add(prms->t_release, &delta, &time_start_expected);
+    utility_time_add(prms->t_0, &delta, &time_start_expected);
 
     absolute_time time_start;
     utility_time_init(&time_start);
@@ -334,7 +341,7 @@ static void testcase_1_periodic_task(FILE *report,
     }
 
     gracious_assert(to_string_gc(utility_time_sub_dyn(&time_start,
-                                                      prms->t_release),
+                                                      prms->t_0),
                                  abs_t, sizeof(abs_t)) == 0);
     fprintf(prms->report, "%15s", abs_t);
     /* End of start time */
@@ -346,7 +353,7 @@ static void testcase_1_periodic_task(FILE *report,
 
     absolute_time time_finish_expected;
     utility_time_init(&time_finish_expected);
-    utility_time_add(prms->t_release, &delta, &time_finish_expected);
+    utility_time_add(prms->t_0, &delta, &time_finish_expected);
 
     absolute_time time_finish;
     utility_time_init(&time_finish);
@@ -369,7 +376,7 @@ static void testcase_1_periodic_task(FILE *report,
     }
 
     gracious_assert(to_string_gc(utility_time_sub_dyn(&time_finish,
-                                                      prms->t_release),
+                                                      prms->t_0),
                                  abs_t, sizeof(abs_t)) == 0);
     fprintf(prms->report, "%15s", abs_t);
     /* End of finishing time */
@@ -443,7 +450,8 @@ static void testcase_1_periodic_task(FILE *report,
 
   /* Clean-up */
   gracious_assert(utility_file_close(stats_file, tmp_file_name) == 0);
-  utility_time_gc(release_time);
+  utility_time_gc(t_0);
+  utility_time_gc(offset);
   utility_time_gc(task_period);
   task_destroy(periodic_task);
   destroy_cpu_busyloop(busyloop_periodic.busyloop_obj);

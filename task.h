@@ -81,11 +81,15 @@ extern "C" {
      * @{
      */
     char *name; /* The name of this task. */
-    relative_time wcet; /* The worst-case execution time of this task. */
-    relative_time period; /* The periodicity of this task. */
-    relative_time deadline; /* The deadline of this task. */
-    absolute_time offset; /* Absolute time at which the task releases
-                             its first job. */
+    relative_time wcet; /* The worst-case execution time of this task
+                           relative to a release time. */
+    relative_time period; /* The periodicity of this task relative to
+                             a release time. */
+    relative_time deadline; /* The deadline of this task relative to
+                               a release time. */
+    absolute_time t_0; /* Absolute time at which the task is spawned. */
+    relative_time offset; /* The delay from t_0 after which the task
+                             releases its first job. */
     /* @} End of collection of theoretical information */
 
     pthread_t thread_id; /* The thread ID of the thread that invokes
@@ -168,6 +172,10 @@ extern "C" {
     struct {
       uint32_t tv_sec;
       uint32_t tv_nsec;
+    } t_0;
+    struct {
+      uint32_t tv_sec;
+      uint32_t tv_nsec;
     } offset;
     struct {
       uint32_t tv_sec;
@@ -214,10 +222,14 @@ extern "C" {
    * @param deadline a pointer to the utility_time object specifying
    * the relative deadline of the task. The utility_time object is
    * garbage collected automatically if it is possible.
-   * @param offset a pointer to the utility_time object specifying the
-   * absolute release time of the first job of the task. The
+   * @param t_0 a pointer to the utility_time object specifying the
+   * absolute spawning time of the first job of the task. The
    * utility_time object is garbage collected automatically if it is
    * possible.
+   * @param offset a pointer to the utility_time object specifying the
+   * delay from t_0 after which the first job of the task is
+   * released. The utility_time object is garbage collected
+   * automatically if it is possible.
    * @param aperiodic_release if this is set, then the task will
    * release one job whenever function aperiodic_release
    * returns. Since function aperiodic_release can block waiting for
@@ -263,7 +275,8 @@ extern "C" {
                   const relative_time *wcet,
                   const relative_time *period,
                   const relative_time *deadline,
-                  const absolute_time *offset,
+                  const absolute_time *t_0,
+                  const relative_time *offset,
                   void (*aperiodic_release)(void *args),
                   void *aperiodic_release_args,
                   const char *stats_file_path,
@@ -394,28 +407,35 @@ extern "C" {
   const char *task_statistics_name(const task *tau);
 
   /**
-   * @return the worst-case execution time of this task as a
-   * utility_time object fits for automatic garbage collection.
+   * @return the worst-case execution time of this task relative to
+   * any release time as a utility_time object fits for automatic
+   * garbage collection.
    */
   relative_time *task_statistics_wcet(const task *tau);
 
   /**
-   * @return the period of this task as a utility_time object fits for
-   * automatic garbage collection.
+   * @return the period of this task relative to any release time as a
+   * utility_time object fits for automatic garbage collection.
    */
   relative_time *task_statistics_period(const task *tau);
 
   /**
-   * @return the deadline of this task as a utility_time object fits
-   * for automatic garbage collection.
+   * @return the deadline of this task relative to any release time as
+   * a utility_time object fits for automatic garbage collection.
    */
   relative_time *task_statistics_deadline(const task *tau);
 
   /**
-   * @return the offset of this task as a utility_time object fits for
-   * automatic garbage collection.
+   * @return the spawning time of this task as a utility_time object
+   * fits for automatic garbage collection.
    */
-  absolute_time *task_statistics_offset(const task *tau);
+  absolute_time *task_statistics_t0(const task *tau);
+
+  /**
+   * @return the offset of this task with respect to t0 as a
+   * utility_time object fits for automatic garbage collection.
+   */
+  relative_time *task_statistics_offset(const task *tau);
 
   /**
    * @return one if the task is an aperiodic task. Otherwise, return zero.

@@ -35,7 +35,8 @@ struct task_stats
   FILE *report;
   relative_time period;
   relative_time deadline;
-  absolute_time offset;
+  absolute_time t_0;
+  relative_time offset;
   unsigned nth_job;
   unsigned late_count;
 };
@@ -49,6 +50,7 @@ static int print_task_stats(task *tau, void *args)
   print_utility_time(prms->report, task_statistics_wcet(tau), "WCET");
   print_utility_time(prms->report, task_statistics_period(tau), "Period");
   print_utility_time(prms->report, task_statistics_deadline(tau), "Deadline");
+  print_utility_time(prms->report, task_statistics_t0(tau), "t_0");
   print_utility_time(prms->report, task_statistics_offset(tau), "Offset");
   print_utility_time(prms->report, task_statistics_job_statistics_overhead(tau),
                      "Job statistics overhead");
@@ -65,6 +67,8 @@ static int print_task_stats(task *tau, void *args)
                                   &prms->period);
   utility_time_to_utility_time_gc(task_statistics_deadline(tau),
                                   &prms->deadline);
+  utility_time_to_utility_time_gc(task_statistics_t0(tau),
+                                  &prms->t_0);
   utility_time_to_utility_time_gc(task_statistics_offset(tau),
                                   &prms->offset);
   
@@ -84,14 +88,16 @@ static int print_job_stats(job_statistics *stats, void *args)
   fprintf(prms->report, "%5d", prms->nth_job);
 
   /* Start time */
-  absolute_time *t_release = utility_time_mul_dyn(&prms->period,
-                                                  prms->nth_job - 1);
+  absolute_time *t_release
+    = utility_time_add_dyn_gc(&prms->offset,
+                              utility_time_mul_dyn(&prms->period,
+                                                   prms->nth_job - 1));
   char *t_str = to_string_dyn(t_release);
   fprintf(prms->report, "%15s", t_str);
   free(t_str);
 
   absolute_time *t_start
-    = utility_time_sub_dyn_gc(job_statistics_time_start(stats), &prms->offset);
+    = utility_time_sub_dyn_gc(job_statistics_time_start(stats), &prms->t_0);
   if (utility_time_lt(t_release, t_start)) {
     t_str = to_string_dyn_gc(utility_time_sub_dyn(t_start, t_release));
 
@@ -126,7 +132,7 @@ static int print_job_stats(job_statistics *stats, void *args)
 
   int is_late = 0;
   absolute_time *t_finish
-    = utility_time_sub_dyn_gc(job_statistics_time_finish(stats), &prms->offset);
+    = utility_time_sub_dyn_gc(job_statistics_time_finish(stats), &prms->t_0);
   if (utility_time_lt(t_deadline, t_finish)) {
     t_str = to_string_dyn_gc(utility_time_sub_dyn(t_finish, t_deadline));
 
@@ -192,6 +198,7 @@ int main(int argc, char **argv, char **envp)
   };
   utility_time_init(&stats_prms.period);
   utility_time_init(&stats_prms.deadline);
+  utility_time_init(&stats_prms.t_0);
   utility_time_init(&stats_prms.offset);
 
   if (task_statistics_read(stats_file, print_task_stats, &stats_prms,
