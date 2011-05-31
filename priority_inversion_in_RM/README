@@ -26,3 +26,6 @@ inversion in which the job of T1 will be late by around 480 ms. Then,
 run main.c as ./main 1 and read the resulting .bin files to observe
 the real case of priority inheritance. No job should be late in the
 case of priority inheritance.
+
+The .bin files can be read using the infrastructure component
+read_task_stats_file like ../read_task_stats_file tau_3_stats.bin.

@@ -31,7 +31,15 @@ of real-time systems. Each experimentation software component should
 be in the form of a single directory containing one README file
 describing the concept(s) or algorithm(s) or problem(s) that the
 component wishes to demonstrate, one or more source or data files, and
-one Makefile.
+one Makefile. To create a new experimentation software component,
+execute `make new_experiment EXP_NAME=DESIRED_EXPERIMENT_NAME'
+replacing DESIRED_EXPERIMENT_NAME with the actual name of the new
+experimentation component. Then, go to directory
+"DESIRED_EXPERIMENT_NAME" and edit README describing the purpose of
+the experiment. Afterwards, main.c and Makefile found in the directory
+can be adjusted accordingly. Usually an experimentation software
+component will produce some binary log files that can be read using
+infrastructure software component named read_task_stats_file.
 
 Each file defining main() function must also define two global
 variables and initialize them appropriately as follows:

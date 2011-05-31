@@ -9,12 +9,13 @@ cond_for_rt := utility_cpu.h job.h task.h
 
 # The part that follows should need no modification
 
-.PHONY := check check_sudo clean new_experiment
-.DEFAULT_GOAL := check
+.PHONY := all check check_sudo clean new_experiment
+.DEFAULT_GOAL := all
 
 override CFLAGS := -O3 -Wall $(CFLAGS)
 
 # Main rules
+all: $(executables)
 check: $(test_cases) $(test_cases_sudo)
 	@set -e; \
 	echo "[With Valgrind] Test cases without root privilege"; \
