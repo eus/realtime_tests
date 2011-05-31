@@ -285,8 +285,8 @@ MAIN_BEGIN("priority_inversion_in_RM", "stderr", NULL)
   utility_time_init(&tau_ ## id ## _deadline);          \
   to_utility_time(offset, ms, &tau_ ## id ## _deadline)
 
-  create_deadline(1, 70);
-  create_deadline(2, 570);
+  create_deadline(1, 50);
+  create_deadline(2, 530);
   create_deadline(3, 580);
 
 #undef create_deadline  
