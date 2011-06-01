@@ -1,0 +1,31 @@
+		   Multicore Means Parallel Threads
+----------------------------------------------------------------------
+
+This experimentation unit means to show that when there are two CPU
+cores, then it is possible to run two SCHED_FIFO threads each with the
+maximum priority simultaneously. This also means that some scheduling
+algorithm that assumes a single CPU model might not work when more
+than one thread can run at the same time. A simple remedy is to set
+the affinity of the threads to a single CPU so that the assumption of
+single CPU model holds.
+
+This fact also means that running a SCHED_FIFO thread with the maximum
+priority should not hang the GNU/Linux machine because the other
+processes like X.org, USB mouse driver and the like can run on the
+other cores. However, it happens that the schedulers on the other
+cores decide to push the other processes to the runqueue of the core
+that is currently occupied by the SCHED_FIFO thread during load
+balancing. If the X.org process is pushed to the core that is used by
+the SCHED_FIFO thread, then the machine will hang. This can be
+observed by running a program having a single SCHED_FIFO thread with
+maximum priority that runs for a certain observable duration. Once the
+program starts, one can move the mouse around to see whether the GUI
+stops responding. With some repetitions, one can see that the GUI does
+not always hang when the SCHED_FIFO program is executing.
+
+Compile the program by entering "make" and run it by entering
+"sudo ./main". No error should be printed on the screen.
+
+In case of error, the experimentation unit can be adjusted by
+modifying the source code, especially the part marked as tuneable
+parameters.
