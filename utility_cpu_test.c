@@ -678,6 +678,40 @@ MAIN_UNIT_TEST_BEGIN("utility_cpu_test", "stderr", NULL, cleanup)
                                      to_utility_time_dyn(140, ms)));
   /* END: Analyzing thread with second max priority */
 
+  /* Testcase 11: check cpu_freq_set_max() and cpu_freq_get() */
+  /* Save current governor */
+  used_gov = cpu_freq_get_governor(0);
+  gracious_assert(used_gov != NULL);
+
+  /* Set the CPU frequency */
+  freqs = cpu_freq_available(0, &freq_count);
+  gracious_assert(freq_count >= 1);
+
+  gracious_assert(cpu_freq_set_max(0) == 0);
+  used_gov_in_use = 1;
+
+  /* Manually read the current frequency */
+  linux_curr_freq_file
+    = utility_file_open_for_reading(linux_curr_freq_file_path);
+  gracious_assert(linux_curr_freq_file != NULL);
+  buffer1 = NULL;
+  buffer1_len = 0;
+  gracious_assert(utility_file_readln(linux_curr_freq_file,
+                                      &buffer1, &buffer1_len, 32) == 0);
+  utility_file_close(linux_curr_freq_file, linux_curr_freq_file_path);
+
+  /* Check that cpu_freq_get() agrees with the manually read frequency */
+  gracious_assert(cpu_freq_get(0) == freqs[0]);
+  gracious_assert(cpu_freq_get(0) == strtoull(buffer1, NULL, 10) * 1000);
+  
+  /* Restore the saved governor */
+  gracious_assert(cpu_freq_restore_governor(used_gov) == 0);
+  used_gov_in_use = 0;
+
+  /* Clean-up */
+  free(buffer1);
+  free(freqs);
+
   return EXIT_SUCCESS;
 
 } MAIN_UNIT_TEST_END

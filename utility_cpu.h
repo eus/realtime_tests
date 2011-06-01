@@ -164,6 +164,10 @@ extern "C" {
    */
   int cpu_freq_set(int which_cpu, unsigned long long new_freq);
 
+  /** Work just like cpu_freq_set() except that the CPU frequency is
+      set to the maximum available. */
+  int cpu_freq_set_max(int which_cpu);
+
   /**
    * @return the CPU frequency of the given CPU. The frequency will be
    * one of those returned by cpu_freq_available(). Zero is returned

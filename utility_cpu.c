@@ -648,3 +648,27 @@ int enter_UP_mode_freq_max(cpu_freq_governor **default_gov)
   *default_gov = NULL;
   return rc;
 }
+
+int cpu_freq_set_max(int which_cpu)
+{
+  unsigned long long max_freq = 0;
+  ssize_t freqlist_len = 0;
+  unsigned long long *freqlist = cpu_freq_available(which_cpu, &freqlist_len);
+  if (freqlist_len == -1) {
+    log_error("Cannot get the frequencies of CPU#%d", which_cpu);
+    return -1;
+  } else if (freqlist_len == 0) {
+    log_verbose("CPU#%d does not have a list of available frequencies\n",
+                which_cpu);
+  }
+
+  max_freq = freqlist[0];
+  free(freqlist);
+
+  int rc = cpu_freq_set(which_cpu, max_freq);
+  if (rc != 0) {
+    log_error("Cannot set CPU#%d to maximum frequency", which_cpu);
+  }
+
+  return rc;
+}
