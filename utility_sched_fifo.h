@@ -27,22 +27,14 @@
 #include <errno.h>
 #include <sched.h>
 #include <pthread.h>
+#include "utility_sched.h"
 #include "utility_log.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  /* I. Main data structures */
-  /** Wrapper over arguments to sched_setscheduler. */
-  struct scheduler
-  {
-    int policy; /**< POSIX RT scheduling policy */
-    struct sched_param param; /**< POSIX RT scheduling parameter */
-  };
-  /* End of main data structures */
-
-  /* II */
+  /* I */
   /**
    * @name Collection of functions to enter and leave SCHED_FIFO real-time mode.
    * @{
@@ -94,7 +86,7 @@ extern "C" {
   int sched_fifo_leave(struct scheduler *sched_to_be_restored);
   /** @} End of collection of functions to enter and leave real-time mode */
 
-  /* III */
+  /* II */
   /**
    * @name Collection of functions to deal with SCHED_FIFO RT priority.
    * @{

@@ -15,9 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
  *****************************************************************************/
 
-#include "utility_sched_fifo.h"
+#define _GNU_SOURCE /* For fn syscall */
 
-int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
+#include "utility_sched_deadline.h"
+
+int sched_deadline_enter(const relative_time *wcet,
+                         const relative_time *deadline,
+                         struct scheduler *old_scheduler)
 {
   /* Save the old scheduler */
   if (sched_save(old_scheduler) != 0) {
@@ -26,58 +30,45 @@ int sched_fifo_enter(int prio, struct scheduler *old_scheduler)
   }
   /* End of saving the old scheduler */
 
-  /* Set SCHED_FIFO RT */
-  struct sched_param new_sched = {
-    .sched_priority = prio,
-  };
-  if ((errno = pthread_setschedparam(pthread_self(),
-                                     SCHED_FIFO, &new_sched)) != 0) {
+  /* Set SCHED_DEADLINE RT */
+  struct sched_param_ex new_sched;
+  to_timespec(wcet, &new_sched.sched_runtime);
+  to_timespec(deadline, &new_sched.sched_period);
+  to_timespec(deadline, &new_sched.sched_deadline);
+  new_sched.sched_flags = 0;
+
+  pid_t thread_id = syscall(SYS_gettid);
+
+  if (syscall(SYS_sched_setscheduler_ex, thread_id, SCHED_DEADLINE,
+              sizeof(new_sched), &new_sched) != 0) {
     if (errno == EPERM) {
       return -1;
     }
-    log_syserror("Cannot schedule using SCHED_FIFO with priority %d", prio);
+    log_syserror("Cannot schedule using SCHED_DEADLINE with bandwidth %f",
+                 sched_deadline_bandwidth(&new_sched));
     return -2;
   }
-  /* End of setting SCHED_FIFO RT */
+  /* End of setting SCHED_DEADLINE RT */
+
+  utility_time_gc_auto(wcet);
+  utility_time_gc_auto(deadline);
 
   return 0;
 }
 
-int sched_fifo_enter_max(struct scheduler *old_scheduler)
+int sched_deadline_leave(struct scheduler *sched)
 {
-  int max_prio = -1;
-  if (sched_fifo_prio(0, &max_prio) != 0) {
-    log_error("Cannot obtain the maximum priority");
-    return -2;
-  }
-
-  return sched_fifo_enter(max_prio, old_scheduler);
+  return sched_restore(sched);
 }
 
-int sched_fifo_leave(struct scheduler *sched_to_be_restored)
+double sched_deadline_bandwidth(struct sched_param_ex *param_ex)
 {
-  return sched_restore(sched_to_be_restored);
-}
+#define NS_IN_SEC 1000000000.0
+  double bandwidth = (param_ex->sched_runtime.tv_sec * NS_IN_SEC
+                      + param_ex->sched_runtime.tv_nsec);
+  bandwidth /= (param_ex->sched_deadline.tv_sec * NS_IN_SEC
+                + param_ex->sched_deadline.tv_nsec);
 
-int sched_fifo_prio(unsigned nth_level, int *result)
-{
-  int max_prio = sched_get_priority_max(SCHED_FIFO);
-  if (max_prio == -1) {
-    log_syserror("Cannot obtain the maximum priority of SCHED_FIFO");
-    return -2;
-  }
-  int min_prio = sched_get_priority_min(SCHED_FIFO);
-  if (min_prio == -1) {
-    log_syserror("Cannot obtain the minimum priority of SCHED_FIFO");
-    return -2;
-  }
-
-  int actual_prio = max_prio - nth_level;
-
-  if (actual_prio < min_prio) {
-    return -1;
-  }
-
-  *result = actual_prio;
-  return 0;
+  return bandwidth;
+#undef NS_IN_SEC
 }

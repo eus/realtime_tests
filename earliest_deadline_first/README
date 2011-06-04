@@ -1,0 +1,46 @@
+		       Earliest Deadline First
+----------------------------------------------------------------------
+
+This experimentation unit requires the Linux kernel found in
+git://gitorious.org/sched_deadline/linux-deadline.git
+in branch latest/2.6.36-dl-V3 at commit
+f2ebcfd122cdab46f1e9eabe91e1549285b5a00b.
+
+The taskset consists of the following tasks:
++-----+------+------+------+
+|Task |C (ms)|T (ms)|D (ms)|
++-----+------+------+------+
+|1    |1     |4     |2     |
++-----+------+------+------+
+|2    |2     |5     |5     |
++-----+------+------+------+
+|3    |3     |10    |7     |
++-----+------+------+------+
+
+The taskset is not schedulable under RM as shown below:
+
+. means activation
+x means deadline
+y means deadline coincides with the next activation point
+.-- execution starts from the activation point
+|-- execution starts after the activation point
+--( execution is pre-empted
+)-- execution is resumed
+--| execution ends before the deadline
+--x execution ends at the deadline
+--y execution ends at the deadline and the next activation point
+
+     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+     |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+T1 --.--|  x     .--|  x     .     x     .     x     .     x     .
+T2 --.  |-----|     y-----|        y              y              y
+T3 --.        |--(        x        .                    x        .
+                         ^^^
+                          T3 misses its deadline
+
+But, the taskset is schedulable under EDF as shown below:
+     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+     |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+T1 --.--|  x     .--|  x     .  |--x     .--|  x     .--|  x     .
+T2 --.  |-----|     y     |-----|  y-----|        y     |-----|  .
+T3 --.        |--(  )-----x        .        |--------|  x        .

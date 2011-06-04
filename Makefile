@@ -1,21 +1,22 @@
 test_cases := utility_time_test utility_log_test utility_file_test
 test_cases_sudo := utility_cpu_test job_test utility_sched_fifo_test \
-    task_test
+    task_test utility_sched_deadline_test
 
-executables := $(test_cases) $(test_cases_sudo) read_task_stats_file
+executables := read_task_stats_file
 
-cond_for_pthread := utility_log.h utility_cpu.h utility_sched_fifo.h task.h
+cond_for_pthread := utility_log.h utility_cpu.h utility_sched_fifo.h task.h \
+    utility_sched.h
 cond_for_rt := utility_cpu.h job.h task.h
 
 # The part that follows should need no modification
 
-.PHONY := all check check_sudo clean new_experiment
-.DEFAULT_GOAL := all
+.PHONY := all_infrastructure check check_sudo clean new_experiment
+.DEFAULT_GOAL := all_infrastructure
 
 override CFLAGS := -O3 -Wall $(CFLAGS)
 
 # Main rules
-all: $(executables)
+all_infrastructure: $(executables)
 check: $(test_cases) $(test_cases_sudo)
 	@set -e; \
 	echo "[With Valgrind] Test cases without root privilege"; \
@@ -36,7 +37,8 @@ check: $(test_cases) $(test_cases_sudo)
 	done
 
 clean:
-	-rm -- *.o *.d $(executables) > /dev/null 2>&1
+	-rm -- *.o *.d $(executables) $(test_cases) $(test_cases_sudo) \
+		> /dev/null 2>&1
 
 new_experiment:
 	@./make_new_experiment.sh "$(strip $(EXP_NAME))"
