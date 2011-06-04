@@ -245,12 +245,14 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
 
 #define create_task_thread(id)                                          \
   pthread_t tau_ ## id ## _thread;                                      \
-  if ((errno = pthread_create(&tau_ ## id ## _thread, NULL,             \
-                              task_thread,                              \
-                              &tau_ ## id ## _thread_args)) != 0) {     \
-    log_syserror("Cannot create task thread of Tau_" #id);              \
-    goto error;                                                         \
-  }
+  do {                                                                  \
+    if ((errno = pthread_create(&tau_ ## id ## _thread, NULL,           \
+                                task_thread,                            \
+                                &tau_ ## id ## _thread_args)) != 0) {   \
+      log_syserror("Cannot create task thread of Tau_" #id);            \
+      goto error;                                                       \
+    }                                                                   \
+  } while (0)
 
   create_task_thread(1);
   create_task_thread(2);
@@ -275,11 +277,12 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
   /* END: Stop the tasks */
 
   /* Join task threads */
-#define join_thread(id)                                                 \
-  if ((errno = pthread_join(tau_ ## id ## _thread, NULL)) != 0) {       \
-    log_syserror("Cannot join Tau_" #id " thread");                     \
-    goto error;                                                         \
-  }
+#define join_thread(id) do {                                            \
+    if ((errno = pthread_join(tau_ ## id ## _thread, NULL)) != 0) {     \
+      log_syserror("Cannot join Tau_" #id " thread");                   \
+      goto error;                                                       \
+    }                                                                   \
+  } while (0)
 
   join_thread(1);
   join_thread(2);
