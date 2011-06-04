@@ -46,6 +46,15 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
 {
   require_valgrind_indicator();
 
+  if (under_valgrind()) {
+    /* Since Valgrind instruments the access to every variable, the
+       busyloop operation involving incrementation of a variable is
+       really slowed down to the point it is impossible to perform
+       busyloop search. */
+
+    return EXIT_SUCCESS;
+  }
+
   /* Adjustable test parameters */
   /** The worst-case execution time of this hard real-time job (timing
       and function call overhead is included in this WCET). */
@@ -209,14 +218,8 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
     nth_job++;
   }
 
-  if (strcmp(argv[1], "0") == 0) {
-    gracious_assert_msg(late_count == 0, "late count is %d out of %d",
-                        late_count, sample_count);
-  } else {
-    if (late_count != 0) {
-      log_error("late count is %d out of %d", late_count, sample_count);
-    }
-  }
+  gracious_assert_msg(late_count == 0, "late count is %d out of %d",
+                      late_count, sample_count);
 
   gracious_assert(rc != -2);
   gracious_assert(utility_file_close(job_stats_log_stream, tmp_file_name) == 0);

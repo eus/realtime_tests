@@ -145,6 +145,10 @@
     }                                                                   \
   } while (0)
 
+/** Return non-zero if the test unit uses require_valgrind_indicator()
+    and is run under Valgrind. */
+#define under_valgrind() (argc == 2 && argv[1][0] != '0')
+
 #ifdef __cplusplus
 extern "C" {
 #endif

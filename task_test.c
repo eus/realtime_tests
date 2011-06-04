@@ -116,7 +116,6 @@ static void testcase_1_periodic_task(FILE *report,
                                      unsigned overhead_approximation_scaling,
                                      const relative_time *job_stats_overhead,
                                      unsigned sample_count,
-                                     int under_valgrind,
                                      const relative_time *error)
 {
   /* Get and print finish-to-start overhead */
@@ -399,15 +398,9 @@ static void testcase_1_periodic_task(FILE *report,
                                        job_stats_checker,
                                        &expected_job_params) == 0);
 
-  if (under_valgrind) {
-    if (expected_job_params.late_count != 0) {
-      log_error("Late count = %u is not zero", expected_job_params.late_count);
-    }
-  } else {
-    gracious_assert_msg(expected_job_params.late_count == 0,
-                        "Late count = %u is not zero",
-                        expected_job_params.late_count);
-  }
+  gracious_assert_msg(expected_job_params.late_count == 0,
+                      "Late count = %u is not zero",
+                      expected_job_params.late_count);
   /* END: Check task timeliness */
 
   /* Check EOF */
@@ -463,7 +456,6 @@ static void testcase_2_aperiodic_task(FILE *report,
                                       unsigned overhead_approximation_scaling,
                                       const relative_time *job_stats_overhead,
                                       unsigned sample_count,
-                                      int under_valgrind,
                                       const relative_time *error)
 {
   /* Subtracting the aperiodic overhead from the given job duration */
@@ -495,6 +487,15 @@ static relative_time *job_stats_overhead(void)
 MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
 {
   require_valgrind_indicator();
+
+  if (under_valgrind()) {
+    /* Since Valgrind instruments the access to every variable, the
+       busyloop operation involving incrementation of a variable is
+       really slowed down to the point it is impossible to perform
+       busyloop search. */
+
+    return EXIT_SUCCESS;
+  }
 
   int tmp_file_fd = mkstemp(tmp_file_name);
   if (tmp_file_fd == -1) {
@@ -545,14 +546,12 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
   /* Testcase 1: Periodic task */
   testcase_1_periodic_task(report, &job_duration,
                            overhead_approximation_scaling,
-                           job_overhead, sample_count,
-                           strcmp(argv[1], "1") == 0, error);
+                           job_overhead, sample_count, error);
 
   /* [TODO] Testcase 2: Aperiodic task */
   testcase_2_aperiodic_task(report, &job_duration,
                             overhead_approximation_scaling,
-                            job_overhead, sample_count,
-                            strcmp(argv[1], "1") == 0, error);
+                            job_overhead, sample_count, error);
 
   /* Clean-up */
   utility_time_gc(error);

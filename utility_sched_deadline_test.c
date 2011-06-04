@@ -32,6 +32,13 @@
 
 MAIN_UNIT_TEST_BEGIN("utility_sched_deadline_test", "stderr", NULL, NULL)
 {
+  if (under_valgrind()) {
+    /* Since Valgrind instruments the access to every system call, it
+       refuses to run when fn syscall is in use. */
+
+    return EXIT_SUCCESS;
+  }
+
   gracious_assert(sched_fifo_enter_max(NULL) == 0);
 
   int expected_old_policy;
