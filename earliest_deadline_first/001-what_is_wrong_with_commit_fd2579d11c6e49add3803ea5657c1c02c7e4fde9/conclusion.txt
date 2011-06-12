@@ -1,0 +1,11 @@
+One property of CBS server is that a well-behaving hard real-time task
+will never have a deadline postponement (i.e., no appearance of trace
+message "uses up its c_s" as can be seen in row 31, 36 and 61 of
+execution_trace_processed.ods).
+
+But, since the WCET is incorrectly presented to SCHED_DEADLINE at
+commit fd2579d11c6e49add3803ea5657c1c02c7e4fde9, the CBS server of
+each task always gets a deadline postponement. Worse, the incorrect
+WCET causes the task using the server to miss its deadline as can be
+seen in row 354 of execution_trace_processed.ods (job #6 in
+tau_2_stats.bin).

@@ -102,14 +102,12 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
 
   /* Create needed busyloops */
 #define create_busyloop(id) do {                                        \
-    tau_ ## id ## _wcet = utility_time_sub_dyn_gc(tau_ ## id ## _wcet,  \
-                                                  overhead);            \
-    utility_time_set_gc_manual(tau_ ## id ## _wcet);                    \
-    rc = create_cpu_busyloop(0, tau_ ## id ## _wcet,                    \
+    rc = create_cpu_busyloop(0,                                         \
+                             utility_time_sub_dyn(tau_ ## id ## _wcet,  \
+                                                  overhead),            \
                              busyloop_tolerance,                        \
                              busyloop_search_passes,                    \
                              &tau_ ## id ## _busyloop);                 \
-    utility_time_set_gc_auto(tau_ ## id ## _wcet);                      \
     if (rc == -2) {                                                     \
       log_error("Tau_" #id " WCET is too small to create busyloop");    \
       goto error;                                                       \

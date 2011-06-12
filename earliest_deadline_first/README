@@ -44,3 +44,52 @@ But, the taskset is schedulable under EDF as shown below:
 T1 --.--|  x     .--|  x     .  |--x     .--|  x     .--|  x     .
 T2 --.  |-----|     y     |-----|  y-----|        y     |-----|  .
 T3 --.        |--(  )-----x        .        |--------|  x        .
+
+This experiment unit is also Tadeus's means to understand how
+SCHED_DEADLINE works. This is done by instrumenting SCHED_DEADLINE
+scheduling logic at commit f2ebcfd122cdab46f1e9eabe91e1549285b5a00b by
+applying sched_dl_instrumentation.diff.
+
+The resulting printk messages can be extracted with a command like
+'dmesg | grep' to a file. The file can then be processed using
+execution_trace-to-execution_trace_processed.sh to get a .csv
+file. The .csv file can then be processed further using a spreadsheet
+program to obtain an execution timeline. An example is the file
+execution_trace_processed.ods in directory
+001-what_is_wrong_with_commit_fd2579d11c6e49add3803ea5657c1c02c7e4fde9.
+
+Some messages in the execution timeline have the following associated
+meanings:
+1. "select_task_rq_dl" signifies the event at which clock_nanosleep
+   wakes up. This is the release time of a job (r_{i,j}).
+2. "is pick_next_task_dl-ed by" signifies the start time of a job
+   (s_{i,j}).
+3. "is dequeued" signifies the call to clock_nanosleep. This is the
+   finishing time of a job (f_{i,j}).
+4. "uses up its c_s" signifies that the postponement of the CBS server
+   deadline is about to happen. In hard CBS replenishment behavior,
+   "Hard CBS timer goes off" message will appear before the deadline
+   postponement really happens with the appearance of "postpones its
+   deadline to ..." message. In the original CBS replenishment
+   behavior, the message "postpones its deadline to" directly follows
+   the message "uses up its c_s".
+5. "d_s is renewed (r + D) to ..." signifies the CBS rule application
+   when a CBS server changes state from idle to active and
+   c_s/(d_s - r) >= Q_s/T_s.
+6. "resumes its BW pair" signifies the CBS rule application when a CBS
+   server changes state from idle to active and
+   c_s/(d_s - r) < Q_s/T_s.
+
+The directory
+001-what_is_wrong_with_commit_fd2579d11c6e49add3803ea5657c1c02c7e4fde9
+contains the problem that an earlier version of this experimentation
+unit has.
+
+The directory 002-kernel_latency_problem highlights how kernel latency
+can jeopardize the timeliness of a task set consisting of
+well-behaving hard real-time tasks. This problem happened in Tadeus's
+GNU/Linux Ubuntu 10.10 machine when the machine tried to establish a
+wireless LAN connection. This was done by selecting an access point in
+GNOME wireless applet. Tadeus thinks that sched_wait_interval syscall
+is introduced into SCHED_DEADLINE at commit
+a827a2c853b15c0d11713d44ed442175f408467d to ameliorate this problem.
