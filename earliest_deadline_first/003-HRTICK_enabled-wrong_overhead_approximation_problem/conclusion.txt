@@ -1,0 +1,6 @@
+As can be seen in row 259, 275, 287, 296, 317, 329, 340 and finally
+350 to 383 of execution_trace_processed.ods, the wrong overhead
+approximation, which is too low, causes a cascaded deadline
+postponement with shrinking c_s. So, eventually Task 2 misses its
+deadline. This problem does not lie in SCHED_DEADLINE but in the
+experimentation unit itself.

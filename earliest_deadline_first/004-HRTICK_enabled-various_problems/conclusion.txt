@@ -1,0 +1,10 @@
+1. Row 795 to row 822 shows how a slight variation in the execution
+   time causes a job to miss its deadline.
+
+2. Row 846 to row 851 shows how SCHED_DEADLINE scheduling logic does
+   not enforce bandwidth isolation property when a server has decided
+   to use its remaining budget for serving an incoming task.
+
+3. Row 874 to 884 shows how SCHED_DEADLINE scheduling logic does not
+   read the correct time for the start of the execution of a job. Row
+   885 to 902 shows how the failure makes the job miss its deadline.
