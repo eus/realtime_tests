@@ -102,3 +102,9 @@ violates its stated WCET.
 
 The directory 004-HRTICK_enabled-various_problems show various
 problems observed in SCHED_DEADLINE scheduling logic.
+
+The problems can be fixed by applying
+004-HRTICK_enabled-various_problems-solution.diff to SCHED_DEADLINE.
+
+The directory 004-HRTICK_enabled-various_problems-* highlights the
+problems to be fixed as well as the fixing results.

@@ -1,0 +1,5 @@
+This result shows that the bandwidth enforcement failure when c_s is
+less than or equal to 10 us has been fixed.
+
+This result also shows the problem of cascading lateness when the
+execution time of one job takes longer than the stated WCET.

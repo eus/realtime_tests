@@ -17,10 +17,136 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "utility_log.h"
 #include "utility_file.h"
 #include "utility_time.h"
 #include "task.h"
+
+struct exec_time_list
+{
+  struct exec_time_list *next;
+  unsigned job_count;
+  unsigned long long exec_time;
+};
+
+static void free_exec_time_list(struct exec_time_list *smallest_exec_time)
+{
+  while (smallest_exec_time != NULL) {
+    struct exec_time_list *n = smallest_exec_time;
+    smallest_exec_time = n->next;
+    free(n);
+  }
+}
+
+static struct exec_time_list *new_exec_time_list(unsigned long long exec_time)
+{
+  struct exec_time_list *res = malloc(sizeof(*res));
+  if (res == NULL) {
+    log_error("Insufficient memory to create exec time list item");
+    return NULL;
+  }
+
+  res->next = NULL;
+  res->job_count = 1;
+  res->exec_time = exec_time;
+
+  return res;
+}
+
+static struct exec_time_list *
+insert_exec_time(unsigned long long exec_time,
+                 struct exec_time_list *smallest_exec_time)
+{
+  /* Adjust exec_time unit to microsecond from nanosecond */
+  exec_time = (exec_time % 1000 >= 500
+               ? exec_time / 1000 + 1
+               : exec_time / 1000);
+  /* END: Adjust exec_time unit to microsecond from nanosecond */
+
+  struct exec_time_list *itr_prev = NULL;
+  struct exec_time_list *itr = smallest_exec_time;
+
+  while (itr != NULL) {
+
+    if (itr->exec_time == exec_time) {
+      /* The item already exists; just increment job_count and exit */
+      itr->job_count++;
+      return smallest_exec_time;
+    } else if (itr->exec_time > exec_time) {
+      /* Found an insertion point */
+      break;
+    }
+
+    itr_prev = itr;
+    itr = itr->next;
+  }
+
+  /* +----------+----------+------------------------------+
+   * | itr_prev | itr      | exec_time                    |
+   * +----------+----------+------------------------------+
+   * | NULL     | NULL     | smallest                     |
+   * | NULL     | not NULL | smallest                     |
+   * | not NULL | NULL     | largest                      |
+   * | not NULL | not NULL | neither smallest nor largest |
+   * +----------+----------+------------------------------+
+   */
+  if (itr_prev == NULL && itr == NULL) {
+
+    smallest_exec_time = new_exec_time_list(exec_time);
+
+  } else if (itr_prev == NULL && itr != NULL) {
+
+    smallest_exec_time = new_exec_time_list(exec_time);
+    if (smallest_exec_time == NULL) {
+      return itr;
+    }
+
+    smallest_exec_time->next = itr;
+
+  } else if (itr_prev != NULL && itr == NULL) {
+
+    struct exec_time_list *largest_exec_time = new_exec_time_list(exec_time);
+    itr_prev->next = largest_exec_time;
+
+  } else {
+
+    struct exec_time_list *n = new_exec_time_list(exec_time);
+    if (n == NULL) {
+      return smallest_exec_time;
+    }
+
+    n->next = itr;
+    itr_prev->next = n;
+  }
+
+  return smallest_exec_time;
+}
+
+static void print_exec_time_cdf(struct exec_time_list *smallest_exec_time,
+                                unsigned total_job_count, FILE *report)
+{
+  struct exec_time_list *itr;
+
+  fprintf(report, "plot([");
+  itr = smallest_exec_time;
+  while (itr != NULL) {
+    fprintf(report, " %llu", itr->exec_time);
+
+    itr = itr->next;
+  }
+  fprintf(report, "], [");
+  itr = smallest_exec_time;
+  unsigned cummulative_job_count = 0;
+  while (itr != NULL) {
+    cummulative_job_count += itr->job_count;
+
+    fprintf(report, " %.06f", cummulative_job_count / (double) total_job_count);
+
+    itr = itr->next;
+  }
+  fprintf(report, "]);\n");
+}
 
 static void print_utility_time(FILE *report,
                                const utility_time *t, const char *label)
@@ -39,6 +165,8 @@ struct task_stats
   relative_time offset;
   unsigned nth_job;
   unsigned late_count;
+
+  struct exec_time_list *exec_times;
 };
 
 static int print_task_stats(task *tau, void *args)
@@ -163,7 +291,15 @@ static int print_job_stats(job_statistics *stats, void *args)
   /* End of finishing time */
 
   /* Execution time */
-  t_str = to_string_dyn_gc(utility_time_sub_dyn_gc(t_finish, t_start));
+  relative_time *exec_time = utility_time_sub_dyn_gc(t_finish, t_start);
+
+  struct timespec exec_time_duration;
+  to_timespec(exec_time, &exec_time_duration);
+  prms->exec_times = insert_exec_time(exec_time_duration.tv_sec * 1000000000ULL
+                                      + exec_time_duration.tv_nsec,
+                                      prms->exec_times);
+  
+  t_str = to_string_dyn_gc(exec_time);
   fprintf(prms->report, "%15s", t_str);
   free(t_str);
   /* End of execution time */
@@ -195,6 +331,7 @@ int main(int argc, char **argv, char **envp)
     .report = stdout,
     .nth_job = 1,
     .late_count = 0,
+    .exec_times = NULL,
   };
   utility_time_init(&stats_prms.period);
   utility_time_init(&stats_prms.deadline);
@@ -207,6 +344,11 @@ int main(int argc, char **argv, char **envp)
   }
 
   utility_file_close(stats_file, argv[1]);
+
+  print_exec_time_cdf(stats_prms.exec_times, stats_prms.nth_job - 1,
+                      stats_prms.report);
+
+  free_exec_time_list(stats_prms.exec_times);
 
   return EXIT_SUCCESS;
 }

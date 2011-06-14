@@ -1,0 +1,4 @@
+This result shows that bandwidth enforcement failure and outdated rq
+clock problems have been fixed. But, it shows that the bandwidth
+enforcement still fails under SCHED_HRTICK when c_s is less than or
+equal to 10 us.

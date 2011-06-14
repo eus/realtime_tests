@@ -1,0 +1,4 @@
+This result highlights the problem of bandwidth enforcement found in
+branch latest/2.6.36-dl-V3 at commit
+f2ebcfd122cdab46f1e9eabe91e1549285b5a00b of SCHED_DEADLINE
+(http://gitorious.org/sched_deadline/).
