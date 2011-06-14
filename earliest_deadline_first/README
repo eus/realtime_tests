@@ -98,13 +98,16 @@ a827a2c853b15c0d11713d44ed442175f408467d to ameliorate this problem.
 
 The directory 003-HRTICK_enabled-wrong_overhead_approximation_problem
 shows how a CBS server deadline keeps being postponed when a task
-violates its stated WCET.
+violates its stated WCET. This is produced by making Tadeus's
+GNU/Linux Ubuntu 10.10 machine try to establish a wireless LAN
+connection. This was done by selecting an access point in GNOME
+wireless applet.
 
 The directory 004-HRTICK_enabled-various_problems show various
-problems observed in SCHED_DEADLINE scheduling logic.
-
-The problems can be fixed by applying
-004-HRTICK_enabled-various_problems-solution.diff to SCHED_DEADLINE.
-
-The directory 004-HRTICK_enabled-various_problems-* highlights the
-problems to be fixed as well as the fixing results.
+problems observed in SCHED_DEADLINE scheduling logic. This is produced
+by making Tadeus's GNU/Linux Ubuntu 10.10 machine try to establish a
+wireless LAN connection. This was done by selecting an access point in
+GNOME wireless applet. The problems can be fixed by applying
+004-HRTICK_enabled-various_problems-solution.diff to
+SCHED_DEADLINE. The directory 004-HRTICK_enabled-various_problems-*
+highlights the problems to be fixed as well as the fixing results.
