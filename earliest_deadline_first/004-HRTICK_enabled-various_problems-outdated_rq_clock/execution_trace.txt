@@ -1,0 +1,1297 @@
+[ 6909.645880] [4514] set_curr_task_dl
+[ 6909.645883] [4514] is enqueued
+[ 6909.645886] [4514] gets new BW pair; d_s at 6909652.882541
+[ 6909.645888] [4514] switched_to_dl
+[ 6909.645895] [4514] is dequeued
+[ 6909.645897] [4514] put_prev_task_dl
+[ 6909.645902] [4513] set_curr_task_dl
+[ 6909.645903] [4513] is enqueued
+[ 6909.645905] [4513] gets new BW pair; d_s at 6909650.903336
+[ 6909.645907] [4513] switched_to_dl
+[ 6909.645911] [4513] is dequeued
+[ 6909.645913] [4513] put_prev_task_dl
+[ 6909.645916] [4512] set_curr_task_dl
+[ 6909.645918] [4512] is enqueued
+[ 6909.645920] [4512] gets new BW pair; d_s at 6909647.917838
+[ 6909.645922] [4512] switched_to_dl
+[ 6909.645925] [4512] is dequeued
+[ 6909.645927] [4512] put_prev_task_dl
+[ 6912.645690] [4514] select_task_rq_dl
+[ 6912.645694] [4514] is enqueued
+[ 6912.645697] [4514] d_s is renewed (r + D) to 6912652.693604; c_s is fully topped up
+[ 6912.645700] [4513] select_task_rq_dl
+[ 6912.645702] [4513] is enqueued
+[ 6912.645704] [4513] d_s is renewed (r + D) to 6912650.702011; c_s is fully topped up
+[ 6912.645707] [4512] select_task_rq_dl
+[ 6912.645709] [4512] is enqueued
+[ 6912.645711] [4512] d_s is renewed (r + D) to 6912647.708712; c_s is fully topped up
+[ 6912.645724] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.646667] [4512] is dequeued
+[ 6912.646669] [4512] put_prev_task_dl
+[ 6912.646671] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.648638] [4513] is dequeued
+[ 6912.648639] [4513] put_prev_task_dl
+[ 6912.648642] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.649632] [4512] select_task_rq_dl
+[ 6912.649634] [4512] is enqueued
+[ 6912.649636] [4512] d_s is renewed (r + D) to 6912651.633925; c_s is fully topped up
+[ 6912.649639] [4512] preempts main (4514)
+[ 6912.649642] [4514] put_prev_task_dl
+[ 6912.649644] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.650582] [4512] is dequeued
+[ 6912.650584] [4512] put_prev_task_dl
+[ 6912.650587] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.650631] [4513] select_task_rq_dl
+[ 6912.650632] [4513] is enqueued
+[ 6912.650636] [4513] 0.030109 / 0.069540 > 2.000000 / 5.000000
+[ 6912.650638] [4513] d_s is renewed (r + D) to 6912655.632471; c_s is fully topped up
+[ 6912.652588] [4514] is dequeued
+[ 6912.652590] [4514] rorun
+[ 6912.652593] [4514] uses up its c_s; 6912652.587979-6912652.006856=0.581123
+[ 6912.652598] [4514] put_prev_task_dl
+[ 6912.652600] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.652704] [4514] Hard CBS timer goes off
+[ 6912.653632] [4512] select_task_rq_dl
+[ 6912.653634] [4512] is enqueued
+[ 6912.653636] [4512] d_s is renewed (r + D) to 6912655.633795; c_s is fully topped up
+[ 6912.654559] [4513] is dequeued
+[ 6912.654560] [4513] put_prev_task_dl
+[ 6912.654562] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.655505] [4512] is dequeued
+[ 6912.655507] [4512] put_prev_task_dl
+[ 6912.655706] [4514] select_task_rq_dl
+[ 6912.655708] [4514] is enqueued
+[ 6912.655710] [4514] d_s is renewed (r + D) to 6912662.708262; c_s is fully topped up
+[ 6912.655713] [4513] select_task_rq_dl
+[ 6912.655715] [4513] is enqueued
+[ 6912.655717] [4513] d_s is renewed (r + D) to 6912660.708262; c_s is fully topped up
+[ 6912.655729] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.657632] [4512] select_task_rq_dl
+[ 6912.657634] [4512] is enqueued
+[ 6912.657637] [4512] d_s is renewed (r + D) to 6912659.634424; c_s is fully topped up
+[ 6912.657639] [4512] preempts main (4513)
+[ 6912.657642] [4513] put_prev_task_dl
+[ 6912.657644] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.658588] [4512] is dequeued
+[ 6912.658590] [4512] put_prev_task_dl
+[ 6912.658593] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.658655] [4513] is dequeued
+[ 6912.658657] [4513] rorun
+[ 6912.658660] [4513] uses up its c_s; 6912658.655530-6912658.587813=0.067717
+[ 6912.658664] [4513] put_prev_task_dl
+[ 6912.658666] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.658668] [4514] put_prev_task_dl
+[ 6912.658672] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.660634] [4513] select_task_rq_dl
+[ 6912.660637] [4513] cannot be enqueued: throttled
+[ 6912.660639] [4513] preempts main (4514)
+[ 6912.660642] [4514] put_prev_task_dl
+[ 6912.660646] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.660720] [4513] Hard CBS timer goes off
+[ 6912.660721] [4513] is enqueued
+[ 6912.660724] [4513] postpones its deadline to 6912665.708262; c_s is topped up to 1.998351
+[ 6912.661632] [4512] select_task_rq_dl
+[ 6912.661634] [4512] is enqueued
+[ 6912.661637] [4512] d_s is renewed (r + D) to 6912663.634433; c_s is fully topped up
+[ 6912.661722] [4514] is dequeued
+[ 6912.661724] [4514] rorun
+[ 6912.661727] [4514] uses up its c_s; 6912661.722086-6912660.636692=1.085394
+[ 6912.661732] [4514] put_prev_task_dl
+[ 6912.661734] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.662672] [4512] is dequeued
+[ 6912.662673] [4512] put_prev_task_dl
+[ 6912.662675] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.662678] [4513] put_prev_task_dl
+[ 6912.662680] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.662716] [4514] Hard CBS timer goes off
+[ 6912.664649] [4513] is dequeued
+[ 6912.664651] [4513] put_prev_task_dl
+[ 6912.665640] [4514] select_task_rq_dl
+[ 6912.665644] [4514] is enqueued
+[ 6912.665647] [4514] d_s is renewed (r + D) to 6912672.643536; c_s is fully topped up
+[ 6912.665650] [4512] select_task_rq_dl
+[ 6912.665652] [4512] is enqueued
+[ 6912.665654] [4512] d_s is renewed (r + D) to 6912667.643536; c_s is fully topped up
+[ 6912.665657] [4513] select_task_rq_dl
+[ 6912.665658] [4513] is enqueued
+[ 6912.665662] [4513] 0.022015 / 0.064726 <= 2.000000 / 5.000000
+[ 6912.665664] [4513] resumes its BW pair
+[ 6912.665679] [4513] is pick_next_task_dl-ed by Xorg (999)
+[ 6912.667634] [4513] is dequeued
+[ 6912.667636] [4513] rorun dmiss
+[ 6912.667638] [4513] uses up its c_s; 6912667.633218-6912665.643536=1.989682
+[ 6912.667642] [4513] is enqueued
+[ 6912.667645] [4513] postpones its deadline to 6912675.708262; c_s is topped up to 0.107377
+[ 6912.667647] [4513] put_prev_task_dl
+[ 6912.667649] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.668011] [4512] dmiss
+[ 6912.668014] [4512] uses up its c_s; 6912668.010667-6912667.633218=0.377449
+[ 6912.668018] [4512] is enqueued
+[ 6912.668021] [4512] postpones its deadline to 6912669.643536; c_s is topped up to 0.632869
+[ 6912.668028] [4512] put_prev_task_dl
+[ 6912.668033] [4512] is pick_next_task_dl-ed by main (4512)
+[ 6912.668639] [4512] is dequeued
+[ 6912.668641] [4512] put_prev_task_dl
+[ 6912.668643] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.668645] [4514] put_prev_task_dl
+[ 6912.668647] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.669632] [4512] select_task_rq_dl
+[ 6912.669634] [4512] is enqueued
+[ 6912.669637] [4512] 0.004530 / 0.009251 <= 1.000000 / 2.000000
+[ 6912.669639] [4512] resumes its BW pair
+[ 6912.669641] [4512] preempts main (4514)
+[ 6912.669647] [4514] put_prev_task_dl
+[ 6912.669650] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.670594] [4512] is dequeued
+[ 6912.670596] [4512] rorun dmiss
+[ 6912.670599] [4512] uses up its c_s; 6912670.594225-6912669.646745=0.947480
+[ 6912.670602] [4512] is enqueued
+[ 6912.670605] [4512] postpones its deadline to 6912673.643536; c_s is topped up to 0.106361
+[ 6912.670607] [4512] put_prev_task_dl
+[ 6912.670611] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.670631] [4513] select_task_rq_dl
+[ 6912.670632] [4513] is enqueued
+[ 6912.670635] [4513] 0.107377 / 5.075665 <= 2.000000 / 5.000000
+[ 6912.670637] [4513] resumes its BW pair
+[ 6912.672617] [4514] is dequeued
+[ 6912.672619] [4514] put_prev_task_dl
+[ 6912.672623] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.672626] [4513] put_prev_task_dl
+[ 6912.672627] [4513] rorun
+[ 6912.672630] [4513] uses up its c_s; 6912672.625654-6912670.632597=1.993057
+[ 6912.673638] [4512] select_task_rq_dl
+[ 6912.673642] [4512] is enqueued
+[ 6912.673646] [4512] 0.106361 / 0.001958 > 1.000000 / 2.000000
+[ 6912.673648] [4512] d_s is renewed (r + D) to 6912675.641578; c_s is fully topped up
+[ 6912.673653] [4512] is pick_next_task_dl-ed by Xorg (999)
+[ 6912.673657] [4512] put_prev_task_dl
+[ 6912.673662] [4512] is pick_next_task_dl-ed by main (4512)
+[ 6912.674631] [4512] is dequeued
+[ 6912.674632] [4512] put_prev_task_dl
+[ 6912.675710] [4514] select_task_rq_dl
+[ 6912.675713] [4514] is enqueued
+[ 6912.675716] [4514] d_s is renewed (r + D) to 6912682.713292; c_s is fully topped up
+[ 6912.675722] [4513] Hard CBS timer goes off
+[ 6912.675723] [4513] is enqueued
+[ 6912.675727] [4513] postpones its deadline to 6912680.708262; c_s is topped up to 0.114320
+[ 6912.675729] [4513] preempts swapper (0)
+[ 6912.675742] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.675746] [4513] put_prev_task_dl
+[ 6912.675749] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.676011] [4513] rorun
+[ 6912.676014] [4513] uses up its c_s; 6912676.010283-6912675.745712=0.264571
+[ 6912.676023] [4513] put_prev_task_dl
+[ 6912.676025] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.677632] [4512] select_task_rq_dl
+[ 6912.677634] [4512] is enqueued
+[ 6912.677637] [4512] d_s is renewed (r + D) to 6912679.634112; c_s is fully topped up
+[ 6912.677639] [4512] preempts main (4514)
+[ 6912.677642] [4514] put_prev_task_dl
+[ 6912.677644] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.678585] [4512] is dequeued
+[ 6912.678586] [4512] put_prev_task_dl
+[ 6912.678589] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.679941] [4514] is dequeued
+[ 6912.679942] [4514] put_prev_task_dl
+[ 6912.680771] [4513] Hard CBS timer goes off
+[ 6912.680773] [4513] is enqueued
+[ 6912.680776] [4513] postpones its deadline to 6912685.708262; c_s is topped up to 1.817329
+[ 6912.680778] [4513] preempts swapper (0)
+[ 6912.680792] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.681634] [4512] select_task_rq_dl
+[ 6912.681635] [4512] is enqueued
+[ 6912.681638] [4512] d_s is renewed (r + D) to 6912683.635495; c_s is fully topped up
+[ 6912.681640] [4512] preempts main (4513)
+[ 6912.681645] [4513] put_prev_task_dl
+[ 6912.681647] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.682592] [4512] is dequeued
+[ 6912.682593] [4512] put_prev_task_dl
+[ 6912.682597] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.683461] [4513] is dequeued
+[ 6912.683463] [4513] rorun
+[ 6912.683465] [4513] uses up its c_s; 6912683.460871-6912682.591670=0.869201
+[ 6912.683469] [4513] put_prev_task_dl
+[ 6912.683473] [4513] select_task_rq_dl
+[ 6912.683475] [4513] cannot be enqueued: throttled
+[ 6912.685649] [4514] select_task_rq_dl
+[ 6912.685653] [4514] is enqueued
+[ 6912.685656] [4514] d_s is renewed (r + D) to 6912692.652431; c_s is fully topped up
+[ 6912.685658] [4512] select_task_rq_dl
+[ 6912.685660] [4512] is enqueued
+[ 6912.685663] [4512] d_s is renewed (r + D) to 6912687.660237; c_s is fully topped up
+[ 6912.685670] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.685721] [4513] Hard CBS timer goes off
+[ 6912.685723] [4513] is enqueued
+[ 6912.685726] [4513] postpones its deadline to 6912690.708262; c_s is topped up to 1.441469
+[ 6912.686623] [4512] is dequeued
+[ 6912.686625] [4512] put_prev_task_dl
+[ 6912.686630] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.686634] [4513] put_prev_task_dl
+[ 6912.686638] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.688354] [4513] rorun
+[ 6912.688358] [4513] uses up its c_s; 6912688.352543-6912688.009988=0.342555
+[ 6912.688363] [4513] put_prev_task_dl
+[ 6912.688365] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.689632] [4512] select_task_rq_dl
+[ 6912.689634] [4512] is enqueued
+[ 6912.689637] [4512] d_s is renewed (r + D) to 6912691.634285; c_s is fully topped up
+[ 6912.689639] [4512] preempts main (4514)
+[ 6912.689642] [4514] put_prev_task_dl
+[ 6912.689645] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.690583] [4512] is dequeued
+[ 6912.690585] [4512] put_prev_task_dl
+[ 6912.690588] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.690715] [4513] Hard CBS timer goes off
+[ 6912.690717] [4513] is enqueued
+[ 6912.690719] [4513] postpones its deadline to 6912695.708262; c_s is topped up to 1.712070
+[ 6912.692312] [4514] is dequeued
+[ 6912.692314] [4514] rorun
+[ 6912.692317] [4514] uses up its c_s; 6912692.311335-6912692.007110=0.304225
+[ 6912.692321] [4514] put_prev_task_dl
+[ 6912.692326] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.692607] [4513] is dequeued
+[ 6912.692608] [4513] put_prev_task_dl
+[ 6912.692613] [4513] select_task_rq_dl
+[ 6912.692615] [4513] is enqueued
+[ 6912.692618] [4513] 1.416774 / 3.093440 > 2.000000 / 5.000000
+[ 6912.692620] [4513] d_s is renewed (r + D) to 6912697.614822; c_s is fully topped up
+[ 6912.692628] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.692662] [4514] Hard CBS timer goes off
+[ 6912.693632] [4512] select_task_rq_dl
+[ 6912.693634] [4512] is enqueued
+[ 6912.693636] [4512] d_s is renewed (r + D) to 6912695.633916; c_s is fully topped up
+[ 6912.693639] [4512] preempts main (4513)
+[ 6912.693642] [4513] put_prev_task_dl
+[ 6912.693644] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.694588] [4512] is dequeued
+[ 6912.694590] [4512] put_prev_task_dl
+[ 6912.694594] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.695539] [4513] is dequeued
+[ 6912.695541] [4513] put_prev_task_dl
+[ 6912.695544] [4513] select_task_rq_dl
+[ 6912.695546] [4513] is enqueued
+[ 6912.695549] [4513] 0.034745 / 2.068765 <= 2.000000 / 5.000000
+[ 6912.695551] [4513] resumes its BW pair
+[ 6912.695556] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.695630] [4514] select_task_rq_dl
+[ 6912.695632] [4514] is enqueued
+[ 6912.695634] [4514] d_s is renewed (r + D) to 6912702.632155; c_s is fully topped up
+[ 6912.696007] [4513] rorun
+[ 6912.696010] [4513] uses up its c_s; 6912695.632155-6912695.554074=0.078081
+[ 6912.696019] [4513] put_prev_task_dl
+[ 6912.696021] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.696024] [4514] put_prev_task_dl
+[ 6912.696029] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.697632] [4512] select_task_rq_dl
+[ 6912.697634] [4512] is enqueued
+[ 6912.697637] [4512] d_s is renewed (r + D) to 6912699.634406; c_s is fully topped up
+[ 6912.697639] [4512] preempts main (4514)
+[ 6912.697644] [4514] put_prev_task_dl
+[ 6912.697646] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.697995] [4513] Hard CBS timer goes off
+[ 6912.697996] [4513] is enqueued
+[ 6912.697999] [4513] postpones its deadline to 6912702.614822; c_s is topped up to 1.956664
+[ 6912.698594] [4512] is dequeued
+[ 6912.698595] [4512] put_prev_task_dl
+[ 6912.698600] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.700156] [4513] is dequeued
+[ 6912.700158] [4513] put_prev_task_dl
+[ 6912.700161] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.701519] [4514] is dequeued
+[ 6912.701520] [4514] rorun
+[ 6912.701523] [4514] uses up its c_s; 6912701.518420-6912700.155450=1.362970
+[ 6912.701527] [4514] put_prev_task_dl
+[ 6912.701532] [4513] select_task_rq_dl
+[ 6912.701534] [4513] is enqueued
+[ 6912.701537] [4513] 0.394918 / 1.080657 <= 2.000000 / 5.000000
+[ 6912.701539] [4513] resumes its BW pair
+[ 6912.701545] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.701633] [4512] select_task_rq_dl
+[ 6912.701635] [4512] is enqueued
+[ 6912.701637] [4512] d_s is renewed (r + D) to 6912703.634639; c_s is fully topped up
+[ 6912.702641] [4514] Hard CBS timer goes off
+[ 6912.703149] [4513] rorun dmiss
+[ 6912.703152] [4513] uses up its c_s; 6912703.148614-6912701.542638=1.605976
+[ 6912.703155] [4513] is enqueued
+[ 6912.703158] [4513] postpones its deadline to 6912707.614822; c_s is topped up to 0.255150
+[ 6912.703163] [4513] put_prev_task_dl
+[ 6912.703165] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.704010] [4512] dmiss
+[ 6912.704013] [4512] uses up its c_s; 6912704.008813-6912703.163140=0.845673
+[ 6912.704017] [4512] is enqueued
+[ 6912.704019] [4512] postpones its deadline to 6912705.634639; c_s is topped up to 0.625826
+[ 6912.704026] [4512] put_prev_task_dl
+[ 6912.704031] [4512] is pick_next_task_dl-ed by main (4512)
+[ 6912.704145] [4512] is dequeued
+[ 6912.704147] [4512] put_prev_task_dl
+[ 6912.704150] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.704538] [4513] is dequeued
+[ 6912.704540] [4513] rorun
+[ 6912.704543] [4513] uses up its c_s; 6912704.538306-6912704.144962=0.393344
+[ 6912.704547] [4513] put_prev_task_dl
+[ 6912.704551] [4513] select_task_rq_dl
+[ 6912.704553] [4513] cannot be enqueued: throttled
+[ 6912.705646] [4514] select_task_rq_dl
+[ 6912.705649] [4514] is enqueued
+[ 6912.705652] [4514] d_s is renewed (r + D) to 6912712.648978; c_s is fully topped up
+[ 6912.705654] [4512] select_task_rq_dl
+[ 6912.705656] [4512] is enqueued
+[ 6912.705658] [4512] d_s is renewed (r + D) to 6912707.648978; c_s is fully topped up
+[ 6912.705665] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.706614] [4512] is dequeued
+[ 6912.706616] [4512] put_prev_task_dl
+[ 6912.706618] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.706621] [4514] put_prev_task_dl
+[ 6912.706623] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.707622] [4513] Hard CBS timer goes off
+[ 6912.707624] [4513] is enqueued
+[ 6912.707626] [4513] postpones its deadline to 6912712.614822; c_s is topped up to 1.847280
+[ 6912.707629] [4513] preempts main (4514)
+[ 6912.707632] [4514] put_prev_task_dl
+[ 6912.707637] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.707641] [4513] put_prev_task_dl
+[ 6912.707646] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.709624] [4513] is dequeued
+[ 6912.709626] [4513] rorun
+[ 6912.709629] [4513] uses up its c_s; 6912709.623064-6912708.805662=0.817402
+[ 6912.709632] [4513] put_prev_task_dl
+[ 6912.709636] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.709640] [4513] select_task_rq_dl
+[ 6912.709642] [4513] cannot be enqueued: throttled
+[ 6912.709644] [4513] preempts main (4514)
+[ 6912.709646] [4512] select_task_rq_dl
+[ 6912.709648] [4512] is enqueued
+[ 6912.709650] [4512] d_s is renewed (r + D) to 6912711.641625; c_s is fully topped up
+[ 6912.709652] [4512] preempts main (4514)
+[ 6912.709659] [4514] put_prev_task_dl
+[ 6912.709661] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.710599] [4512] is dequeued
+[ 6912.710601] [4512] put_prev_task_dl
+[ 6912.710605] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.712576] [4514] is dequeued
+[ 6912.712578] [4514] rorun
+[ 6912.712580] [4514] uses up its c_s; 6912712.575560-6912712.006952=0.568608
+[ 6912.712584] [4514] put_prev_task_dl
+[ 6912.712638] [4513] Hard CBS timer goes off
+[ 6912.712640] [4513] is enqueued
+[ 6912.712643] [4513] postpones its deadline to 6912717.614822; c_s is topped up to 1.856319
+[ 6912.712645] [4513] preempts swapper (0)
+[ 6912.712652] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.712655] [4513] put_prev_task_dl
+[ 6912.712658] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.712662] [4514] Hard CBS timer goes off
+[ 6912.713633] [4512] select_task_rq_dl
+[ 6912.713635] [4512] is enqueued
+[ 6912.713638] [4512] d_s is renewed (r + D) to 6912715.635379; c_s is fully topped up
+[ 6912.713640] [4512] preempts main (4513)
+[ 6912.713645] [4513] put_prev_task_dl
+[ 6912.713647] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.714585] [4512] is dequeued
+[ 6912.714586] [4512] put_prev_task_dl
+[ 6912.714590] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.715585] [4513] is dequeued
+[ 6912.715587] [4513] rorun
+[ 6912.715589] [4513] uses up its c_s; 6912715.584732-6912714.584565=1.000167
+[ 6912.715593] [4513] put_prev_task_dl
+[ 6912.715598] [4513] select_task_rq_dl
+[ 6912.715600] [4513] cannot be enqueued: throttled
+[ 6912.715646] [4514] select_task_rq_dl
+[ 6912.715648] [4514] is enqueued
+[ 6912.715650] [4514] d_s is renewed (r + D) to 6912722.647911; c_s is fully topped up
+[ 6912.715661] [4514] is pick_next_task_dl-ed by swapper (0)
+[ 6912.715664] [4514] put_prev_task_dl
+[ 6912.715668] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.717627] [4513] Hard CBS timer goes off
+[ 6912.717629] [4513] is enqueued
+[ 6912.717632] [4513] postpones its deadline to 6912722.614822; c_s is topped up to 1.797816
+[ 6912.717635] [4513] preempts main (4514)
+[ 6912.717639] [4512] select_task_rq_dl
+[ 6912.717641] [4512] is enqueued
+[ 6912.717643] [4512] d_s is renewed (r + D) to 6912719.641259; c_s is fully topped up
+[ 6912.717646] [4512] preempts main (4514)
+[ 6912.717650] [4514] put_prev_task_dl
+[ 6912.717652] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.718599] [4512] is dequeued
+[ 6912.718601] [4512] put_prev_task_dl
+[ 6912.718605] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.718609] [4513] put_prev_task_dl
+[ 6912.718613] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.720591] [4513] is dequeued
+[ 6912.720593] [4513] rorun
+[ 6912.720596] [4513] uses up its c_s; 6912720.591224-6912720.120177=0.471047
+[ 6912.720599] [4513] put_prev_task_dl
+[ 6912.720603] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.721632] [4513] select_task_rq_dl
+[ 6912.721634] [4513] cannot be enqueued: throttled
+[ 6912.721636] [4513] preempts main (4514)
+[ 6912.721638] [4512] select_task_rq_dl
+[ 6912.721639] [4512] is enqueued
+[ 6912.721642] [4512] d_s is renewed (r + D) to 6912723.633623; c_s is fully topped up
+[ 6912.721649] [4514] put_prev_task_dl
+[ 6912.721651] [4514] rorun
+[ 6912.721654] [4514] uses up its c_s; 6912721.633623-6912720.591224=1.042399
+[ 6912.721658] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.722595] [4512] is dequeued
+[ 6912.722597] [4512] put_prev_task_dl
+[ 6912.722621] [4513] Hard CBS timer goes off
+[ 6912.722623] [4513] is enqueued
+[ 6912.722626] [4513] postpones its deadline to 6912727.614822; c_s is topped up to 1.805630
+[ 6912.722628] [4513] preempts rsyslogd (817)
+[ 6912.722634] [4513] is pick_next_task_dl-ed by rsyslogd (817)
+[ 6912.722636] [4513] put_prev_task_dl
+[ 6912.722640] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.722672] [4514] Hard CBS timer goes off
+[ 6912.722673] [4514] is enqueued
+[ 6912.722676] [4514] postpones its deadline to 6912729.647911; c_s is topped up to 2.955005
+[ 6912.724621] [4513] is dequeued
+[ 6912.724623] [4513] rorun
+[ 6912.724625] [4513] uses up its c_s; 6912724.620743-6912724.056062=0.564681
+[ 6912.724629] [4513] put_prev_task_dl
+[ 6912.724632] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.724634] [4514] put_prev_task_dl
+[ 6912.724638] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.724661] [4514] is dequeued
+[ 6912.724663] [4514] put_prev_task_dl
+[ 6912.724954] [4513] select_task_rq_dl
+[ 6912.724956] [4513] cannot be enqueued: throttled
+[ 6912.725646] [4512] select_task_rq_dl
+[ 6912.725648] [4512] is enqueued
+[ 6912.725651] [4512] d_s is renewed (r + D) to 6912727.648245; c_s is fully topped up
+[ 6912.725654] [4514] select_task_rq_dl
+[ 6912.725655] [4514] is enqueued
+[ 6912.725659] [4514] 2.914388 / 3.992328 > 3.000000 / 7.000000
+[ 6912.725661] [4514] d_s is renewed (r + D) to 6912732.655583; c_s is fully topped up
+[ 6912.725669] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.726610] [4512] is dequeued
+[ 6912.726612] [4512] put_prev_task_dl
+[ 6912.726614] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.727627] [4513] Hard CBS timer goes off
+[ 6912.727628] [4513] is enqueued
+[ 6912.727631] [4513] postpones its deadline to 6912732.614822; c_s is topped up to 1.816780
+[ 6912.727633] [4513] preempts main (4514)
+[ 6912.727637] [4514] put_prev_task_dl
+[ 6912.727641] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.727646] [4513] put_prev_task_dl
+[ 6912.727650] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.729621] [4513] is dequeued
+[ 6912.729624] [4513] rorun
+[ 6912.729626] [4513] uses up its c_s; 6912729.620404-6912729.018739=0.601665
+[ 6912.729630] [4513] put_prev_task_dl
+[ 6912.729634] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.729638] [4513] select_task_rq_dl
+[ 6912.729640] [4513] cannot be enqueued: throttled
+[ 6912.729642] [4513] preempts main (4514)
+[ 6912.729644] [4512] select_task_rq_dl
+[ 6912.729646] [4512] is enqueued
+[ 6912.729648] [4512] d_s is renewed (r + D) to 6912731.639854; c_s is fully topped up
+[ 6912.729651] [4512] preempts main (4514)
+[ 6912.729658] [4514] put_prev_task_dl
+[ 6912.729660] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.730624] [4512] is dequeued
+[ 6912.730627] [4512] put_prev_task_dl
+[ 6912.730631] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.732598] [4514] is dequeued
+[ 6912.732600] [4514] rorun
+[ 6912.732603] [4514] uses up its c_s; 6912732.597307-6912732.007081=0.590226
+[ 6912.732606] [4514] put_prev_task_dl
+[ 6912.732628] [4513] Hard CBS timer goes off
+[ 6912.732630] [4513] is enqueued
+[ 6912.732633] [4513] postpones its deadline to 6912737.614822; c_s is topped up to 1.833156
+[ 6912.732635] [4513] preempts ntpdate (4495)
+[ 6912.732641] [4513] is pick_next_task_dl-ed by ntpdate (4495)
+[ 6912.732644] [4513] put_prev_task_dl
+[ 6912.732648] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.732666] [4514] Hard CBS timer goes off
+[ 6912.733632] [4512] select_task_rq_dl
+[ 6912.733634] [4512] is enqueued
+[ 6912.733637] [4512] d_s is renewed (r + D) to 6912735.634494; c_s is fully topped up
+[ 6912.733639] [4512] preempts main (4513)
+[ 6912.733644] [4513] put_prev_task_dl
+[ 6912.733646] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.734585] [4512] is dequeued
+[ 6912.734586] [4512] put_prev_task_dl
+[ 6912.734590] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.735588] [4513] put_prev_task_dl
+[ 6912.735590] [4513] rorun
+[ 6912.735593] [4513] uses up its c_s; 6912735.587264-6912734.584593=1.002671
+[ 6912.735632] [4514] select_task_rq_dl
+[ 6912.735634] [4514] is enqueued
+[ 6912.735637] [4514] d_s is renewed (r + D) to 6912742.634354; c_s is fully topped up
+[ 6912.735650] [4514] is pick_next_task_dl-ed by ntpdate (4495)
+[ 6912.735653] [4514] put_prev_task_dl
+[ 6912.735658] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.737628] [4513] Hard CBS timer goes off
+[ 6912.737630] [4513] is enqueued
+[ 6912.737633] [4513] postpones its deadline to 6912742.614822; c_s is topped up to 1.825508
+[ 6912.737635] [4513] preempts main (4514)
+[ 6912.737640] [4512] select_task_rq_dl
+[ 6912.737642] [4512] is enqueued
+[ 6912.737644] [4512] d_s is renewed (r + D) to 6912739.641971; c_s is fully topped up
+[ 6912.737647] [4512] preempts main (4514)
+[ 6912.737651] [4514] put_prev_task_dl
+[ 6912.737653] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.738593] [4512] is dequeued
+[ 6912.738595] [4512] put_prev_task_dl
+[ 6912.738599] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.738603] [4513] put_prev_task_dl
+[ 6912.738608] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.740582] [4513] is dequeued
+[ 6912.740584] [4513] rorun
+[ 6912.740586] [4513] uses up its c_s; 6912740.581127-6912740.006850=0.574277
+[ 6912.740590] [4513] put_prev_task_dl
+[ 6912.740594] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.741421] [4513] select_task_rq_dl
+[ 6912.741424] [4513] cannot be enqueued: throttled
+[ 6912.741426] [4513] preempts main (4514)
+[ 6912.741431] [4514] put_prev_task_dl
+[ 6912.741434] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.741632] [4512] select_task_rq_dl
+[ 6912.741634] [4512] is enqueued
+[ 6912.741636] [4512] d_s is renewed (r + D) to 6912743.634095; c_s is fully topped up
+[ 6912.741645] [4514] is dequeued
+[ 6912.741647] [4514] rorun
+[ 6912.741650] [4514] uses up its c_s; 6912741.645204-6912741.423347=0.221857
+[ 6912.741653] [4514] put_prev_task_dl
+[ 6912.741655] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.742598] [4512] is dequeued
+[ 6912.742600] [4512] put_prev_task_dl
+[ 6912.742623] [4513] Hard CBS timer goes off
+[ 6912.742624] [4513] is enqueued
+[ 6912.742627] [4513] postpones its deadline to 6912747.614822; c_s is topped up to 1.837327
+[ 6912.742629] [4513] preempts ntpdate (4495)
+[ 6912.742635] [4513] is pick_next_task_dl-ed by ntpdate (4495)
+[ 6912.742638] [4513] put_prev_task_dl
+[ 6912.742641] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.742644] [4514] Hard CBS timer goes off
+[ 6912.744657] [4513] is dequeued
+[ 6912.744660] [4513] rorun
+[ 6912.744662] [4513] uses up its c_s; 6912744.655069-6912744.009106=0.645963
+[ 6912.744666] [4513] put_prev_task_dl
+[ 6912.744726] [4513] select_task_rq_dl
+[ 6912.744729] [4513] cannot be enqueued: throttled
+[ 6912.745652] [4514] select_task_rq_dl
+[ 6912.745656] [4514] is enqueued
+[ 6912.745659] [4514] d_s is renewed (r + D) to 6912752.655660; c_s is fully topped up
+[ 6912.745662] [4512] select_task_rq_dl
+[ 6912.745664] [4512] is enqueued
+[ 6912.745666] [4512] d_s is renewed (r + D) to 6912747.655660; c_s is fully topped up
+[ 6912.745672] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.746615] [4512] is dequeued
+[ 6912.746617] [4512] put_prev_task_dl
+[ 6912.746619] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.746622] [4514] put_prev_task_dl
+[ 6912.746624] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.747625] [4513] Hard CBS timer goes off
+[ 6912.747626] [4513] is enqueued
+[ 6912.747629] [4513] postpones its deadline to 6912752.614822; c_s is topped up to 1.815067
+[ 6912.747632] [4513] preempts main (4514)
+[ 6912.747635] [4514] put_prev_task_dl
+[ 6912.747640] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.747644] [4513] put_prev_task_dl
+[ 6912.747648] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.749628] [4513] is dequeued
+[ 6912.749630] [4513] rorun
+[ 6912.749633] [4513] uses up its c_s; 6912749.627597-6912749.026425=0.601172
+[ 6912.749637] [4513] put_prev_task_dl
+[ 6912.749640] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.749644] [4513] select_task_rq_dl
+[ 6912.749646] [4513] cannot be enqueued: throttled
+[ 6912.749648] [4513] preempts main (4514)
+[ 6912.749650] [4512] select_task_rq_dl
+[ 6912.749652] [4512] is enqueued
+[ 6912.749654] [4512] d_s is renewed (r + D) to 6912751.645750; c_s is fully topped up
+[ 6912.749656] [4512] preempts main (4514)
+[ 6912.749663] [4514] put_prev_task_dl
+[ 6912.749665] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.750603] [4512] is dequeued
+[ 6912.750605] [4512] put_prev_task_dl
+[ 6912.750609] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.752589] [4514] is dequeued
+[ 6912.752591] [4514] rorun
+[ 6912.752594] [4514] uses up its c_s; 6912752.588657-6912752.007570=0.581087
+[ 6912.752598] [4514] put_prev_task_dl
+[ 6912.752638] [4513] Hard CBS timer goes off
+[ 6912.752640] [4513] is enqueued
+[ 6912.752643] [4513] postpones its deadline to 6912757.614822; c_s is topped up to 1.822850
+[ 6912.752646] [4513] preempts swapper (0)
+[ 6912.752653] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.752656] [4513] put_prev_task_dl
+[ 6912.752659] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.752666] [4514] Hard CBS timer goes off
+[ 6912.753633] [4512] select_task_rq_dl
+[ 6912.753635] [4512] is enqueued
+[ 6912.753637] [4512] d_s is renewed (r + D) to 6912755.635050; c_s is fully topped up
+[ 6912.753640] [4512] preempts main (4513)
+[ 6912.753644] [4513] put_prev_task_dl
+[ 6912.753646] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.754590] [4512] is dequeued
+[ 6912.754592] [4512] put_prev_task_dl
+[ 6912.754595] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.755580] [4513] is dequeued
+[ 6912.755582] [4513] rorun
+[ 6912.755584] [4513] uses up its c_s; 6912755.580074-6912754.590463=0.989611
+[ 6912.755588] [4513] put_prev_task_dl
+[ 6912.755591] [4513] select_task_rq_dl
+[ 6912.755594] [4513] cannot be enqueued: throttled
+[ 6912.755644] [4514] select_task_rq_dl
+[ 6912.755646] [4514] is enqueued
+[ 6912.755648] [4514] d_s is renewed (r + D) to 6912762.646195; c_s is fully topped up
+[ 6912.755659] [4514] is pick_next_task_dl-ed by swapper (0)
+[ 6912.755662] [4514] put_prev_task_dl
+[ 6912.755666] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.757626] [4513] Hard CBS timer goes off
+[ 6912.757628] [4513] is enqueued
+[ 6912.757631] [4513] postpones its deadline to 6912762.614822; c_s is topped up to 1.789674
+[ 6912.757633] [4513] preempts main (4514)
+[ 6912.757638] [4512] select_task_rq_dl
+[ 6912.757640] [4512] is enqueued
+[ 6912.757642] [4512] d_s is renewed (r + D) to 6912759.639666; c_s is fully topped up
+[ 6912.757644] [4512] preempts main (4514)
+[ 6912.757649] [4514] put_prev_task_dl
+[ 6912.757651] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.758615] [4512] is dequeued
+[ 6912.758617] [4512] put_prev_task_dl
+[ 6912.758622] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.758626] [4513] put_prev_task_dl
+[ 6912.758631] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.760601] [4513] is dequeued
+[ 6912.760603] [4513] rorun
+[ 6912.760606] [4513] uses up its c_s; 6912760.600791-6912760.209651=0.391140
+[ 6912.760609] [4513] put_prev_task_dl
+[ 6912.760613] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.760829] [4513] select_task_rq_dl
+[ 6912.760831] [4513] cannot be enqueued: throttled
+[ 6912.760833] [4513] preempts main (4514)
+[ 6912.760840] [4514] put_prev_task_dl
+[ 6912.760844] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.761633] [4512] select_task_rq_dl
+[ 6912.761635] [4512] is enqueued
+[ 6912.761637] [4512] d_s is renewed (r + D) to 6912763.634820; c_s is fully topped up
+[ 6912.761678] [4514] is dequeued
+[ 6912.761680] [4514] rorun
+[ 6912.761683] [4514] uses up its c_s; 6912761.678397-6912760.830670=0.847727
+[ 6912.761687] [4514] put_prev_task_dl
+[ 6912.761689] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.762622] [4513] Hard CBS timer goes off
+[ 6912.762624] [4513] is enqueued
+[ 6912.762627] [4513] postpones its deadline to 6912767.614822; c_s is topped up to 1.803130
+[ 6912.762638] [4512] is dequeued
+[ 6912.762640] [4512] put_prev_task_dl
+[ 6912.762644] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.762647] [4513] put_prev_task_dl
+[ 6912.762650] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.762656] [4514] Hard CBS timer goes off
+[ 6912.764638] [4513] is dequeued
+[ 6912.764640] [4513] rorun
+[ 6912.764643] [4513] uses up its c_s; 6912764.636417-6912764.113416=0.523001
+[ 6912.764647] [4513] put_prev_task_dl
+[ 6912.764652] [4513] select_task_rq_dl
+[ 6912.764654] [4513] cannot be enqueued: throttled
+[ 6912.765648] [4514] select_task_rq_dl
+[ 6912.765651] [4514] is enqueued
+[ 6912.765654] [4514] d_s is renewed (r + D) to 6912772.650996; c_s is fully topped up
+[ 6912.765657] [4512] select_task_rq_dl
+[ 6912.765658] [4512] is enqueued
+[ 6912.765660] [4512] d_s is renewed (r + D) to 6912767.650996; c_s is fully topped up
+[ 6912.765672] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.766622] [4512] is dequeued
+[ 6912.766624] [4512] put_prev_task_dl
+[ 6912.766626] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.766628] [4514] put_prev_task_dl
+[ 6912.766630] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.767624] [4513] Hard CBS timer goes off
+[ 6912.767625] [4513] is enqueued
+[ 6912.767628] [4513] postpones its deadline to 6912772.614822; c_s is topped up to 1.804900
+[ 6912.767631] [4513] preempts main (4514)
+[ 6912.767634] [4514] put_prev_task_dl
+[ 6912.767638] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.767642] [4513] put_prev_task_dl
+[ 6912.767646] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.769625] [4513] is dequeued
+[ 6912.769627] [4513] rorun
+[ 6912.769630] [4513] uses up its c_s; 6912769.624255-6912769.093087=0.531168
+[ 6912.769633] [4513] put_prev_task_dl
+[ 6912.769637] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.769640] [4513] select_task_rq_dl
+[ 6912.769642] [4513] cannot be enqueued: throttled
+[ 6912.769644] [4513] preempts main (4514)
+[ 6912.769646] [4512] select_task_rq_dl
+[ 6912.769648] [4512] is enqueued
+[ 6912.769650] [4512] d_s is renewed (r + D) to 6912771.642209; c_s is fully topped up
+[ 6912.769653] [4512] preempts main (4514)
+[ 6912.769660] [4514] put_prev_task_dl
+[ 6912.769662] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.770600] [4512] is dequeued
+[ 6912.770601] [4512] put_prev_task_dl
+[ 6912.770605] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.772592] [4514] is dequeued
+[ 6912.772595] [4514] rorun
+[ 6912.772598] [4514] uses up its c_s; 6912772.590693-6912772.009648=0.581045
+[ 6912.772601] [4514] put_prev_task_dl
+[ 6912.772631] [4513] Hard CBS timer goes off
+[ 6912.772632] [4513] is enqueued
+[ 6912.772635] [4513] postpones its deadline to 6912777.614822; c_s is topped up to 1.814430
+[ 6912.772638] [4513] preempts swapper (0)
+[ 6912.772644] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.772646] [4513] put_prev_task_dl
+[ 6912.772650] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.772663] [4514] Hard CBS timer goes off
+[ 6912.773634] [4512] select_task_rq_dl
+[ 6912.773636] [4512] is enqueued
+[ 6912.773638] [4512] d_s is renewed (r + D) to 6912775.635874; c_s is fully topped up
+[ 6912.773641] [4512] preempts main (4513)
+[ 6912.773645] [4513] put_prev_task_dl
+[ 6912.773647] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.774586] [4512] is dequeued
+[ 6912.774588] [4512] put_prev_task_dl
+[ 6912.774591] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.775599] [4513] is dequeued
+[ 6912.775601] [4513] rorun
+[ 6912.775603] [4513] uses up its c_s; 6912775.598840-6912774.585847=1.012993
+[ 6912.775607] [4513] put_prev_task_dl
+[ 6912.775631] [4513] select_task_rq_dl
+[ 6912.775633] [4513] cannot be enqueued: throttled
+[ 6912.775635] [4514] select_task_rq_dl
+[ 6912.775637] [4514] is enqueued
+[ 6912.775639] [4514] d_s is renewed (r + D) to 6912782.633014; c_s is fully topped up
+[ 6912.775647] [4514] is pick_next_task_dl-ed by Xorg (999)
+[ 6912.775650] [4514] put_prev_task_dl
+[ 6912.775654] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.777626] [4513] Hard CBS timer goes off
+[ 6912.777628] [4513] is enqueued
+[ 6912.777630] [4513] postpones its deadline to 6912782.614822; c_s is topped up to 1.760201
+[ 6912.777633] [4513] preempts main (4514)
+[ 6912.777637] [4512] select_task_rq_dl
+[ 6912.777639] [4512] is enqueued
+[ 6912.777641] [4512] d_s is renewed (r + D) to 6912779.638882; c_s is fully topped up
+[ 6912.777644] [4512] preempts main (4514)
+[ 6912.777648] [4514] put_prev_task_dl
+[ 6912.777650] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.778600] [4512] is dequeued
+[ 6912.778601] [4512] put_prev_task_dl
+[ 6912.778606] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.778610] [4513] put_prev_task_dl
+[ 6912.778614] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.780390] [4513] rorun
+[ 6912.780393] [4513] uses up its c_s; 6912780.389239-6912780.007641=0.381598
+[ 6912.780398] [4513] put_prev_task_dl
+[ 6912.780402] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.781428] [4514] is dequeued
+[ 6912.781430] [4514] rorun
+[ 6912.781432] [4514] uses up its c_s; 6912781.427057-6912780.398042=1.029015
+[ 6912.781436] [4514] put_prev_task_dl
+[ 6912.781660] [4512] select_task_rq_dl
+[ 6912.781662] [4512] is enqueued
+[ 6912.781664] [4512] d_s is renewed (r + D) to 6912783.661669; c_s is fully topped up
+[ 6912.781670] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.782609] [4512] is dequeued
+[ 6912.782610] [4512] put_prev_task_dl
+[ 6912.782627] [4513] Hard CBS timer goes off
+[ 6912.782629] [4513] is enqueued
+[ 6912.782632] [4513] postpones its deadline to 6912787.614822; c_s is topped up to 1.970271
+[ 6912.782634] [4513] preempts swapper (0)
+[ 6912.782640] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.782645] [4514] Hard CBS timer goes off
+[ 6912.782848] [4513] is dequeued
+[ 6912.782850] [4513] put_prev_task_dl
+[ 6912.782854] [4513] select_task_rq_dl
+[ 6912.782855] [4513] is enqueued
+[ 6912.782858] [4513] 1.730580 / 4.759497 <= 2.000000 / 5.000000
+[ 6912.782860] [4513] resumes its BW pair
+[ 6912.782866] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.784765] [4513] rorun
+[ 6912.784768] [4513] uses up its c_s; 6912784.764779-6912784.007449=0.757330
+[ 6912.784773] [4513] put_prev_task_dl
+[ 6912.785699] [4514] select_task_rq_dl
+[ 6912.785702] [4514] is enqueued
+[ 6912.785704] [4514] d_s is renewed (r + D) to 6912792.701577; c_s is fully topped up
+[ 6912.785707] [4512] select_task_rq_dl
+[ 6912.785708] [4512] is enqueued
+[ 6912.785710] [4512] d_s is renewed (r + D) to 6912787.701577; c_s is fully topped up
+[ 6912.785716] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.786660] [4512] is dequeued
+[ 6912.786662] [4512] put_prev_task_dl
+[ 6912.786664] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.786666] [4514] put_prev_task_dl
+[ 6912.786668] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.787622] [4513] Hard CBS timer goes off
+[ 6912.787623] [4513] is enqueued
+[ 6912.787626] [4513] postpones its deadline to 6912792.614822; c_s is topped up to 1.829077
+[ 6912.787629] [4513] preempts main (4514)
+[ 6912.787632] [4514] put_prev_task_dl
+[ 6912.787637] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.787713] [4513] is dequeued
+[ 6912.787715] [4513] put_prev_task_dl
+[ 6912.787719] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.787807] [4513] select_task_rq_dl
+[ 6912.787809] [4513] is enqueued
+[ 6912.787812] [4513] 1.748101 / 4.805873 <= 2.000000 / 5.000000
+[ 6912.787814] [4513] resumes its BW pair
+[ 6912.787816] [4513] preempts main (4514)
+[ 6912.787822] [4514] put_prev_task_dl
+[ 6912.787826] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.789620] [4513] rorun
+[ 6912.789624] [4513] uses up its c_s; 6912789.619476-6912788.594611=1.024865
+[ 6912.789629] [4513] put_prev_task_dl
+[ 6912.789632] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.789636] [4512] select_task_rq_dl
+[ 6912.789637] [4512] is enqueued
+[ 6912.789640] [4512] d_s is renewed (r + D) to 6912791.637497; c_s is fully topped up
+[ 6912.789642] [4512] preempts main (4514)
+[ 6912.789647] [4514] put_prev_task_dl
+[ 6912.789649] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.790596] [4512] is dequeued
+[ 6912.790598] [4512] put_prev_task_dl
+[ 6912.790603] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.792562] [4514] is dequeued
+[ 6912.792564] [4514] rorun
+[ 6912.792567] [4514] uses up its c_s; 6912792.560872-6912792.007258=0.553614
+[ 6912.792570] [4514] put_prev_task_dl
+[ 6912.792636] [4513] Hard CBS timer goes off
+[ 6912.792638] [4513] is enqueued
+[ 6912.792641] [4513] postpones its deadline to 6912797.614822; c_s is topped up to 1.951157
+[ 6912.792643] [4513] preempts swapper (0)
+[ 6912.792651] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.792713] [4514] Hard CBS timer goes off
+[ 6912.792839] [4513] is dequeued
+[ 6912.792840] [4513] put_prev_task_dl
+[ 6912.792844] [4513] select_task_rq_dl
+[ 6912.792846] [4513] is enqueued
+[ 6912.792849] [4513] 1.685842 / 4.768969 <= 2.000000 / 5.000000
+[ 6912.792851] [4513] resumes its BW pair
+[ 6912.792856] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.793633] [4512] select_task_rq_dl
+[ 6912.793635] [4512] is enqueued
+[ 6912.793637] [4512] d_s is renewed (r + D) to 6912795.634721; c_s is fully topped up
+[ 6912.793639] [4512] preempts main (4513)
+[ 6912.793644] [4513] put_prev_task_dl
+[ 6912.793646] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.794590] [4512] is dequeued
+[ 6912.794591] [4512] put_prev_task_dl
+[ 6912.794594] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.795630] [4514] select_task_rq_dl
+[ 6912.795632] [4514] is enqueued
+[ 6912.795634] [4514] d_s is renewed (r + D) to 6912802.631566; c_s is fully topped up
+[ 6912.795698] [4513] rorun
+[ 6912.795701] [4513] uses up its c_s; 6912795.631566-6912794.589719=1.041847
+[ 6912.795706] [4513] put_prev_task_dl
+[ 6912.795708] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.795710] [4514] put_prev_task_dl
+[ 6912.795715] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.797632] [4512] select_task_rq_dl
+[ 6912.797635] [4512] is enqueued
+[ 6912.797637] [4512] d_s is renewed (r + D) to 6912799.634680; c_s is fully topped up
+[ 6912.797639] [4512] preempts main (4514)
+[ 6912.797642] [4514] put_prev_task_dl
+[ 6912.797644] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.797691] [4513] Hard CBS timer goes off
+[ 6912.797692] [4513] is enqueued
+[ 6912.797695] [4513] postpones its deadline to 6912802.614822; c_s is topped up to 1.854023
+[ 6912.798593] [4512] is dequeued
+[ 6912.798594] [4512] put_prev_task_dl
+[ 6912.798599] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.798680] [4513] is dequeued
+[ 6912.798681] [4513] put_prev_task_dl
+[ 6912.798684] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.798744] [4513] select_task_rq_dl
+[ 6912.798746] [4513] is enqueued
+[ 6912.798749] [4513] 1.767037 / 3.868669 > 2.000000 / 5.000000
+[ 6912.798751] [4513] d_s is renewed (r + D) to 6912803.746153; c_s is fully topped up
+[ 6912.799763] [4514] is dequeued
+[ 6912.799765] [4514] rorun
+[ 6912.799768] [4514] uses up its c_s; 6912799.763254-6912798.679565=1.083689
+[ 6912.799771] [4514] put_prev_task_dl
+[ 6912.799774] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.801633] [4512] select_task_rq_dl
+[ 6912.801635] [4512] is enqueued
+[ 6912.801638] [4512] d_s is renewed (r + D) to 6912803.635315; c_s is fully topped up
+[ 6912.801640] [4512] preempts main (4513)
+[ 6912.801643] [4513] put_prev_task_dl
+[ 6912.801645] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.802614] [4512] is dequeued
+[ 6912.802616] [4512] put_prev_task_dl
+[ 6912.802619] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.802643] [4514] Hard CBS timer goes off
+[ 6912.802734] [4513] is dequeued
+[ 6912.802736] [4513] rorun
+[ 6912.802738] [4513] uses up its c_s; 6912802.733968-6912802.612976=0.120992
+[ 6912.802742] [4513] put_prev_task_dl
+[ 6912.802746] [4513] select_task_rq_dl
+[ 6912.802748] [4513] cannot be enqueued: throttled
+[ 6912.803810] [4513] Hard CBS timer goes off
+[ 6912.803812] [4513] is enqueued
+[ 6912.803815] [4513] postpones its deadline to 6912808.746153; c_s is topped up to 1.998817
+[ 6912.803818] [4513] preempts swapper (0)
+[ 6912.803827] [4513] is pick_next_task_dl-ed by swapper (0)
+[ 6912.803830] [4513] put_prev_task_dl
+[ 6912.803834] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.804913] [4513] rorun
+[ 6912.804916] [4513] uses up its c_s; 6912804.912442-6912804.009457=0.902985
+[ 6912.804921] [4513] put_prev_task_dl
+[ 6912.805706] [4514] select_task_rq_dl
+[ 6912.805708] [4514] is enqueued
+[ 6912.805710] [4514] d_s is renewed (r + D) to 6912812.707970; c_s is fully topped up
+[ 6912.805713] [4512] select_task_rq_dl
+[ 6912.805715] [4512] is enqueued
+[ 6912.805717] [4512] d_s is renewed (r + D) to 6912807.707970; c_s is fully topped up
+[ 6912.805729] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.806675] [4512] is dequeued
+[ 6912.806677] [4512] put_prev_task_dl
+[ 6912.806679] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.806681] [4514] put_prev_task_dl
+[ 6912.806683] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.808754] [4513] Hard CBS timer goes off
+[ 6912.808756] [4513] is enqueued
+[ 6912.808759] [4513] postpones its deadline to 6912813.746153; c_s is topped up to 1.838706
+[ 6912.809632] [4512] select_task_rq_dl
+[ 6912.809634] [4512] is enqueued
+[ 6912.809636] [4512] d_s is renewed (r + D) to 6912811.633968; c_s is fully topped up
+[ 6912.809638] [4512] preempts main (4514)
+[ 6912.809642] [4514] put_prev_task_dl
+[ 6912.809644] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.810581] [4512] is dequeued
+[ 6912.810583] [4512] put_prev_task_dl
+[ 6912.810586] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.810609] [4514] is dequeued
+[ 6912.810611] [4514] put_prev_task_dl
+[ 6912.810615] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.811520] [4513] is dequeued
+[ 6912.811522] [4513] put_prev_task_dl
+[ 6912.811525] [4513] select_task_rq_dl
+[ 6912.811527] [4513] is enqueued
+[ 6912.811530] [4513] 0.928450 / 2.219152 > 2.000000 / 5.000000
+[ 6912.811533] [4513] d_s is renewed (r + D) to 6912816.527001; c_s is fully topped up
+[ 6912.811537] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.813493] [4513] is dequeued
+[ 6912.813495] [4513] put_prev_task_dl
+[ 6912.813498] [4513] select_task_rq_dl
+[ 6912.813500] [4513] is enqueued
+[ 6912.813503] [4513] 0.044312 / 3.026957 <= 2.000000 / 5.000000
+[ 6912.813505] [4513] resumes its BW pair
+[ 6912.813510] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.813632] [4512] select_task_rq_dl
+[ 6912.813634] [4512] is enqueued
+[ 6912.813636] [4512] d_s is renewed (r + D) to 6912815.634283; c_s is fully topped up
+[ 6912.813639] [4512] preempts main (4513)
+[ 6912.813643] [4513] put_prev_task_dl
+[ 6912.813645] [4513] rorun
+[ 6912.813648] [4513] uses up its c_s; 6912813.643524-6912813.508204=0.135320
+[ 6912.813652] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.814597] [4512] is dequeued
+[ 6912.814599] [4512] put_prev_task_dl
+[ 6912.815672] [4514] select_task_rq_dl
+[ 6912.815674] [4514] is enqueued
+[ 6912.815676] [4514] d_s is renewed (r + D) to 6912822.674217; c_s is fully topped up
+[ 6912.815689] [4514] is pick_next_task_dl-ed by swapper (0)
+[ 6912.816540] [4513] Hard CBS timer goes off
+[ 6912.816542] [4513] is enqueued
+[ 6912.816545] [4513] postpones its deadline to 6912821.527001; c_s is topped up to 1.908992
+[ 6912.816547] [4513] preempts main (4514)
+[ 6912.816551] [4514] put_prev_task_dl
+[ 6912.816555] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.816559] [4513] put_prev_task_dl
+[ 6912.816564] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.817632] [4512] select_task_rq_dl
+[ 6912.817634] [4512] is enqueued
+[ 6912.817636] [4512] d_s is renewed (r + D) to 6912819.634151; c_s is fully topped up
+[ 6912.817639] [4512] preempts main (4513)
+[ 6912.817643] [4513] put_prev_task_dl
+[ 6912.817645] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.818586] [4512] is dequeued
+[ 6912.818587] [4512] put_prev_task_dl
+[ 6912.818592] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.819370] [4513] is dequeued
+[ 6912.819371] [4513] put_prev_task_dl
+[ 6912.819374] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.819773] [4513] select_task_rq_dl
+[ 6912.819775] [4513] is enqueued
+[ 6912.819778] [4513] 0.032255 / 1.751989 <= 2.000000 / 5.000000
+[ 6912.819780] [4513] resumes its BW pair
+[ 6912.819782] [4513] preempts main (4514)
+[ 6912.819788] [4514] put_prev_task_dl
+[ 6912.819792] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.820007] [4513] rorun
+[ 6912.820010] [4513] uses up its c_s; 6912820.006381-6912819.787797=0.218584
+[ 6912.820017] [4513] put_prev_task_dl
+[ 6912.820022] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.821533] [4513] Hard CBS timer goes off
+[ 6912.821535] [4513] is enqueued
+[ 6912.821537] [4513] postpones its deadline to 6912826.527001; c_s is topped up to 1.813671
+[ 6912.821632] [4512] select_task_rq_dl
+[ 6912.821634] [4512] is enqueued
+[ 6912.821636] [4512] d_s is renewed (r + D) to 6912823.634185; c_s is fully topped up
+[ 6912.821791] [4514] is dequeued
+[ 6912.821793] [4514] rorun
+[ 6912.821796] [4514] uses up its c_s; 6912821.791579-6912821.313926=0.477653
+[ 6912.821801] [4514] put_prev_task_dl
+[ 6912.821803] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.822682] [4514] Hard CBS timer goes off
+[ 6912.822745] [4512] is dequeued
+[ 6912.822747] [4512] put_prev_task_dl
+[ 6912.822751] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.824525] [4513] is dequeued
+[ 6912.824527] [4513] put_prev_task_dl
+[ 6912.824530] [4513] select_task_rq_dl
+[ 6912.824532] [4513] is enqueued
+[ 6912.824535] [4513] 0.034544 / 1.994806 <= 2.000000 / 5.000000
+[ 6912.824537] [4513] resumes its BW pair
+[ 6912.824542] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.825632] [4514] select_task_rq_dl
+[ 6912.825634] [4514] is enqueued
+[ 6912.825636] [4514] d_s is renewed (r + D) to 6912832.633725; c_s is fully topped up
+[ 6912.825638] [4512] select_task_rq_dl
+[ 6912.825640] [4512] is enqueued
+[ 6912.825642] [4512] d_s is renewed (r + D) to 6912827.633725; c_s is fully topped up
+[ 6912.826504] [4513] is dequeued
+[ 6912.826505] [4513] rorun
+[ 6912.826508] [4513] uses up its c_s; 6912825.633725-6912824.540290=1.093435
+[ 6912.826511] [4513] put_prev_task_dl
+[ 6912.826513] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.826517] [4513] select_task_rq_dl
+[ 6912.826519] [4513] cannot be enqueued: throttled
+[ 6912.826521] [4513] preempts main (4512)
+[ 6912.826527] [4512] put_prev_task_dl
+[ 6912.826531] [4512] is pick_next_task_dl-ed by main (4512)
+[ 6912.827404] [4513] Hard CBS timer goes off
+[ 6912.827406] [4513] is enqueued
+[ 6912.827409] [4513] postpones its deadline to 6912831.527001; c_s is topped up to 0.941109
+[ 6912.827416] [4512] rorun
+[ 6912.827419] [4512] uses up its c_s; 6912827.415914-6912826.519187=0.896727
+[ 6912.827425] [4512] put_prev_task_dl
+[ 6912.827428] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.827431] [4513] put_prev_task_dl
+[ 6912.827434] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.827641] [4512] Hard CBS timer goes off
+[ 6912.827643] [4512] is enqueued
+[ 6912.827645] [4512] postpones its deadline to 6912829.633725; c_s is topped up to 0.217811
+[ 6912.827648] [4512] preempts main (4513)
+[ 6912.827651] [4513] put_prev_task_dl
+[ 6912.827654] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.827720] [4512] is dequeued
+[ 6912.827722] [4512] put_prev_task_dl
+[ 6912.827725] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.829014] [4513] rorun
+[ 6912.829017] [4513] uses up its c_s; 6912829.013887-6912828.007085=1.006802
+[ 6912.829022] [4513] put_prev_task_dl
+[ 6912.829024] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.829027] [4514] put_prev_task_dl
+[ 6912.829029] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.829632] [4512] select_task_rq_dl
+[ 6912.829634] [4512] is enqueued
+[ 6912.829637] [4512] 0.149079 / 0.000110 > 1.000000 / 2.000000
+[ 6912.829639] [4512] d_s is renewed (r + D) to 6912831.633615; c_s is fully topped up
+[ 6912.829641] [4512] preempts main (4514)
+[ 6912.829645] [4514] put_prev_task_dl
+[ 6912.829647] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.830586] [4512] is dequeued
+[ 6912.830587] [4512] put_prev_task_dl
+[ 6912.830592] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.831533] [4513] Hard CBS timer goes off
+[ 6912.831535] [4513] is enqueued
+[ 6912.831538] [4513] postpones its deadline to 6912836.527001; c_s is topped up to 1.421002
+[ 6912.833006] [4514] is dequeued
+[ 6912.833008] [4514] rorun dmiss
+[ 6912.833010] [4514] uses up its c_s; 6912833.005169-6912832.468741=0.536428
+[ 6912.833014] [4514] is enqueued
+[ 6912.833017] [4514] postpones its deadline to 6912839.633725; c_s is topped up to 2.586676
+[ 6912.833019] [4514] put_prev_task_dl
+[ 6912.833023] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.833498] [4513] is dequeued
+[ 6912.833499] [4513] put_prev_task_dl
+[ 6912.833503] [4513] select_task_rq_dl
+[ 6912.833505] [4513] is enqueued
+[ 6912.833508] [4513] 0.928458 / 3.021686 <= 2.000000 / 5.000000
+[ 6912.833510] [4513] resumes its BW pair
+[ 6912.833515] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.833632] [4512] select_task_rq_dl
+[ 6912.833634] [4512] is enqueued
+[ 6912.833637] [4512] d_s is renewed (r + D) to 6912835.634276; c_s is fully topped up
+[ 6912.833639] [4512] preempts main (4513)
+[ 6912.833644] [4513] put_prev_task_dl
+[ 6912.833646] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.834584] [4512] is dequeued
+[ 6912.834586] [4512] put_prev_task_dl
+[ 6912.834589] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.835629] [4514] select_task_rq_dl
+[ 6912.835631] [4514] is enqueued
+[ 6912.835634] [4514] 2.586676 / 4.002837 > 3.000000 / 7.000000
+[ 6912.835636] [4514] d_s is renewed (r + D) to 6912842.630888; c_s is fully topped up
+[ 6912.835791] [4513] rorun
+[ 6912.835793] [4513] uses up its c_s; 6912835.630888-6912834.584093=1.046795
+[ 6912.835798] [4513] put_prev_task_dl
+[ 6912.835800] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.835803] [4514] put_prev_task_dl
+[ 6912.835807] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.836698] [4513] Hard CBS timer goes off
+[ 6912.836700] [4513] is enqueued
+[ 6912.836703] [4513] postpones its deadline to 6912841.527001; c_s is topped up to 1.751261
+[ 6912.836705] [4513] preempts main (4514)
+[ 6912.836710] [4514] put_prev_task_dl
+[ 6912.836714] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.837366] [4513] is dequeued
+[ 6912.837367] [4513] put_prev_task_dl
+[ 6912.837371] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.837465] [4513] select_task_rq_dl
+[ 6912.837467] [4513] is enqueued
+[ 6912.837470] [4513] 1.095402 / 4.059812 <= 2.000000 / 5.000000
+[ 6912.837472] [4513] resumes its BW pair
+[ 6912.837474] [4513] preempts main (4514)
+[ 6912.837479] [4514] put_prev_task_dl
+[ 6912.837483] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.837632] [4512] select_task_rq_dl
+[ 6912.837634] [4512] is enqueued
+[ 6912.837636] [4512] d_s is renewed (r + D) to 6912839.634239; c_s is fully topped up
+[ 6912.837639] [4512] preempts main (4513)
+[ 6912.837643] [4513] put_prev_task_dl
+[ 6912.837645] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.838589] [4512] is dequeued
+[ 6912.838590] [4512] put_prev_task_dl
+[ 6912.838595] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.839661] [4513] rorun
+[ 6912.839664] [4513] uses up its c_s; 6912839.661193-6912838.588673=1.072520
+[ 6912.839669] [4513] put_prev_task_dl
+[ 6912.839672] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.841537] [4513] Hard CBS timer goes off
+[ 6912.841539] [4513] is enqueued
+[ 6912.841541] [4513] postpones its deadline to 6912846.527001; c_s is topped up to 1.859051
+[ 6912.841633] [4512] select_task_rq_dl
+[ 6912.841635] [4512] is enqueued
+[ 6912.841637] [4512] d_s is renewed (r + D) to 6912843.634592; c_s is fully topped up
+[ 6912.841701] [4514] is dequeued
+[ 6912.841703] [4514] rorun
+[ 6912.841706] [4514] uses up its c_s; 6912841.701427-6912840.868934=0.832493
+[ 6912.841710] [4514] put_prev_task_dl
+[ 6912.841713] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.842638] [4514] Hard CBS timer goes off
+[ 6912.842663] [4512] is dequeued
+[ 6912.842665] [4512] put_prev_task_dl
+[ 6912.842669] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.843411] [4513] is dequeued
+[ 6912.843412] [4513] put_prev_task_dl
+[ 6912.843417] [4513] select_task_rq_dl
+[ 6912.843419] [4513] is enqueued
+[ 6912.843422] [4513] 1.111917 / 3.107601 <= 2.000000 / 5.000000
+[ 6912.843424] [4513] resumes its BW pair
+[ 6912.843430] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.845425] [4513] is dequeued
+[ 6912.845427] [4513] rorun
+[ 6912.845430] [4513] uses up its c_s; 6912845.423478-6912844.322729=1.100749
+[ 6912.845434] [4513] put_prev_task_dl
+[ 6912.845498] [4513] select_task_rq_dl
+[ 6912.845501] [4513] cannot be enqueued: throttled
+[ 6912.845641] [4514] select_task_rq_dl
+[ 6912.845644] [4514] is enqueued
+[ 6912.845646] [4514] d_s is renewed (r + D) to 6912852.643417; c_s is fully topped up
+[ 6912.845649] [4512] select_task_rq_dl
+[ 6912.845651] [4512] is enqueued
+[ 6912.845653] [4512] d_s is renewed (r + D) to 6912847.643417; c_s is fully topped up
+[ 6912.845660] [4512] is pick_next_task_dl-ed by swapper (0)
+[ 6912.846539] [4513] Hard CBS timer goes off
+[ 6912.846541] [4513] is enqueued
+[ 6912.846544] [4513] postpones its deadline to 6912851.527001; c_s is topped up to 1.116095
+[ 6912.846613] [4512] is dequeued
+[ 6912.846614] [4512] put_prev_task_dl
+[ 6912.846619] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.846623] [4513] put_prev_task_dl
+[ 6912.846627] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.848010] [4513] rorun
+[ 6912.848013] [4513] uses up its c_s; 6912848.009344-6912847.519745=0.489599
+[ 6912.848022] [4513] put_prev_task_dl
+[ 6912.848025] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.848027] [4514] put_prev_task_dl
+[ 6912.848029] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.849632] [4512] select_task_rq_dl
+[ 6912.849634] [4512] is enqueued
+[ 6912.849636] [4512] d_s is renewed (r + D) to 6912851.633989; c_s is fully topped up
+[ 6912.849639] [4512] preempts main (4514)
+[ 6912.849642] [4514] put_prev_task_dl
+[ 6912.849644] [4512] is pick_next_task_dl-ed by main (4514)
+[ 6912.850581] [4512] is dequeued
+[ 6912.850583] [4512] put_prev_task_dl
+[ 6912.850586] [4514] is pick_next_task_dl-ed by main (4512)
+[ 6912.851531] [4513] Hard CBS timer goes off
+[ 6912.851533] [4513] is enqueued
+[ 6912.851535] [4513] postpones its deadline to 6912856.527001; c_s is topped up to 1.719170
+[ 6912.851948] [4514] is dequeued
+[ 6912.851950] [4514] put_prev_task_dl
+[ 6912.851953] [4513] is pick_next_task_dl-ed by main (4514)
+[ 6912.852567] [4513] is dequeued
+[ 6912.852569] [4513] put_prev_task_dl
+[ 6912.852580] [4513] select_task_rq_dl
+[ 6912.852582] [4513] is enqueued
+[ 6912.852585] [4513] 1.101230 / 3.945291 <= 2.000000 / 5.000000
+[ 6912.852587] [4513] resumes its BW pair
+[ 6912.852592] [4513] is pick_next_task_dl-ed by ksoftirqd/0 (3)
+[ 6912.853633] [4512] select_task_rq_dl
+[ 6912.853635] [4512] is enqueued
+[ 6912.853637] [4512] d_s is renewed (r + D) to 6912855.635002; c_s is fully topped up
+[ 6912.853640] [4512] preempts main (4513)
+[ 6912.853643] [4513] put_prev_task_dl
+[ 6912.853645] [4512] is pick_next_task_dl-ed by main (4513)
+[ 6912.854679] [4512] is dequeued
+[ 6912.854682] [4512] rorun
+[ 6912.854685] [4512] uses up its c_s; 6912854.678056-6912853.642898=1.035158
+[ 6912.854689] [4512] put_prev_task_dl
+[ 6912.854693] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.855632] [4514] select_task_rq_dl
+[ 6912.855634] [4514] is enqueued
+[ 6912.855637] [4514] d_s is renewed (r + D) to 6912862.634304; c_s is fully topped up
+[ 6912.855646] [4512] Hard CBS timer goes off
+[ 6912.855658] [4513] is dequeued
+[ 6912.855660] [4513] rorun
+[ 6912.855663] [4513] uses up its c_s; 6912855.658029-6912854.678056=0.979973
+[ 6912.855667] [4513] put_prev_task_dl
+[ 6912.855669] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.856541] [4513] Hard CBS timer goes off
+[ 6912.858683] [4514] is dequeued
+[ 6912.858686] [4514] rorun
+[ 6912.858688] [4514] uses up its c_s; 6912858.680903-6912856.011444=2.669459
+[ 6912.858693] [4514] put_prev_task_dl
+[ 6912.862682] [4514] Hard CBS timer goes off
+[ 6912.880726] [4512] select_task_rq_dl
+[ 6912.880730] [4512] is enqueued
+[ 6912.880734] [4512] d_s is renewed (r + D) to 6912882.729667; c_s is fully topped up
+[ 6912.880737] [4513] select_task_rq_dl
+[ 6912.880739] [4513] is enqueued
+[ 6912.880741] [4513] d_s is renewed (r + D) to 6912885.729667; c_s is fully topped up
+[ 6912.880771] [4512] is pick_next_task_dl-ed by polkitd (1232)
+[ 6912.880775] [4512] put_prev_task_dl
+[ 6912.880781] [4512] is pick_next_task_dl-ed by main (4512)
+[ 6912.880837] [4512] is dequeued
+[ 6912.880839] [4512] put_prev_task_dl
+[ 6912.880841] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.880844] [4513] put_prev_task_dl
+[ 6912.880847] [4513] is pick_next_task_dl-ed by main (4513)
+[ 6912.880851] [4514] select_task_rq_dl
+[ 6912.880854] [4514] is enqueued
+[ 6912.880856] [4514] d_s is renewed (r + D) to 6912887.853308; c_s is fully topped up
+[ 6912.880861] [4513] is dequeued
+[ 6912.880862] [4513] put_prev_task_dl
+[ 6912.880864] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.880867] [4514] put_prev_task_dl
+[ 6912.880871] [4514] is pick_next_task_dl-ed by main (4514)
+[ 6912.880878] [4514] is dequeued
+[ 6912.880880] [4514] put_prev_task_dl
+[ 6912.884053] [4512] select_task_rq_dl
+[ 6912.884056] [4512] is enqueued
+[ 6912.884060] [4512] d_s is renewed (r + D) to 6912886.056204; c_s is fully topped up
+[ 6912.884063] [4513] select_task_rq_dl
+[ 6912.884065] [4513] is enqueued
+[ 6912.884069] [4513] 1.983937 / 1.664288 > 2.000000 / 5.000000
+[ 6912.884072] [4513] d_s is renewed (r + D) to 6912889.065379; c_s is fully topped up
+[ 6912.884098] [4512] is pick_next_task_dl-ed by NetworkManager (844)
+[ 6912.884111] [4514] select_task_rq_dl
+[ 6912.884113] [4514] is enqueued
+[ 6912.884116] [4514] 2.975008 / 3.740148 > 3.000000 / 7.000000
+[ 6912.884119] [4514] d_s is renewed (r + D) to 6912891.113160; c_s is fully topped up
+[ 6912.884228] [4512] is dequeued
+[ 6912.884230] [4512] put_prev_task_dl
+[ 6912.884233] [4513] is pick_next_task_dl-ed by main (4512)
+[ 6912.884236] [4512] task_dead_dl
+[ 6912.884287] [4513] is dequeued
+[ 6912.884289] [4513] put_prev_task_dl
+[ 6912.884291] [4514] is pick_next_task_dl-ed by main (4513)
+[ 6912.884294] [4513] task_dead_dl
+[ 6912.884333] [4514] is dequeued
+[ 6912.884335] [4514] put_prev_task_dl
+[ 6912.884341] [4514] task_dead_dl
