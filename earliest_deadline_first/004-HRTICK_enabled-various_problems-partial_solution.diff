@@ -1,0 +1,39 @@
+From 4bd7c0b90fdfb58496f74f37f3efbc85f180fc39 Mon Sep 17 00:00:00 2001
+From: Tadeus Prastowo <eus@member.fsf.org>
+Date: Wed, 15 Jun 2011 17:17:07 +0200
+Subject: [PATCH 3/3] When the remaining runtime of a DL task is too small to start the
+ hrtick (<= 10 ns), the task should not be allowed to run. Otherwise,
+ the task can use approximately 4 ms when HZ=250. This happens when the
+ system HZ tick fires followed by the firing of hrtick and the DL task
+ still has the smallest budget that allows it to use the existing
+ deadline. Since hrtick cannot be scheduled, the task can enjoy
+ approximately 4 ms of runtime jeopardizing other DL tasks.
+
+The ideal situation is for the hrtick to be scheduled to fire at the
+time when the task's budget is expected to be 0. Since in reality some
++/- error tolerance is needed, the tolerance can be set at +/- 10 us
+so that when the remaining budget <= 10 us, SCHED_DEADLINE simply
+treats it as 0 and does deadline postponement which is implemented in
+this patch.
+---
+ kernel/sched_dl.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
+index af767e3..d755c4a 100644
+--- a/kernel/sched_dl.c
++++ b/kernel/sched_dl.c
+@@ -485,6 +485,10 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
+ 	if (p->dl.runtime > SCHED_HRTICK_SMALLEST)
+ 		hrtick_start(rq, p->dl.runtime);
++	else {
++		replenish_dl_entity(&p->dl);
++		resched_task(p);
++	}
+ }
+ #else
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+-- 
+1.7.1
+

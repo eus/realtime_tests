@@ -1,0 +1,54 @@
+From 35388160a7910baa536187118d627e141b842878 Mon Sep 17 00:00:00 2001
+From: Tadeus Prastowo <eus@member.fsf.org>
+Date: Wed, 15 Jun 2011 13:17:13 +0200
+Subject: [PATCH 2/3] For a DL task, the next tick should fire when the runtime is 0.
+ This bug causes the following problem:
+ 1. DL task wakes up from its clock_nanosleep and gets enqueued.
+ 2. runtime / deadline <= dl_runtime / dl_deadline
+    41 / 912 <= 2000 / 5000 (all is in microsecond)
+ 3. A currently running task gets preempted.
+ 4. DL task is picked and hrtick is scheduled at the next 1959 us
+    (dl_runtime - runtime = 2000 - 41 = 1959 us)
+ 5. The hrtick fires too late by 1918 us (1959 - 41) making the task
+    able to run for more than the given runtime 41 us. In this
+    unfortunate situation, the periodical system tick, which is 250 Hz
+    (once in every 4 ms), does not fire before the hrtick fires. Had
+    the periodical system tick fired, this problem would have not been
+    observed.
+
+---
+ kernel/sched_dl.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
+index f0ded38..af767e3 100644
+--- a/kernel/sched_dl.c
++++ b/kernel/sched_dl.c
+@@ -14,6 +14,11 @@
+  *                    Fabio Checconi <fabio@gandalf.sssup.it>
+  */
+ 
++#ifdef CONFIG_SCHED_HRTICK
++/* The following is in nanosecond */
++#define SCHED_HRTICK_SMALLEST 10000
++#endif
++
+ static inline int dl_time_before(u64 a, u64 b)
+ {
+ 	return (s64)(a - b) < 0;
+@@ -478,10 +483,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+ #ifdef CONFIG_SCHED_HRTICK
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
+-	s64 delta = p->dl.dl_runtime - p->dl.runtime;
+-
+-	if (delta > 10000)
+-		hrtick_start(rq, delta);
++	if (p->dl.runtime > SCHED_HRTICK_SMALLEST)
++		hrtick_start(rq, p->dl.runtime);
+ }
+ #else
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+-- 
+1.7.1
+
