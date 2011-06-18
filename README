@@ -41,6 +41,12 @@ can be adjusted accordingly. Usually an experimentation software
 component will produce some binary log files that can be read using
 infrastructure software component named read_task_stats_file.
 
+The infrastructure component read_task_stats_file produces a GNU
+Octave (Matlab-compatible) command to plot the cummulative
+distribution of the task response times as the last line in its
+output. The command will not be output if the task log file carries no
+record of job execution statistics.
+
 Each file defining main() function must also define two global
 variables and initialize them appropriately as follows:
 const char prog_name[] = "PROGRAM_NAME";
