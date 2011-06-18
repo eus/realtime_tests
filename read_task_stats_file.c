@@ -128,6 +128,10 @@ static void print_exec_time_cdf(struct exec_time_list *smallest_exec_time,
 {
   struct exec_time_list *itr;
 
+  if (total_job_count == 0) {
+    return;
+  }
+
   fprintf(report, "plot([");
   itr = smallest_exec_time;
   while (itr != NULL) {
