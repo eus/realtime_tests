@@ -111,3 +111,10 @@ GNOME wireless applet. The problems can be fixed by applying
 004-HRTICK_enabled-various_problems-solution.diff to
 SCHED_DEADLINE. The directory 004-HRTICK_enabled-various_problems-*
 highlights the problems to be fixed as well as the fixing results.
+
+The directory 005-HRTICK_enabled-still_late contains result of an
+experiment done using hard CBS replenishment behavior after applying
+the fixes introduced at the previous experiment. This is produced by
+making Tadeus's GNU/Linux Ubuntu 10.10 machine try to establish a
+wireless LAN connection. This was done by selecting an access point in
+GNOME wireless applet.
