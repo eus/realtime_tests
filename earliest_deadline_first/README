@@ -50,13 +50,20 @@ SCHED_DEADLINE works. This is done by instrumenting SCHED_DEADLINE
 scheduling logic at commit f2ebcfd122cdab46f1e9eabe91e1549285b5a00b by
 applying sched_dl_instrumentation.diff.
 
-The resulting printk messages can be extracted with a command like
-'dmesg | grep' to a file. The file can then be processed using
-execution_trace-to-execution_trace_processed.sh to get a .csv
-file. The .csv file can then be processed further using a spreadsheet
-program to obtain an execution timeline. An example is the file
-execution_trace_processed.ods in directory
-001-what_is_wrong_with_commit_fd2579d11c6e49add3803ea5657c1c02c7e4fde9.
+In the above context, this experiment unit should be run by executing
+./run_experiment.sh that requires the kernel to have ftrace enabled in
+the debugfs. The result of running the executable will be
+/tmp/sched_dl_timeline.csv. The .csv file can then be processed
+further using a spreadsheet program to obtain an execution
+timeline. An example is the file execution_trace_processed.ods in
+directory
+006-HRTICK_enabled-bogus_outdated_rq_clock_problem/result_003. Aside
+from the .csv file, the executable will also produce
+./execution_trace.txt containing the ftrace result. To obtain the .csv
+file from this ftrace result, use the executable
+process_experiment_result.sh that will internally use
+execution_trace-to-execution_trace_processed.sh to produce the .csv
+file.
 
 Some messages in the execution timeline have the following associated
 meanings:
@@ -108,7 +115,9 @@ problems observed in SCHED_DEADLINE scheduling logic. This is produced
 by making Tadeus's GNU/Linux Ubuntu 10.10 machine try to establish a
 wireless LAN connection. This was done by selecting an access point in
 GNOME wireless applet. The problems can be fixed by applying
-004-HRTICK_enabled-various_problems-solution.diff to
+004-HRTICK_enabled-various_problems-fail_to_enforce_bandwidth.diff,
+004-HRTICK_enabled-various_problems-outdated_rq_clock.diff, and
+004-HRTICK_enabled-various_problems-partial_solution.diff to
 SCHED_DEADLINE. The directory 004-HRTICK_enabled-various_problems-*
 highlights the problems to be fixed as well as the fixing results.
 
@@ -118,3 +127,33 @@ the fixes introduced at the previous experiment. This is produced by
 making Tadeus's GNU/Linux Ubuntu 10.10 machine try to establish a
 wireless LAN connection. This was done by selecting an access point in
 GNOME wireless applet.
+
+The directory 006-HRTICK_enabled-bogus_outdated_rq_clock_problem
+contains the result that refutes the previous observation that
+SCHED_DEADLINE at commit f2ebcfd122cdab46f1e9eabe91e1549285b5a00b
+requires the patch
+004-HRTICK_enabled-various_problems-outdated_rq_clock.diff. Specifically,
+Dario Faggioli pointed out in a private e-mail that it is better to
+leave the time accounting to Linux generic scheduler just like what
+SCHED_FAIR and SCHED_RT do. An inspection of the Linux sched.c reveals
+that rq->clock is updated in function dequeue_task and, if a task is
+not dequeued in function schedule, rq->clock is updated in function
+put_prev_task. That is, the problem described in
+004-HRTICK_enabled-various_problems-outdated_rq_clock should have
+never been observed and so there is no need to apply patch
+004-HRTICK_enabled-various_problems-outdated_rq_clock.diff. To Tadeus,
+it seems that the use of printk interferes with the mechanism to
+update the rq->clock. Therefore, as Dario Faggioli suggested, the
+printk is replaced by trace_printk and the experiment result is
+obtained by applying sched_dl_instrumentation.diff and running
+./run_experiment.sh while making Tadeus's GNU/Linux Ubuntu 10.10
+machine try to establish a wireless LAN connection. This was done by
+selecting an access point in GNOME wireless applet. The file
+./006-detect_potential_outdated_rq_clock.sh is used to help
+distinguish the result that most likely show the problem of outdated
+rq->clock as in:
+./run_experiment.sh \
+    && ./006-detect_potential_outdated_rq_clock.sh /tmp/sched_dl_timeline.csv
+If there is no output, the whole command is simply repeated
+again. Otherwise, /tmp/sched_dl_timeline.csv is manually processed
+using a spreadsheet program.

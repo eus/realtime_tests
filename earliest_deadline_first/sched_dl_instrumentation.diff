@@ -1,56 +1,58 @@
-From fe88d4843bb5cb88709e1605a1e2e51784bb4bcc Mon Sep 17 00:00:00 2001
-From: Tadeus Prastowo <eus@member.fsf.org>
-Date: Tue, 14 Jun 2011 04:40:28 +0200
-Subject: [PATCH] Instrument the scheduling logic of SCHED_DEADLINE to produce the
- execution trace as printk messages.
-
----
- kernel/sched_dl.c |   85 +++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 79 insertions(+), 6 deletions(-)
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 67d545c..bc1ec53 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -703,8 +703,15 @@ static inline struct task_group *task_group(struct task_struct *p)
+ 
+ inline void update_rq_clock(struct rq *rq)
+ {
+-	if (!rq->skip_clock_update)
++	if (!rq->skip_clock_update) {
++		u64 old_clock = rq->clock;
+ 		rq->clock = sched_clock_cpu(cpu_of(rq));
++		trace_printk("rq->clock is %s\n",
++			     old_clock == rq->clock ? "not updated" : "updated"
++			);
++	} else {
++		trace_printk("rq->clock update is skipped\n");
++	}
+ }
+ 
+ /*
 diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
-index 9d0443e..7a4c5a6 100644
+index 70ce1d3..0e35331 100644
 --- a/kernel/sched_dl.c
 +++ b/kernel/sched_dl.c
-@@ -14,6 +14,10 @@
-  *                    Fabio Checconi <fabio@gandalf.sssup.it>
-  */
- 
-+static long long nsec_high(unsigned long long nsec);
-+static unsigned long nsec_low(unsigned long long nsec);
-+#define SPLIT_NS(x) nsec_high(x), nsec_low(x)
-+
- static inline int dl_time_before(u64 a, u64 b)
- {
- 	return (s64)(a - b) < 0;
-@@ -69,6 +73,9 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
+@@ -74,6 +74,9 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
  	dl_se->deadline = rq->clock + dl_se->dl_deadline;
  	dl_se->runtime = dl_se->dl_runtime;
  	dl_se->dl_new = 0;
 +
-+	printk("[%d] gets new BW pair; d_s at %Ld.%06ld\n",
-+	       dl_task_of(dl_se)->pid, SPLIT_NS(dl_se->deadline));
++	trace_printk("@%llu [%d] gets new BW pair; d_s at %llu\n",
++		     rq->clock, dl_task_of(dl_se)->pid, dl_se->deadline);
  }
  
  /*
-@@ -118,6 +125,16 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+@@ -123,6 +126,18 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
  		WARN_ON_ONCE(1);
  		dl_se->deadline = rq->clock + dl_se->dl_deadline;
  		dl_se->runtime = dl_se->dl_runtime;
 +
-+		printk("[%d] postpones its deadline but it lags too much;"
-+		       " d_l is set to %Ld.%06ld;"
-+		       " c_s is fully topped up\n",
-+		       dl_task_of(dl_se)->pid, SPLIT_NS(dl_se->deadline));
++		trace_printk("@%llu [%d] postpones its deadline"
++			     " but it lags too much;"
++			     " d_l is set to %llu;"
++			     " c_s is fully topped up\n", rq->clock,
++			     dl_task_of(dl_se)->pid, dl_se->deadline);
 +	} else {
-+		printk("[%d] postpones its deadline to %Ld.%06ld;"
-+		       " c_s is topped up to %Ld.%06ld\n",
-+		       dl_task_of(dl_se)->pid,
-+		       SPLIT_NS(dl_se->deadline), SPLIT_NS(dl_se->runtime));
++		trace_printk("@%llu [%d] postpones its deadline to %llu;"
++			     " c_s is topped up to %llu\n",
++			     rq->clock, dl_task_of(dl_se)->pid,
++			     dl_se->deadline, dl_se->runtime
++			);
  	}
  }
  
-@@ -132,7 +149,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+@@ -137,7 +152,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
   */
  static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
  {
@@ -60,7 +62,7 @@ index 9d0443e..7a4c5a6 100644
  
  	/*
  	 * left and right are the two sides of the equation above,
-@@ -148,9 +166,17 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+@@ -153,9 +169,18 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
  	 * type is very unlikely to occur in both cases.
  	 */
  	left = dl_se->dl_deadline * dl_se->runtime;
@@ -70,48 +72,50 @@ index 9d0443e..7a4c5a6 100644
 +	right_before_left = dl_time_before(right, left);
  
 -	return dl_time_before(right, left);
-+	printk("[%d] %Ld.%06ld / %Ld.%06ld %s %Ld.%06ld / %Ld.%06ld\n",
-+	       dl_task_of(dl_se)->pid,
-+	       SPLIT_NS(dl_se->runtime), SPLIT_NS(remaining_time),
-+	       right_before_left ? ">" : "<=",
-+	       SPLIT_NS(dl_se->dl_runtime), SPLIT_NS(dl_se->dl_deadline));
++	trace_printk("@%llu [%d] %llu / %llu %s %llu / %llu\n",
++		     rq_of_dl_rq(dl_rq_of_se(dl_se))->clock,
++		     dl_task_of(dl_se)->pid,
++		     dl_se->runtime, remaining_time,
++		     right_before_left ? ">" : "<=",
++		     dl_se->dl_runtime, dl_se->dl_deadline);
 +
 +	return right_before_left;
  }
  
  /*
-@@ -180,6 +206,11 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
+@@ -185,6 +210,12 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
  	    dl_entity_overflow(dl_se, rq->clock)) {
  		dl_se->deadline = rq->clock + dl_se->dl_deadline;
  		dl_se->runtime = dl_se->dl_runtime;
-+		printk("[%d] d_s is renewed (r + D) to %Ld.%06ld;"
-+		       " c_s is fully topped up\n",
-+		       dl_task_of(dl_se)->pid, SPLIT_NS(dl_se->deadline));
++		trace_printk("@%llu [%d] d_s is renewed (r + D) to %llu;"
++			     " c_s is fully topped up\n", rq->clock,
++			     dl_task_of(dl_se)->pid, dl_se->deadline);
 +	} else {
-+		printk("[%d] resumes its BW pair\n", dl_task_of(dl_se)->pid);
++		trace_printk("@%llu [%d] resumes its BW pair\n", rq->clock,
++			     dl_task_of(dl_se)->pid);
  	}
  }
  
-@@ -261,6 +292,8 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+@@ -266,6 +297,8 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
  	if (!dl_task(p))
  		goto unlock;
  
-+	printk("[%d] Hard CBS timer goes off\n", p->pid);
++	trace_printk("@%llu [%d] Hard CBS timer goes off\n", rq->clock, p->pid);
 +
  	dl_se->dl_throttled = 0;
  	if (p->se.on_rq) {
  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
-@@ -304,6 +337,9 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+@@ -309,6 +342,9 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
  		dl_se->runtime = rorun ? dl_se->runtime : 0;
  		dl_se->runtime -= rq->clock - dl_se->deadline;
  	}
-+	printk("[%d]%s%s\n", dl_task_of(dl_se)->pid,
-+	       rorun ? " rorun" : "",
-+	       dmiss ? " dmiss" : "");
++	trace_printk("@%llu [%d]%s%s\n", rq->clock, dl_task_of(dl_se)->pid,
++		     rorun ? " rorun" : "",
++		     dmiss ? " dmiss" : "");
  
  	return 1;
  }
-@@ -317,6 +353,7 @@ static void update_curr_dl(struct rq *rq)
+@@ -322,6 +358,7 @@ static void update_curr_dl(struct rq *rq)
  	struct task_struct *curr = rq->curr;
  	struct sched_dl_entity *dl_se = &curr->dl;
  	u64 delta_exec;
@@ -119,7 +123,7 @@ index 9d0443e..7a4c5a6 100644
  
  	if (!dl_task(curr) || !on_dl_rq(dl_se))
  		return;
-@@ -325,6 +362,9 @@ static void update_curr_dl(struct rq *rq)
+@@ -330,6 +367,9 @@ static void update_curr_dl(struct rq *rq)
  	if (unlikely((s64)delta_exec < 0))
  		delta_exec = 0;
  
@@ -129,156 +133,148 @@ index 9d0443e..7a4c5a6 100644
  	schedstat_set(curr->se.statistics.exec_max,
  		      max(curr->se.statistics.exec_max, delta_exec));
  
-@@ -336,6 +376,13 @@ static void update_curr_dl(struct rq *rq)
+@@ -341,6 +381,11 @@ static void update_curr_dl(struct rq *rq)
  
  	dl_se->runtime -= delta_exec;
  	if (dl_runtime_exceeded(rq, dl_se)) {
 +
-+		printk("[%d] uses up its c_s;"
-+		       " %Ld.%06ld-%Ld.%06ld=%Ld.%06ld\n",
-+		       curr->pid,
-+		       SPLIT_NS(prev_rq_clock), SPLIT_NS(prev_exec_start),
-+		       SPLIT_NS(delta_exec));
++		trace_printk("@%llu [%d] uses up its c_s; %llu-%llu=%llu\n",
++			     rq->clock, curr->pid,
++			     prev_rq_clock, prev_exec_start, delta_exec);
 +
  		__dequeue_task_dl(rq, curr, 0);
  		if (likely(start_dl_timer(dl_se)))
  			dl_se->dl_throttled = 1;
-@@ -427,9 +474,12 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+@@ -432,9 +477,13 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
  	 * its rq, the bandwidth timer callback (which clearly has not
  	 * run yet) will take care of this.
  	 */
 -	if (p->dl.dl_throttled)
 +	if (p->dl.dl_throttled) {
-+		printk("[%d] cannot be enqueued: throttled\n", p->pid);
++		trace_printk("@%llu [%d] cannot be enqueued: throttled\n",
++			     rq->clock, p->pid);
  		return;
 +	}
  
-+	printk("[%d] is enqueued\n", p->pid);
++	trace_printk("@%llu [%d] is enqueued\n", rq->clock, p->pid);
  	enqueue_dl_entity(&p->dl, flags);
  }
  
-@@ -440,6 +490,7 @@ static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+@@ -445,6 +494,7 @@ static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
  
  static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
  {
-+	printk("[%d] is dequeued\n", p->pid);
++	trace_printk("@%llu [%d] is dequeued\n", rq->clock, p->pid);
  	update_curr_dl(rq);
  	__dequeue_task_dl(rq, p, flags);
  }
-@@ -453,6 +504,7 @@ static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+@@ -458,6 +508,7 @@ static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
  static void yield_task_dl(struct rq *rq)
  {
  	struct task_struct *p = rq->curr;
-+	printk("[%d] yield_task_dl\n", p->pid);
++	trace_printk("@%llu [%d] yield_task_dl\n", rq->clock, p->pid);
  
  	/*
  	 * We make the task go to sleep until its current deadline by
-@@ -472,7 +524,11 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+@@ -477,7 +528,11 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
  {
  	if (!dl_task(rq->curr) || (dl_task(p) &&
  	    dl_time_before(p->dl.deadline, rq->curr->dl.deadline)))
 +	{
  		resched_task(rq->curr);
-+		printk("[%d] preempts %s (%d)\n",
-+		       p->pid, rq->curr->comm, rq->curr->pid);
++		trace_printk("@%llu [%d] preempts %s (%d)\n", rq->clock,
++			     p->pid, rq->curr->comm, rq->curr->pid);
 +	}
  }
  
  #ifdef CONFIG_SCHED_HRTICK
-@@ -520,11 +576,14 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
+@@ -527,11 +582,14 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
  	if (hrtick_enabled(rq))
  		start_hrtick_dl(rq, p);
  #endif
-+	printk("[%d] is pick_next_task_dl-ed by %s (%d)\n",
-+	       p->pid, current->comm, current->pid);
++	trace_printk("@%llu [%d] is pick_next_task_dl-ed by %s (%d)\n",
++		     rq->clock, p->pid, current->comm, current->pid);
  	return p;
  }
  
  static void put_prev_task_dl(struct rq *rq, struct task_struct *p)
  {
-+	printk("[%d] put_prev_task_dl\n", p->pid);
++	trace_printk("@%llu [%d] put_prev_task_dl\n", rq->clock, p->pid);
  	update_curr_dl(rq);
  	p->se.exec_start = 0;
  }
-@@ -541,6 +600,7 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+@@ -548,6 +606,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
  
  static void task_fork_dl(struct task_struct *p)
  {
-+	printk("[%d] task_fork_dl\n", p->pid);
++	trace_printk("@%llu [%d] task_fork_dl\n",
++		     rq_of_dl_rq(dl_rq_of_se(&p->dl))->clock, p->pid);
  	/*
  	 * The child of a -deadline task will be SCHED_DEADLINE, but
  	 * as a throttled task. This means the parent (or someone else)
-@@ -553,6 +613,7 @@ static void task_fork_dl(struct task_struct *p)
+@@ -560,6 +620,8 @@ static void task_fork_dl(struct task_struct *p)
  
  static void task_dead_dl(struct task_struct *p)
  {
-+	printk("[%d] task_dead_dl\n", p->pid);
++	trace_printk("@%llu [%d] task_dead_dl\n",
++		     rq_of_dl_rq(dl_rq_of_se(&p->dl))->clock, p->pid);
  	/*
  	 * We are not holding any lock here, so it is safe to
  	 * wait for the bandwidth timer to be removed.
-@@ -564,12 +625,14 @@ static void set_curr_task_dl(struct rq *rq)
+@@ -571,12 +633,14 @@ static void set_curr_task_dl(struct rq *rq)
  {
  	struct task_struct *p = rq->curr;
  
-+	printk("[%d] set_curr_task_dl\n", p->pid);
++	trace_printk("@%llu [%d] set_curr_task_dl\n", rq->clock, p->pid);
  	p->se.exec_start = rq->clock;
  }
  
  static void switched_from_dl(struct rq *rq, struct task_struct *p,
  			     int running)
  {
-+	printk("[%d] switched_from_dl\n", p->pid);
++	trace_printk("@%llu [%d] switched_from_dl\n", rq->clock, p->pid);
  	if (hrtimer_active(&p->dl.dl_timer))
  		hrtimer_try_to_cancel(&p->dl.dl_timer);
  }
-@@ -577,21 +640,29 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p,
- static void switched_to_dl(struct rq *rq, struct task_struct *p,
- 			   int running)
- {
-+	printk("[%d] switched_to_dl", p->pid);
- 	/*
- 	 * If p is throttled, don't consider the possibility
+@@ -589,16 +653,23 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p,
  	 * of preempting rq->curr, the check will be done right
  	 * after its runtime will get replenished.
  	 */
 -	if (unlikely(p->dl.dl_throttled))
 +	if (unlikely(p->dl.dl_throttled)) {
-+		printk(", but throttled\n");
++		trace_printk("@%llu [%d] switched_to_dl, but throttled\n",
++			     rq->clock, p->pid);
  		return;
 +	}
  
 -	if (!running)
 +	if (!running) {
-+		printk(", and not running");
++		trace_printk("@%llu [%d] switched_to_dl, and not running\n",
++			     rq->clock, p->pid);
  		check_preempt_curr_dl(rq, p, 0);
 +	}
-+
-+	printk("\n");
  }
  
  static void prio_changed_dl(struct rq *rq, struct task_struct *p,
  			    int oldprio, int running)
  {
-+	printk("[%d] prio_changed_dl\n", p->pid);
++	trace_printk("@%llu [%d] prio_changed_dl\n", rq->clock, p->pid);
  	switched_to_dl(rq, p, running);
  }
  
-@@ -599,6 +670,7 @@ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+@@ -606,6 +677,7 @@ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
  static int
  select_task_rq_dl(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
  {
-+	printk("[%d] select_task_rq_dl\n", p->pid);
++	trace_printk("@%llu [%d] select_task_rq_dl\n", rq->clock, p->pid);
  	return task_cpu(p);
  }
  
-@@ -609,6 +681,7 @@ static void set_cpus_allowed_dl(struct task_struct *p,
+@@ -616,6 +688,7 @@ static void set_cpus_allowed_dl(struct task_struct *p,
  
  	BUG_ON(!dl_task(p));
  
-+	printk("[%d] set_cpus_allowed_dl\n", p->pid);
++	trace_printk("[%d] set_cpus_allowed_dl\n", p->pid);
  	cpumask_copy(&p->cpus_allowed, new_mask);
  	p->dl.nr_cpus_allowed = weight;
  }
--- 
-1.7.1
-

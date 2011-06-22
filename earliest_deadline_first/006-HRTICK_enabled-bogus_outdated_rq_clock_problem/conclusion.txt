@@ -1,0 +1,5 @@
+This experiment concludes that it is possible that the problem
+of outdated rq->clock observed in
+004-HRTICK_enabled-various_problems-outdated_rq_clock was caused by
+the use of printk because using trace_printk, the problem is no longer
+observed in this experiment.

@@ -47,8 +47,8 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
   relative_time *busyloop_tolerance = to_utility_time_dyn(100, us);
   unsigned busyloop_search_passes = 10;
 
-  relative_time *offset_to_start = to_utility_time_dyn(3, s);
-  relative_time *offset_to_stop = to_utility_time_dyn(3205, ms);
+  relative_time *offset_to_start = to_utility_time_dyn(2, s);
+  relative_time *offset_to_stop = to_utility_time_dyn(2405, ms);
   /* END: Tuneable parameters */
 
 #define set_manual_gc(id)                                       \
@@ -76,6 +76,8 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
   task *tau_2 = NULL;
   task *tau_3 = NULL;
   char t_str[32];
+  const char *ktrace_path = "/sys/kernel/debug/tracing/tracing_enabled";
+  FILE *ktrace_file = NULL;
 
   /* Determining overheads */
   if (job_statistics_overhead(0, &job_stats_overhead) != 0) {
@@ -250,9 +252,26 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
     }                                                                   \
   } while (0)
 
+  ktrace_file = utility_file_open_for_writing(ktrace_path);
+  if (ktrace_file == NULL) {
+    log_error("Cannot open ktrace file");
+    goto error;
+  }
+  errno = 0;
+  if (setvbuf(ktrace_file, NULL, _IONBF, 0) != 0) {
+    if (errno) {
+      log_syserror("Cannot unbuffer ktrace_file");
+    } else {
+      log_error("Cannot unbuffer ktrace_file");
+    }
+    goto error;
+  }
+
   create_task_thread(1);
   create_task_thread(2);
   create_task_thread(3);
+
+  fprintf(ktrace_file, "1");
 
 #undef create_task_thread
   /* END: Create task threads */
@@ -286,6 +305,8 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
 #undef join_thread
   /* END: Join task threads */
 
+  fprintf(ktrace_file, "0");
+
   /* Check task return statuses */
 #define check_rc(id) do {                                               \
     if (tau_ ## id ## _thread_args.rc != 0) {                           \
@@ -307,6 +328,10 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
   
  error:
   /* Clean-up */
+  if (ktrace_file != NULL) {
+    utility_file_close(ktrace_file, ktrace_path);
+  }
+
   if (tau_3 != NULL) {
     task_destroy(tau_3);
   }
