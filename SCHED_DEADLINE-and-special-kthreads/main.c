@@ -25,52 +25,14 @@
 #include "../utility_experimentation.h"
 #include "../utility_log.h"
 #include "../utility_sched_deadline.h"
+#include "../utility_subprocess.h"
 
 MAIN_BEGIN("SCHED_DEADLINE-and-special-kthreads", "stderr", NULL)
 {
   pid_t s1 = -1, s2 = -1;
   int s1_pipe[2], s2_pipe[2];
   char buffer[32], buffer_2[32];
-
-#define fork_proc(id)                                   \
-  id = fork();                                          \
-  if (id == -1) {                                       \
-    fatal_syserror("Cannot fork to execute " #id);      \
-  } else if (id == 0)
-
-#define exec_proc(filename, ...) do {                   \
-    char *argv[] = { filename, ## __VA_ARGS__ , NULL }; \
-    execv(filename, argv);                              \
-    log_syserror("Cannot execute " #filename);          \
-    return EXIT_FAILURE;                                \
-  } while (0)
-
-#define make_opt(opchr, oparg) "-" opchr, oparg
-
-#define wait_proc(id) do {                                      \
-    int child_exit_code;                                        \
-    if (waitpid(id, &child_exit_code, 0) != id) {               \
-      log_syserror("Cannot reap " #id);                         \
-      break;                                                    \
-    } else {                                                    \
-      if (!WIFEXITED(child_exit_code)) {                        \
-        log_error(#id " does not terminate normally");          \
-        break;                                                  \
-      } else {                                                  \
-        if (WEXITSTATUS(child_exit_code) != EXIT_SUCCESS) {     \
-          log_error(#id " terminates due to an error");         \
-          break;                                                \
-        }                                                       \
-      }                                                         \
-    }                                                           \
-  } while (0)
-
-#define kill_proc(id, sgnl) do {                        \
-    if (kill(id, sgnl) != 0) {                          \
-      log_error("Cannot kill " #id " with " #sgnl);     \
-      break;                                            \
-    }                                                   \
-  } while (0)
+  int rc = EXIT_SUCCESS;
 
   /* Phase 1 */
   if (pipe(s1_pipe) != 0) {
@@ -94,8 +56,8 @@ MAIN_BEGIN("SCHED_DEADLINE-and-special-kthreads", "stderr", NULL)
   }
 
   sleep(1);
-  kill_proc(s1, SIGUSR1);
-  wait_proc(s1);
+  rc = kill_proc(s1, SIGUSR1) ? EXIT_FAILURE : rc;
+  rc = wait_proc(s1) ? EXIT_FAILURE : rc;
 
   memset(buffer, 0, sizeof(buffer));
   if (read(s1_pipe[0], buffer, sizeof(buffer) - 1) == -1) {
@@ -157,11 +119,11 @@ MAIN_BEGIN("SCHED_DEADLINE-and-special-kthreads", "stderr", NULL)
     fatal_error("Cannot enter SCHED_DEADLINE (privilege may be insufficient)"
                 );
   }
-  kill_proc(s1, SIGUSR1);
-  kill_proc(s2, SIGUSR1);
+  rc = kill_proc(s1, SIGUSR1) ? EXIT_FAILURE : rc;
+  rc = kill_proc(s2, SIGUSR1) ? EXIT_FAILURE : rc;
   sched_deadline_leave(&old_scheduler);
-  wait_proc(s1);
-  wait_proc(s2);
+  rc = wait_proc(s1) ? EXIT_FAILURE : rc;
+  rc = wait_proc(s2) ? EXIT_FAILURE : rc;
 
   memset(buffer, 0, sizeof(buffer));
   if (read(s1_pipe[0], buffer, sizeof(buffer) - 1) == -1) {
@@ -184,6 +146,6 @@ MAIN_BEGIN("SCHED_DEADLINE-and-special-kthreads", "stderr", NULL)
   printf("2. Cycle count (S1, S2): %s %s\n", buffer, buffer_2);  
   /* END: Phase 2 */
 
-  return EXIT_SUCCESS;
+  return rc;
 
 } MAIN_END
