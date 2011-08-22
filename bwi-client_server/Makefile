@@ -3,7 +3,7 @@ include ../Makefile
 # Part that each experimentation component should customize
 test_cases = 
 test_cases_sudo =
-executables = main-1 main-2 main-3 main-4 main-5 main-6 \
+executables = main-1 main-2 main-3 main-4 main-5 main-6 main-7 \
 server client cpu_hog cpu_hog_cbs hrt_cbs
 
 cond_for_pthread +=

@@ -30,6 +30,7 @@
 #include "../utility_time.h"
 #include "../utility_sched.h"
 #include "../utility_sched_fifo.h"
+#include "../utility_sched_deadline.h"
 
 static volatile int terminated = 0;
 static int old_scheduler_set = 0;
@@ -93,10 +94,12 @@ MAIN_BEGIN("server", "stderr", NULL)
   };
   int processing_duration_ms = -1;
   int server_port = -1;
+  int cbs_budget_ms = -1;
+  int cbs_period_ms = -1;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hd:p:")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hd:p:q:t:")) != -1) {
       switch (optchar) {
       case 'd':
         processing_duration_ms = atoi(optarg);
@@ -111,20 +114,33 @@ MAIN_BEGIN("server", "stderr", NULL)
         }
         server_addr.sin_port = htons(server_port);
         break;
+      case 'q':
+        cbs_budget_ms = atoi(optarg);
+        break;
+      case 't':
+        cbs_period_ms = atoi(optarg);
+        break;
       case 'h':
         printf("Usage: %s -d SERVING_DURATION -p PORT\n"
+               "       [-q CBS_BUDGET -t CBS_PERIOD]\n"
                "\n"
                "This server listens on a local UDP port. Upon receiving a UDP\n"
                "packet at the port, this server will run for the specified\n"
                "duration without blocking before sending the client-sent data\n"
                "back to the client. SIGTERM should be used to graciously\n"
-               "terminate this program.\n"
+               "terminate this program. Optionally, this server can be run\n"
+               "using a CBS by specifying both the CBS budget and period.\n"
+               "\n"
                "-d SERVING_DURATION is the duration in millisecond by which\n"
                "   this server will keep the CPU busy after receiving\n"
                "   a client request but before returning the response.\n"
                "-p PORT is the server UDP port number at which the server\n"
                "   is receiving UDP packets. This port should be unprivileged\n"
-               "   to avoid unnecessary security problem.\n",
+               "   to avoid unnecessary security problem.\n"
+               "-q CBS_BUDGET is the budget in millisecond of the CBS that\n"
+               "   runs this server.\n"
+               "-t CBS_PERIOD is the period in millisecond of the CBS that\n"
+               "   runs this server.\n",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -141,6 +157,19 @@ MAIN_BEGIN("server", "stderr", NULL)
   }
   if (server_port == -1) {
     fatal_error("-p must be specified (-h for help)");
+  }
+  if ((cbs_budget_ms == -1 && cbs_period_ms != -1)
+      || (cbs_budget_ms != -1 && cbs_period_ms == -1)) {
+    fatal_error("Both -q and -t must be specified (-h for help)");
+  }
+  if (cbs_budget_ms != -1 && cbs_period_ms != -1) {
+    if (cbs_budget_ms <= 0) {
+      fatal_error("CBS_BUDGET must be at least 1 (-h for help)");
+    }
+    if (cbs_budget_ms > cbs_period_ms) {
+      fatal_error("CBS_PERIOD must be greater than or equal to CBS_BUDGET"
+                  " (-h for help)");
+    }
   }
 
   /* Prepare server busyloop */
@@ -178,6 +207,16 @@ MAIN_BEGIN("server", "stderr", NULL)
     }
   }
   /* END: Prepare UDP connection */
+
+  /* Use CBS if requested */
+  if (cbs_budget_ms != -1 && cbs_period_ms != -1) {
+    if (sched_deadline_enter(to_utility_time_dyn(cbs_budget_ms, ms),
+                             to_utility_time_dyn(cbs_period_ms, ms),
+                             NULL) != 0) {
+      fatal_error("Cannot use CBS (privilege may be insufficient)");
+    }
+  }
+  /* END: Use CBS if requested */
 
   /* Serve incoming client UDP packet */
   while (!terminated) {

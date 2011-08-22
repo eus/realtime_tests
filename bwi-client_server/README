@@ -97,3 +97,13 @@ The result will be file subexperiment_06.bin.
 The expected CDF graph of the client's response time is not a vertical
 line at 19 ms because there is a competing HRT server. Nevertheless,
 the CDF should end at one at a time t less than or equal to 30 ms.
+
+[Sub-experiment 7]
+Same as sub-experiment 1 except that the server is run using a CBS
+whose Q_s is 4 ms and T_s is 30 ms.
+
+This sub-experiment is run by: sudo ./main-7
+The result will be file subexperiment_07.bin.
+The expected CDF graph of the client's response time is a vertical
+line at 19 ms because the CPU hogger cannot interfere with the server
+that runs using a CBS.
