@@ -27,7 +27,8 @@
 #include "utility_time.h"
 #include "utility_cpu.h"
 
-static inline void print_stats(const absolute_time *t1_abs, int chunk_counter)
+static inline void print_stats(const absolute_time *t1_abs, int chunk_counter,
+                               int silent)
 {
   struct timespec t2;
   absolute_time t2_abs;
@@ -39,16 +40,19 @@ static inline void print_stats(const absolute_time *t1_abs, int chunk_counter)
   utility_time_sub(&t2_abs, t1_abs, &t2_abs);
   to_string(&t2_abs, t_str, sizeof(t_str));
 
-  printf("%d\n%s\n", chunk_counter, t_str);
+  if (!silent) {
+    printf("%d\n%s\n", chunk_counter, t_str);
+  }
 }
 
+static int silent = 0;
 static int chunk_counter = 0;
 static absolute_time t1_abs;
 static sigjmp_buf jmp_env;
 static void sighand(int signo)
 {
   if (signo == SIGTERM) {
-    print_stats(&t1_abs, chunk_counter);
+    print_stats(&t1_abs, chunk_counter, silent);
     siglongjmp(jmp_env, 0);
   }
 }
@@ -179,7 +183,7 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":he:b:q:t:s:")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hze:b:q:t:s:")) != -1) {
       switch (optchar) {
       case 'e':
         exec_time_ms = atoi(optarg);
@@ -196,9 +200,12 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
       case 's':
         stopping_time = atoi(optarg);
         break;
+      case 'z':
+        silent = 1;
+        break;
       case 'h':
         printf("Usage: %s -e EXEC_TIME -b SLEEP_TIME -q CBS_BUDGET\n"
-               "       -t CBS_PERIOD [-s STOPPING_TIME]\n"
+               "       -t CBS_PERIOD [-s STOPPING_TIME] [-z]\n"
                "\n"
                "This program will run busyloop chunks, each for the given\n"
                "execution time before sleeping for the stated duration.\n"
@@ -206,12 +213,13 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
                "budget and period. If desired, the program can quit after\n"
                "the total time to perform the busyloop-sleep cycles exceed\n"
                "the given time. Otherwise, SIGTERM can be sent to quit the\n"
-               "program gracefully. When the program quits gracefully, it\n"
-               "prints on stdout the number of cycles fully performed\n"
-               "followed by a newline followed by the elapsed time in second\n"
-               "since the first chunk execution followed by a newline.\n"
+               "program gracefully. When the program quits gracefully,\n"
+               "unless -z is given, it prints on stdout the number of cycles\n"
+               "fully performed followed by a newline followed by the\n"
+               "elapsed time in second since the first chunk execution\n"
+               "followed by a newline.\n"
                "SIGUSR1 must be sent to this program to start chunk execution."
-               "\n"
+               "\n\n"
                "-e EXEC_TIME is the busyloop duration in millisecond.\n"
                "   This should be greater than zero.\n"
                "-b SLEEP_TIME is the sleeping duration in millisecond.\n"
@@ -222,7 +230,9 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
                "   This should be greater than or equal to CBS_BUDGET.\n"
                "-i STOPPING_TIME is the elapsed time in ms since the\n"
                "   beginning of the first busyloop-sleep cycle after which\n"
-               "   this program will quit before beginning the next cycle.\n",
+               "   this program will quit before beginning the next cycle.\n"
+               "-z BE_SILENT will disable cycle count and elapsed time\n"
+               "   print out.\n",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -298,7 +308,7 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
             stopping_time == -1 ? NULL : &max_duration,
             exec_busyloop, &t1_abs, &chunk_counter);
 
-    print_stats(&t1_abs, chunk_counter);
+    print_stats(&t1_abs, chunk_counter, silent);
   }
 
   destroy_cpu_busyloop(exec_busyloop);
