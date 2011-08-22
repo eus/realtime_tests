@@ -31,7 +31,13 @@
 
 /**
  * Fork a process and store the child ID in id. If forking fails, this
- * macro will call function exit.
+ * macro will call function exit. The following is a usage example:
+ *
+ * @code
+ * fork_proc(first_child) {
+ *   // Child code
+ * }
+ * @endcode
  *
  * @param id the variable to store the child process ID.
  */
