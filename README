@@ -37,9 +37,14 @@ replacing DESIRED_EXPERIMENT_NAME with the actual name of the new
 experimentation component. Then, go to directory
 "DESIRED_EXPERIMENT_NAME" and edit README describing the purpose of
 the experiment. Afterwards, main.c and Makefile found in the directory
-can be adjusted accordingly. Usually an experimentation software
-component will produce some binary log files that can be read using
-infrastructure software component named read_task_stats_file.
+can be adjusted accordingly. The following files can be added to the
+list of executables in Makefile to obtain the executables in the
+experimentation directory:
+cpu_hog_cbs
+
+Usually an experimentation software component will produce some binary
+log files that can be read using infrastructure software component
+named read_task_stats_file.
 
 The infrastructure component read_task_stats_file produces a GNU
 Octave (Matlab-compatible) command to plot the cummulative

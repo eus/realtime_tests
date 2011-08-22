@@ -21,11 +21,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <setjmp.h>
-#include "../utility_experimentation.h"
-#include "../utility_log.h"
-#include "../utility_sched_deadline.h"
-#include "../utility_time.h"
-#include "../utility_cpu.h"
+#include "utility_experimentation.h"
+#include "utility_log.h"
+#include "utility_sched_deadline.h"
+#include "utility_time.h"
+#include "utility_cpu.h"
 
 static inline void print_stats(const absolute_time *t1_abs, int chunk_counter)
 {
