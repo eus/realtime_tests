@@ -1,0 +1,60 @@
+1. Cycle count (S1): 302
+2. Cycle count (S1, S2): 11 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 16 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 18 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 15 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 9 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 19 57
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 14 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 13 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 12 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 16 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 18 57
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 13 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 8 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 14 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 13 58
+1. Cycle count (S1): 299
+2. Cycle count (S1, S2): 8 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 17 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 12 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 18 57
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 13 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 9 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 14 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 19 57
+1. Cycle count (S1): 302
+2. Cycle count (S1, S2): 9 59
+1. Cycle count (S1): 302
+2. Cycle count (S1, S2): 13 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 14 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 15 58
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 11 59
+1. Cycle count (S1): 298
+2. Cycle count (S1, S2): 18 57
+1. Cycle count (S1): 301
+2. Cycle count (S1, S2): 15 58

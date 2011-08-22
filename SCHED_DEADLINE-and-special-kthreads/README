@@ -1,0 +1,86 @@
+		 SCHED_DEADLINE and Special Kthreads
+----------------------------------------------------------------------
+
+Previously Tadeus Prastowo considers that the simplest revision of
+SCHED_DEADLINE, which adds EDF scheduling algorithm and CBS temporal
+protection mechanism to the Linux kernel, found at
+git://gitorious.org/sched_deadline/linux-deadline.git in branch
+latest/2.6.36-dl-V3 is at commit
+f2ebcfd122cdab46f1e9eabe91e1549285b5a00b.
+
+However, when the commit is patched to implement the original CBS
+replenishment behavior, which is called work conserving mode, during
+some experiments concerning CBS bandwidth inheritance for
+client-server situation where a CBS S1 = (5, 30) with bandwidth 16.67%
+runs an infinite loop, the system call made by a CBS S2 = (19, 30)
+with bandwidth 63.33% through unistd.h function sleep fails to wake
+up.
+
+A hypothesis tested by this experiment is that function sleep enqueues
+a timer to be run by the system programmable timer. When the system
+programmable timer fires, a hard-IRQ is raised that in turn raises a
+soft-IRQ. The soft-IRQ to wake up the sleeping thread, however, fails
+to work because ksoftirqd, which is the thread that runs soft-IRQ
+jobs, is scheduled using SCHED_FIFO that never gets run when a CBS
+keeps being active generating jobs while keep postponing its deadline
+in work conserving mode.
+
+To prove the hypothesis, this experiment will run an infinite loop
+within a CBS S1 = (10, 30). The infinite loop will do usleep(10 *
+1000) after running for 20 ms. After running for 3 s, there should be
+100 running-sleeping cycle count. Then, the experiment will run S1
+along with another CBS S2 = (10, 30) that runs an infinite loop but
+without sleeping at all for 3 s. If the hypothesis is correct, then S1
+will have running-sleeping cycle count less than 100 but should be
+close to 1. If the hypothesis is correct, then the simplest revision
+of SCHED_DEADLINE found at
+git://gitorious.org/sched_deadline/linux-deadline.git in branch
+latest/2.6.36-dl-V3 is at commit
+80d56eabdc0dd373dc18f5583b4782ef91f0f845.
+
+The hypothesis seems to be true from the first few results although
+around 50% of the results shows that S1 can have cycle count more than
+100 when S1 is run together with S2. This anomaly draws attention to
+the way S1 and S2 are started and stopped in main.c. It turned out
+that when S1 cycle count is close to 1, S1 is too late to change its
+scheduler to SCHED_DEADLINE after performing busyloop calibration
+using SCHED_FIFO so that S2 monopolizes the CPU all the time before
+killing S1 (the previous wrong design is for S2 to kill S1 once S2
+completes). And, when S1 cycle count is around 150, it turned out that
+S1 changes its scheduler to SCHED_DEADLINE before S2 completes its
+busyloop calibration using SCHED_FIFO so that S1 can run more cycles
+before S2 kills S1 (S1 cannot monopolize the CPU because it has a
+break for 10 ms after running for 20 ms). After the starting and
+stopping mechanism are corrected, this experiment is run by running
+"for i in 1 2 3 4 5; do sudo ./main; done" on several versions of
+SCHED_DEADLINE kernel.
+
+The result of running the command on commit
+f2ebcfd122cdab46f1e9eabe91e1549285b5a00b using original CBS
+replenishment behavior (work conserving mode) is in f2_work.txt. The
+one on the same commit but using hard replenishment behavior (non-work
+conserving mode) is in f2_non-work.txt. The ones on commit
+80d56eabdc0dd373dc18f5583b4782ef91f0f845 using work conserving mode
+and non-work conserving mode are 80_work.txt and 80_non-work.txt,
+respectively.
+
+From the results, it is apparent that irrespective of S2 chunk size,
+S1 cycle count should be dependent only on its running-sleeping
+parameters. Moreover, S1 cycle counts when S1 runs alone and not do
+not differ much in non-work conserving mode because non-work
+conserving mode disallows a thread to exploit any available free time
+to execute earlier. Most importantly, it can be observed that special
+treatment of some kthreads introduces more variation on S1 cycle count
+when S1 sleeps just almost the end of its budget (S1.e = 9 and S1.b =
+1 independent of S2 chunk parameters because S1 cycle count should be
+dependent only on its own parameters). The variation is made visible
+by running "for ((i = 1; i <= 30; i++)); do sudo ./main; done" on
+commit f2ebcfd122cdab46f1e9eabe91e1549285b5a00b and
+80d56eabdc0dd373dc18f5583b4782ef91f0f845 both using work conserving
+mode whose results are in f2_work_9_1_*.txt and 80_work_9_1_*.txt,
+respectively.
+
+To conclude, commit f2ebcfd122cdab46f1e9eabe91e1549285b5a00b is
+preferrable to perform experiment using SCHED_DEADLINE on
+uni-processor system because there is no unpredictable execution of
+some kthreads.

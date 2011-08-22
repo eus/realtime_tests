@@ -1,0 +1,73 @@
+[S1.e = 9 S1.b = 1]
+S2.e = 10
+1. Cycle count (S1): 71
+2. Cycle count (S1, S2): 87 102
+1. Cycle count (S1): 75
+2. Cycle count (S1, S2): 69 103
+1. Cycle count (S1): 63
+2. Cycle count (S1, S2): 68 101
+1. Cycle count (S1): 71
+2. Cycle count (S1, S2): 66 101
+1. Cycle count (S1): 60
+2. Cycle count (S1, S2): 81 101
+
+S2.e = 50
+1. Cycle count (S1): 63
+2. Cycle count (S1, S2): 62 21
+1. Cycle count (S1): 76
+2. Cycle count (S1, S2): 66 21
+1. Cycle count (S1): 60
+2. Cycle count (S1, S2): 61 21
+1. Cycle count (S1): 71
+2. Cycle count (S1, S2): 64 21
+1. Cycle count (S1): 68
+2. Cycle count (S1, S2): 55 21
+
+S2.e = 100
+1. Cycle count (S1): 82
+2. Cycle count (S1, S2): 82 11
+1. Cycle count (S1): 50
+2. Cycle count (S1, S2): 77 11
+1. Cycle count (S1): 60
+2. Cycle count (S1, S2): 77 11
+1. Cycle count (S1): 64
+2. Cycle count (S1, S2): 82 11
+1. Cycle count (S1): 70
+2. Cycle count (S1, S2): 63 11
+
+[S1.e = 20 S1.b = 10]
+S2.e = 10
+1. Cycle count (S1): 31
+2. Cycle count (S1, S2): 33 83
+1. Cycle count (S1): 34
+2. Cycle count (S1, S2): 31 98
+1. Cycle count (S1): 33
+2. Cycle count (S1, S2): 33 84
+1. Cycle count (S1): 31
+2. Cycle count (S1, S2): 33 101
+1. Cycle count (S1): 36
+2. Cycle count (S1, S2): 31 93
+
+S2.e = 50
+1. Cycle count (S1): 33
+2. Cycle count (S1, S2): 40 18
+1. Cycle count (S1): 28
+2. Cycle count (S1, S2): 33 17
+1. Cycle count (S1): 36
+2. Cycle count (S1, S2): 34 18
+1. Cycle count (S1): 32
+2. Cycle count (S1, S2): 30 18
+1. Cycle count (S1): 34
+2. Cycle count (S1, S2): 34 15
+
+S2.e = 100
+1. Cycle count (S1): 35
+2. Cycle count (S1, S2): 32 11
+1. Cycle count (S1): 31
+2. Cycle count (S1, S2): 32 10
+1. Cycle count (S1): 32
+2. Cycle count (S1, S2): 33 9
+1. Cycle count (S1): 35
+2. Cycle count (S1, S2): 37 8
+1. Cycle count (S1): 34
+2. Cycle count (S1, S2): 38 9
