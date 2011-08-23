@@ -164,3 +164,25 @@ The result will be file subexperiment_11.bin.
 The expected CDF graph of the client's response time should be similar
 to that that of sub-experiment 10 because no deadline is ever
 postponed.
+
+[Sub-experiment 12]
+Same as sub-experiment 1 except that an additional client keeps
+requesting the server service one after another. Since the server
+queue is FIFO and the additional client only sends the next request
+after the server sends the response, the CBS client has a worst-case
+blocking time of 9 ms when using BWI. Unfortunately, in this
+sub-experiment, BWI is not in use, and therefore, the CBS client will
+surely be late.
+
+This sub-experiment is run by: sudo ./main-12
+The result will be file subexperiment_12.bin.
+The expected CDF graph of the client's response time is a slope after
+19 ms.
+
+[Sub-experiment 13]
+Same as sub-experiment 12 except that BWI is in use.
+
+This sub-experiment is run by: sudo ./main-13
+The result will be file subexperiment_13.bin.
+The expected CDF graph of the client's response time is a slope
+between 19 ms and 28 ms due to 9 ms worst-case blocking time.
