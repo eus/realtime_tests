@@ -280,6 +280,7 @@ struct client_prog_prms {
   int stopping_iteration;
   int ftrace_iteration;
   FILE *ktrace_file;
+  sigset_t send_recv_interrupt_mask;
 };
 static void client_prog(void *args)
 {
@@ -303,9 +304,11 @@ static void client_prog(void *args)
   }  
   /* END: BWI */
 
+  pthread_sigmask(SIG_UNBLOCK, &prms->send_recv_interrupt_mask, NULL);
   send_recv(*prms->client_socket_ptr, prms->request, prms->len,
             prms->response, prms->len, &byte_sent, &byte_rcvd,
             &send_errno, &recv_errno);
+  pthread_sigmask(SIG_BLOCK, &prms->send_recv_interrupt_mask, NULL);
 
   /* BWI revocation */
   if (prms->server_pid != -1) {
@@ -360,6 +363,10 @@ static void cleanup(void)
   }
 }
 
+static void signal_handler(int signum)
+{
+}
+
 MAIN_BEGIN("client", "stderr", NULL)
 {
   const char *ktrace_path = "/sys/kernel/debug/tracing/tracing_enabled";
@@ -368,6 +375,17 @@ MAIN_BEGIN("client", "stderr", NULL)
   if (atexit(cleanup) == -1) {
     log_syserror("Cannot register fn cleanup at exit");
   }
+
+  /* SIGUSR2 is just used to interrupt fn recv to avoid getting stuck */
+  {
+    struct sigaction act = {
+      .sa_handler = signal_handler,
+    };
+    if (sigaction(SIGUSR2, &act, NULL) != 0) {
+      fatal_error("Cannot handle signal SIGUSR2");
+    }
+  }
+  /* END: SIGUSR2 is just used to interrupt fn recv to avoid getting stuck */
 
   struct sockaddr_in server_addr = {
     .sin_family = AF_INET,
@@ -660,6 +678,8 @@ MAIN_BEGIN("client", "stderr", NULL)
     .ftrace_iteration = ftrace_iteration,
     .ktrace_file = ktrace_file,
   };
+  sigemptyset(&client_prog_args.send_recv_interrupt_mask);
+  sigaddset(&client_prog_args.send_recv_interrupt_mask, SIGUSR2);
   /* END: Prepare client task */
 
   /* Launching client task */
@@ -699,12 +719,16 @@ MAIN_BEGIN("client", "stderr", NULL)
 
   task_stop(client_thread_args.client_task);
 
+  /* Ensure that client_task does not get stuck at fn recv */
+  pthread_kill(client_tid, SIGUSR2);
+  /* END: Ensure that client_task does not get stuck at fn recv */
+
   if ((errno = pthread_join(client_tid, NULL)) != 0) {
     fatal_syserror("Cannot join client thread");
   }
 
   if (client_thread_args.rc != EXIT_SUCCESS) {
-    fatal_syserror("Cannot execute client thread successfully");
+    fatal_error("Cannot execute client thread successfully");
   }
   /* END: Launching client task */
 
