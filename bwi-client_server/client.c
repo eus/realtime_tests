@@ -174,6 +174,8 @@ static void *send_recv_overhead_measurement_thread(void *args)
   int send_errno, recv_errno;
   int counter;
 
+  memset(prms->response, 0, prms->len);
+
   if (kill(prms->server_pid, SIGUSR1) != 0) {
     fatal_error("Cannot signal the server to enter SCHED_FIFO");
   }
@@ -232,8 +234,7 @@ static void *send_recv_overhead_measurement_thread(void *args)
     fatal_syserror("Cannot retrieve server response");
   } else if (byte_rcvd != prms->len) {
     fatal_error("Server response is corrupted");
-  }
-  if (memcmp(prms->request, prms->response, prms->len) != 0) {
+  } else if (memcmp(prms->request, prms->response, prms->len) != 0) {
     fatal_error("Request & server response do not match");
   }
 
@@ -304,6 +305,8 @@ static void client_prog(void *args)
   }  
   /* END: BWI */
 
+  memset(prms->response, 0, prms->len);
+
   pthread_sigmask(SIG_UNBLOCK, &prms->send_recv_interrupt_mask, NULL);
   send_recv(*prms->client_socket_ptr, prms->request, prms->len,
             prms->response, prms->len, &byte_sent, &byte_rcvd,
@@ -339,8 +342,7 @@ static void client_prog(void *args)
     }
   } else if (byte_rcvd != prms->len) {
     log_error("Server response is corrupted");
-  }
-  if (memcmp(prms->request, prms->response, prms->len) != 0) {
+  } else if (memcmp(prms->request, prms->response, prms->len) != 0) {
     log_error("Request & server response do not match");
   }
 
