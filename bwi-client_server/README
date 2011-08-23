@@ -107,3 +107,60 @@ The result will be file subexperiment_07.bin.
 The expected CDF graph of the client's response time is a vertical
 line at 19 ms because the CPU hogger cannot interfere with the server
 that runs using a CBS.
+
+[Sub-experiment 8]
+Same as sub-experiment 7 except that an additional CPU hogger is run
+using a CBS whose Q_s is 6 ms and T_s is 30 ms.
+
+This sub-experiment is run by: sudo ./main-8
+The result will be file subexperiment_08.bin.
+The expected CDF graph of the client's response time is a slope
+after 19 ms because the server CBS execution will frequently be
+interrupted by the CPU hogger running using a CBS.
+
+* NOTE: When the CBS of the CPU hogger has Q_s = 5 ms, the CDF graph
+  is a vertical line at 19 ms. It seems that Q_s = 5 ms is a "lucky"
+  number that gets along well with the server CBS.
+
+[Sub-experiment 9]
+Same as sub-experiment 8 except that BWI is in use.
+
+This sub-experiment is run by: sudo ./main-9
+The result will be file subexperiment_09.bin.
+The expected CDF graph of the client's response time is a vertical
+line at 19 ms because the server CBS has more execution time using
+client CBS.
+
+[Sub-experiment 10]
+Same as sub-experiment 8 except that the additional CPU hogger running
+using a CBS is replaced by a periodic task running on the same CBS.
+
+This sub-experiment is run by: sudo ./main-10
+The result will be file subexperiment_10.bin.
+The expected CDF graph of the client's response time is a vertical
+line at 25 ms based on the following execution time line:
+
+. means arrival
+d=x means the deadline associated with a particular arrival
+.-- execution starts from the arrival time
+|-- execution starts after the arrival time
+--( execution is transferred to the server
+)-- execution is transferred from the server
+--| execution ends before the deadline
+t=x means a particular point in time
+
+client  .     |----(          )----|
+              d=30                 t=25
+server             .---.---.|
+                   d=41 d=71 d=101
+HRT     .-----|
+        d=30
+
+[Sub-experiment 11]
+Same as sub-experiment 10 except that BWI is in use.
+
+This sub-experiment is run by: sudo ./main-11
+The result will be file subexperiment_11.bin.
+The expected CDF graph of the client's response time should be similar
+to that that of sub-experiment 10 because no deadline is ever
+postponed.
