@@ -325,9 +325,7 @@ static void client_prog(void *args)
 
   if (byte_sent == -1) {
     errno = send_errno;
-    if (errno == EINTR) {
-      log_syserror("Cannot send request");
-    } else {
+    if (errno != EINTR) {
       fatal_syserror("Cannot send request");
     }
   } else if (byte_sent != prms->len) {
@@ -336,9 +334,7 @@ static void client_prog(void *args)
 
   if (byte_rcvd == -1) {
     errno = recv_errno;
-    if (errno == EINTR) {
-      log_syserror("Cannot retrieve server response");
-    } else {
+    if (errno != EINTR) {
       fatal_syserror("Cannot retrieve server response");
     }
   } else if (byte_rcvd != prms->len) {
