@@ -400,11 +400,12 @@ MAIN_BEGIN("client", "stderr", NULL)
   int use_bwi = 0;
   int stopping_iteration = -1;
   int ftrace_iteration = -1;
+  int cbs_budget_ms = -1;
   const char *stats_file_path = NULL;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hv:s:i:r:1:2:3:t:p:b")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hv:s:i:r:1:2:3:t:p:q:b")) != -1) {
       switch (optchar) {
       case '1':
         prologue_duration_ms = atoi(optarg);
@@ -424,10 +425,16 @@ MAIN_BEGIN("client", "stderr", NULL)
           fatal_error("EPILOGUE_DURATION must be at least 0 (-h for help)");
         }
         break;
+      case 'q':
+        cbs_budget_ms = atoi(optarg);
+        if (cbs_budget_ms <= 0) {
+          fatal_error("BUDGET must be at least 1 (-h for help)");
+        }
+        break;  
       case 't':
         period_ms = atoi(optarg);
-        if (period_ms < 0) {
-          fatal_error("PERIOD must be at least 0 (-h for help)");
+        if (period_ms <= 0) {
+          fatal_error("PERIOD must be at least 1 (-h for help)");
         }
         break;
       case 'p':
@@ -456,7 +463,7 @@ MAIN_BEGIN("client", "stderr", NULL)
         printf("Usage: %s -1 PROLOGUE_DURATION -2 EXPECTED_SERVICE_TIME\n"
                "       -3 EPILOGUE_DURATION -t PERIOD -p SERVER_PORT\n"
                "       -s STATS_FILE_PATH -v SERVER_PID\n"
-               "       [-i ITERATION] [-b] [-r NTH_ITERATION]\n"
+               "       [-i ITERATION] [-b] [-r NTH_ITERATION] [-q BUDGET]\n"
                "\n"
                "This client periodically sends a message to a local UDP port.\n"
                "In each period, the client will do processing for the given\n"
@@ -494,7 +501,11 @@ MAIN_BEGIN("client", "stderr", NULL)
                "-r NTH_ITERATION is used to start ktrace at the beginning of\n"
                "   the n-th period and to stop ktrace at the end of the\n"
                "   epilogue in that period. This is useful for debugging\n"
-               "   kernel BWI timing by analyzing ftrace output.\n",
+               "   kernel BWI timing by analyzing ftrace output.\n"
+               "-q BUDGET is the client CBS budget in millisecond. If this\n"
+               "   not specified, the budget is calculated by summing\n"
+               "   PROLOGUE_DURATION, EXPECTED_SERVICE_TIME and\n"
+               "   EPILOGUE_DURATION.\n",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -518,9 +529,15 @@ MAIN_BEGIN("client", "stderr", NULL)
   if (period_ms == -1) {
     fatal_error("-t must be specified (-h for help)");
   }
-  if (prologue_duration_ms + expected_waiting_ms + epilogue_duration_ms
-      > period_ms) {
-    fatal_error("PERIOD is too short to perform prologue-service-epilogue");
+  if (cbs_budget_ms == -1) {
+    if (prologue_duration_ms + expected_waiting_ms + epilogue_duration_ms
+        > period_ms) {
+      fatal_error("PERIOD is too short to perform prologue-service-epilogue");
+    }
+  } else {
+    if (cbs_budget_ms > period_ms) {
+      fatal_error("PERIOD must be greater than or equal to the BUDGET");
+    }
   }
   if (server_port == -1) {
     fatal_error("-p must be specified (-h for help)");
@@ -660,8 +677,9 @@ MAIN_BEGIN("client", "stderr", NULL)
   /* END: Prepare busyloops */
 
   /* Prepare client task */
-  int wcet_ms = (prologue_duration_ms + expected_waiting_ms
-                 + epilogue_duration_ms);
+  int wcet_ms = (cbs_budget_ms == -1
+                 ? (prologue_duration_ms + expected_waiting_ms
+                    + epilogue_duration_ms) : cbs_budget_ms);
   struct client_prog_prms client_prog_args = {
     .main_thread = pthread_self(),
     .prologue_busyloop = prologue_busyloop,
