@@ -149,8 +149,8 @@ d=x means the deadline associated with a particular arrival
 --| execution ends before the deadline
 t=x means a particular point in time
 
-client  .     |----(          )----|
-              d=30                 t=25
+client  .     |----(        )----|
+              d=30               t=25
 server             .---.---.|
                    d=41 d=71 d=101
 HRT     .-----|
@@ -185,4 +185,33 @@ Same as sub-experiment 12 except that BWI is in use.
 This sub-experiment is run by: sudo ./main-13
 The result will be file subexperiment_13.bin.
 The expected CDF graph of the client's response time is a slope
-between 19 ms and 28 ms due to 9 ms worst-case blocking time.
+between 19 ms and 28 ms due to 0 ms best-case blocking time and 9 ms
+worst-case blocking time.
+
+[Sub-experiment 14]
+Same as sub-experiment 1 except that the client CBS budget is set to
+10 ms instead of 19 ms.
+
+This sub-experiment is run by: sudo ./main-14
+The result will be file subexperiment_14.bin.
+The expected CDF graph of the client's response time is a slope
+after 19 ms.
+
+[Sub-experiment 15]
+Same as sub-experiment 14 except that BWI is in use.
+
+This sub-experiment is run by: sudo ./main-15
+The result will be file subexperiment_15.bin.
+The expected CDF graph of the client's response time is a vertical
+line at 19 ms assuming work conserving mode is in use because the
+client CBS can exploit the slack time.
+
+[Sub-experiment 16]
+Same as sub-experiment 15 except that a HRT CBS is also run with Q_s =
+5 ms and T_s = 30 ms.
+
+This sub-experiment is run by: sudo ./main-16
+The result will be file subexperiment_16.bin.
+The expected CDF graph of the client's response time is a vertical
+line at 24 ms due to the competition with CBS whose budget is 5 ms,
+assuming work conserving mode.
