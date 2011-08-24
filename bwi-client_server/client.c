@@ -42,6 +42,7 @@ static void client_prog(void *args);
 
 struct client_thread_prms {
   int wcet_ms;
+  int budget_ms;
   int period_ms;
   const char *stats_file_path;
   struct client_prog_prms *client_prog_args;
@@ -71,7 +72,7 @@ static void *client_thread(void *args)
 
   /* Use CBS server */
   {
-    int rc = sched_deadline_enter(to_utility_time_dyn(prms->wcet_ms, ms),
+    int rc = sched_deadline_enter(to_utility_time_dyn(prms->budget_ms, ms),
                                   to_utility_time_dyn(prms->period_ms, ms),
                                   NULL);
     if (rc == -1) {
@@ -677,9 +678,8 @@ MAIN_BEGIN("client", "stderr", NULL)
   /* END: Prepare busyloops */
 
   /* Prepare client task */
-  int wcet_ms = (cbs_budget_ms == -1
-                 ? (prologue_duration_ms + expected_waiting_ms
-                    + epilogue_duration_ms) : cbs_budget_ms);
+  int wcet_ms = (prologue_duration_ms + expected_waiting_ms
+                 + epilogue_duration_ms);
   struct client_prog_prms client_prog_args = {
     .main_thread = pthread_self(),
     .prologue_busyloop = prologue_busyloop,
@@ -714,6 +714,7 @@ MAIN_BEGIN("client", "stderr", NULL)
   pthread_t client_tid;
   struct client_thread_prms client_thread_args = {
     .wcet_ms = wcet_ms,
+    .budget_ms = cbs_budget_ms == -1 ? wcet_ms : cbs_budget_ms,
     .period_ms = period_ms,
     .stats_file_path = stats_file_path,
     .client_prog_args = &client_prog_args,
