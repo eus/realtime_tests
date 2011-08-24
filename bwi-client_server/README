@@ -15,7 +15,7 @@ communication between an X server and its clients.
 [Sub-experiment 1]
 First, a server accepting and responding to UDP packet and a CPU
 hogger performing an infinite loop are run.
-Then, a client task is run using a CBS server whose Q_s is 19 ms and
+Then, a client task is run using a CBS server whose Q_s is 20 ms and
 T_s is 30 ms (i.e., the CPU utilitization U_s is 63%) mimicking a
 multimedia application that has to render 30 frames per second.
 
@@ -25,6 +25,10 @@ The client task itself consists of three consecutive parts:
 3. Epilogue that runs for 5 ms if it monopolizes the CPU.
 ------------------------------------------------------- +
 With a total duration of 19 ms if it monopolizes the CPU.
+
+Even though the total computational needed is 19 ms, Q_s is set at 20
+ms to take into account the kernel tick whose finest granularity is 1
+ms (HZ=1000).
 
 The second part, however, happens in the server. To initiate the
 second part, the client task sends a UDP packet to the server before
@@ -52,15 +56,16 @@ line at 19 ms.
 
 [Sub-experiment 3]
 Same as sub-experiment 1 but an additional CPU hogger is run using a
-CBS server whose Q_s is 5 ms and T_s is 30 ms such that its bandwidth
-is 16.67%. When the SCHED_DEADLINE kernel is using the original CBS
-replenishment behavior (work conserving mode), the CBS CPU hogger will
-prevent the server from being run at all, and therefore, the client
-will only be able to complete one prologue-service-epilogue that is
-late. When the SCHED_DEADLINE kernel is using the hard CBS
-replenishment behavior (non-work conserving mode), the client would
-have a larger response time compared to the one obtained in
-sub-experiment 1.
+CBS server whose Q_s is 5 ms (the kernel tick is not taken into
+account because this CBS server will run an infinite loop) and T_s is
+30 ms such that its bandwidth is 16.67%. When the SCHED_DEADLINE
+kernel is using the original CBS replenishment behavior (work
+conserving mode), the CBS CPU hogger will prevent the server from
+being run at all, and therefore, the client will only be able to
+complete one prologue-service-epilogue that is late. When the
+SCHED_DEADLINE kernel is using the hard CBS replenishment behavior
+(non-work conserving mode), the client would have a larger response
+time compared to the one obtained in sub-experiment 1.
 
 This sub-experiment is run by: sudo ./main-3
 The result will be file subexperiment_03.bin.
@@ -81,7 +86,8 @@ line at 19 ms.
 
 [Sub-experiment 5]
 Same as sub-experiment 3 but instead of a CPU hogger, a HRT CBS is
-used instead (a HRT CBS never postpones its deadline).
+used instead (a HRT CBS never postpones its deadline). The kernel tick
+is taken into account by setting the HRT CBS budget to 6 ms.
 
 This sub-experiment is run by: sudo ./main-5
 The result will be file subexperiment_05.bin.
@@ -100,7 +106,8 @@ the CDF should end at one at a time t less than or equal to 30 ms.
 
 [Sub-experiment 7]
 Same as sub-experiment 1 except that the server is run using a CBS
-whose Q_s is 4 ms and T_s is 30 ms.
+whose Q_s is 4 ms and T_s is 30 ms. The kernel tick is not taken into
+account because the server will surely need more than 4 ms.
 
 This sub-experiment is run by: sudo ./main-7
 The result will be file subexperiment_07.bin.
@@ -110,7 +117,8 @@ that runs using a CBS.
 
 [Sub-experiment 8]
 Same as sub-experiment 7 except that an additional CPU hogger is run
-using a CBS whose Q_s is 6 ms and T_s is 30 ms.
+using a CBS whose Q_s is 6 ms and T_s is 30 ms. The kernel tick is not
+taken into account because the CBS will run an infinite loop.
 
 This sub-experiment is run by: sudo ./main-8
 The result will be file subexperiment_08.bin.
@@ -133,7 +141,9 @@ client CBS.
 
 [Sub-experiment 10]
 Same as sub-experiment 8 except that the additional CPU hogger running
-using a CBS is replaced by a periodic task running on the same CBS.
+using a CBS is replaced by a periodic task whose WCET is 6 ms running
+inside CBS whose budget is set to 7 ms to take into account the finest
+kernel tick and whose period is 30 ms.
 
 This sub-experiment is run by: sudo ./main-10
 The result will be file subexperiment_10.bin.
@@ -174,6 +184,11 @@ blocking time of 9 ms when using BWI. Unfortunately, in this
 sub-experiment, BWI is not in use, and therefore, the CBS client will
 surely be late.
 
+The blocking time of 9 ms to be experienced by the client must be
+taken into account by increasing the client CBS budget to 29 ms (19 ms
+of computation time and 9 ms of blocking time and 1 ms due to kernel
+tick)
+
 This sub-experiment is run by: sudo ./main-12
 The result will be file subexperiment_12.bin.
 The expected CDF graph of the client's response time is a slope after
@@ -190,7 +205,8 @@ worst-case blocking time.
 
 [Sub-experiment 14]
 Same as sub-experiment 1 except that the client CBS budget is set to
-10 ms instead of 19 ms.
+10 ms (11 ms taking into account the finest kernel tick) instead of 19
+ms.
 
 This sub-experiment is run by: sudo ./main-14
 The result will be file subexperiment_14.bin.
@@ -208,10 +224,53 @@ client CBS can exploit the slack time.
 
 [Sub-experiment 16]
 Same as sub-experiment 15 except that a HRT CBS is also run with Q_s =
-5 ms and T_s = 30 ms.
+5 ms (set to 6 ms to take into account the finest kernel tick) and
+T_s = 30 ms.
 
 This sub-experiment is run by: sudo ./main-16
 The result will be file subexperiment_16.bin.
 The expected CDF graph of the client's response time is a vertical
 line at 24 ms due to the competition with CBS whose budget is 5 ms,
 assuming work conserving mode.
+
+[Sub-experiment 17]
+Same as sub-experiment 7 except that the client CBS budget is set to
+10 ms (11 ms actually to take into account the kernel tick). This is
+because without BWI, the client only needs to perform 10 ms of
+computation (5 ms prologue and 5 ms epilogue). Moreover, without BWI,
+a budget of 19 ms will lower, not raise, the chance for the client to
+complete its computation within 30 ms when the server can execute
+without interference, which is the case in sub-experiment 7 due to the
+server using its own CBS. Specifically, when the client using CBS with
+budget 19 ms sends request to the server after executing its prologue
+for 5 ms, the client remaining budget is 14 ms. When the server sends
+its response after executing without interference for 9 ms, the client
+CBS moves from being idle to active at time r with remaining budget 14
+ms but the distance to the deadline is 30 - 5 - 9 = 16 ms. Since 14/16
+is greater than CBS bandwidth 19/30, the CBS will generate a new
+deadline 30 ms away from r lowering the client chance to complete its
+epilogue within 30 ms since the prologue starts. With a lower budget
+of 10 ms, the remaining budget at time r will 5 ms with the same
+distance to deadline, which is 16 ms. Since 5/16 is lower than the
+bandwidth 10/30, the client has a higher chance to complete its
+epilogue within 30 ms since the prologue starts. This trick of
+lowering the budget to raise the client chance to complete in time
+has the opposite effect of lowering the client chance when BWI is in
+use because the client CBS budget keeps being consumed under BWI.
+
+This sub-experiment is run by: sudo ./main-17
+The result will be file subexperiment_17.bin.
+
+[Sub-experiment 18]
+Same as sub-experiment 17 except that an additional CPU hogger is run
+using a CBS whose Q_s is 6 ms and T_s is 30 ms. Kernel tick is not
+taken into account because the CBS will run an infinite loop.
+
+This sub-experiment is run by: sudo ./main-18
+The result will be file subexperiment_18.bin.
+
+[Sub-experiment 19]
+Same as sub-experiment 18 except that BWI is in use.
+
+This sub-experiment is run by: sudo ./main-19
+The result will be file subexperiment_19.bin.

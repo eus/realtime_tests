@@ -45,7 +45,7 @@ MAIN_BEGIN("bwi-client_server-15", "stderr", NULL)
     exec_proc("./client", make_opt("1", "5"), make_opt("2", "9"),
               make_opt("3", "5"), make_opt("t", "30"), make_opt("p", "7777"),
               make_opt("s", "subexperiment_15.bin"), make_opt("v", server_pid),
-              make_opt("q", "10"), make_opt("b", ""));
+              make_opt("q", "11"), make_opt("b", ""));
   }
   sleep(1);
 

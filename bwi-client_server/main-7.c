@@ -45,7 +45,8 @@ MAIN_BEGIN("bwi-client_server-7", "stderr", NULL)
   fork_proc(client_proc) {
     exec_proc("./client", make_opt("1", "5"), make_opt("2", "9"),
               make_opt("3", "5"), make_opt("t", "30"), make_opt("p", "7777"),
-              make_opt("s", "subexperiment_07.bin"), make_opt("v", server_pid));
+              make_opt("s", "subexperiment_07.bin"), make_opt("v", server_pid),
+              make_opt("q", "20"));
   }
   sleep(1);
 

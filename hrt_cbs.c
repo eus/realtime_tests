@@ -35,6 +35,8 @@
 
 struct periodic_task_thread_prms {
   int wcet_ms;
+  int deadline_ms;
+  int budget_ms;
   int period_ms;
   const char *task_name;
   const char *stats_file_path;
@@ -65,7 +67,7 @@ static void *periodic_task_thread(void *args)
 
   /* Use CBS server */
   {
-    int rc = sched_deadline_enter(to_utility_time_dyn(prms->wcet_ms, ms),
+    int rc = sched_deadline_enter(to_utility_time_dyn(prms->budget_ms, ms),
                                   to_utility_time_dyn(prms->period_ms, ms),
                                   NULL);
     if (rc == -1) {
@@ -102,7 +104,9 @@ static void *periodic_task_thread(void *args)
     int rc = task_create(prms->task_name,
                          to_utility_time_dyn(prms->wcet_ms, ms),
                          to_utility_time_dyn(prms->period_ms, ms),
-                         to_utility_time_dyn(prms->period_ms, ms),
+                         to_utility_time_dyn(prms->deadline_ms == -1
+                                             ? prms->period_ms
+                                             : prms->deadline_ms, ms),
                          timespec_to_utility_time_dyn(&t_release),
                          to_utility_time_dyn(0, ms),
                          NULL, NULL,
@@ -136,11 +140,13 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
   const char *task_name = NULL;
   const char *stats_file_path = NULL;
   int wcet_ms = -1;
+  int budget_ms = -1;
+  int deadline_ms = -1;
   int period_ms = -1;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hn:s:c:t:")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hn:s:c:d:q:t:")) != -1) {
       switch (optchar) {
       case 'n':
         task_name = optarg;
@@ -156,12 +162,25 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
         break;
       case 't':
         period_ms = atoi(optarg);
-        if (period_ms <= 1) {
+        if (period_ms <= 0) {
           fatal_error("PERIOD must be at least 1 ms (-h for help)");
         }
         break;
+      case 'q':
+        budget_ms = atoi(optarg);
+        if (budget_ms <= 0) {
+          fatal_error("BUDGET must be at least 1 ms (-h for help)");
+        }
+        break;
+      case 'd':
+        deadline_ms = atoi(optarg);
+        if (deadline_ms <= 0) {
+          fatal_error("DEADLINE must be at least 1 ms (-h for help)");
+        }
+        break;
       case 'h':
-        printf("Usage: %s -n NAME -s STATS_FILE -c WCET -t PERIOD\n"
+        printf("Usage: %s -n NAME -s STATS_FILE -c WCET -q BUDGET -t PERIOD\n"
+               "       [-d DEADLINE]"
                "\n"
                "A HRT CBS is a CBS that never postpones its deadline because\n"
                "it serves a periodic task that obeys the stated WCET and\n"
@@ -173,7 +192,11 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
                "-n NAME is the name of the periodic task.\n"
                "-s STATS_FILE is the file to record the task statistics.\n"
                "-c WCET is the worst-case execution time in millisecond.\n"
-               "-t PERIOD is the period in millisecond.\n",
+               "-d DEADLINE is the relative deadline of the task, not the\n"
+               "   CBS, in millisecond. If this is omitted, the relative\n"
+               "   deadline of the task is equal to the CBS period.\n"
+               "-q BUDGET is the CBS budget in millisecond.\n"
+               "-t PERIOD is the CBS period in millisecond.\n",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -194,11 +217,30 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
   if (wcet_ms == -1) {
     fatal_error("-c must be specified (-h for help)");
   }
+  if (budget_ms == -1) {
+    fatal_error("-q must be specified (-h for help)");
+  }
   if (period_ms == -1) {
     fatal_error("-t must be specified (-h for help)");
   }
-  if (wcet_ms > period_ms) {
-    fatal_error("WCET must be less than or equal to the period (-h for help)");
+  if (deadline_ms == -1) {
+    if (wcet_ms > budget_ms) {
+      fatal_error("WCET must be less than or equal to the budget"
+                  " (-h for help)");
+    }
+  } else {
+    if (wcet_ms > deadline_ms) {
+      fatal_error("WCET must be less than or equal to the deadline"
+                  " (-h for help)");
+    }
+    if (deadline_ms > budget_ms) {
+      fatal_error("Deadline must be less than or equal to the budget"
+                  " (-h for help)");
+    }
+  }
+  if (budget_ms > period_ms) {
+    fatal_error("Budget must be less than or equal to the period"
+                " (-h for help)");
   }
 
   /* Measure overhead */
@@ -273,6 +315,8 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
   struct periodic_task_thread_prms periodic_task_thread_args = {
     .task_name = task_name,
     .wcet_ms = wcet_ms,
+    .deadline_ms = deadline_ms,
+    .budget_ms = budget_ms,
     .period_ms = period_ms,
     .busyloop_exact_args = {
       .busyloop_obj = wcet_busyloop,

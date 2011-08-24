@@ -46,14 +46,15 @@ MAIN_BEGIN("bwi-client_server-5", "stderr", NULL)
 
   fork_proc(hrt_cbs_proc) {
     exec_proc("./hrt_cbs", make_opt("n", "HRT-1"), make_opt("s", "/dev/null"),
-              make_opt("c", "5"), make_opt("t", "30"));
+              make_opt("c", "5"), make_opt("q", "6"), make_opt("t", "30"));
   }
   sleep(1);
 
   fork_proc(client_proc) {
     exec_proc("./client", make_opt("1", "5"), make_opt("2", "9"),
               make_opt("3", "5"), make_opt("t", "30"), make_opt("p", "7777"),
-              make_opt("s", "subexperiment_05.bin"), make_opt("v", server_pid));
+              make_opt("s", "subexperiment_05.bin"), make_opt("v", server_pid),
+              make_opt("q", "20"));
   }
   sleep(1);
 

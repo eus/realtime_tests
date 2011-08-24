@@ -9,4 +9,4 @@ subexperiment_no=$1
 
 sudo ./main-$subexperiment_no
 output_name=`printf 'subexperiment_%02d' $subexperiment_no`
-../read_task_stats_file ${output_name}.bin | tail -n 1 > ./${output_name}.m
+../read_task_stats_file -c matlab ${output_name}.bin > ./${output_name}.m

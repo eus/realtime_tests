@@ -24,14 +24,15 @@
 #include "../utility_log.h"
 #include "../utility_subprocess.h"
 
-MAIN_BEGIN("bwi-client_server-1", "stderr", NULL)
+MAIN_BEGIN("bwi-client_server-17", "stderr", NULL)
 {
   pid_t cpu_hog_proc = -1, server_proc = -1, client_proc = -1;
   char server_pid[32];
   int rc = EXIT_SUCCESS;
 
   fork_proc(server_proc) {
-    exec_proc("./server", make_opt("d", "9"), make_opt("p", "7777"));
+    exec_proc("./server", make_opt("d", "9"), make_opt("p", "7777"),
+              make_opt("q", "4"), make_opt("t", "30"));
   }
   snprintf(server_pid, sizeof(server_pid), "%d", server_proc);
   sleep(1);
@@ -44,8 +45,8 @@ MAIN_BEGIN("bwi-client_server-1", "stderr", NULL)
   fork_proc(client_proc) {
     exec_proc("./client", make_opt("1", "5"), make_opt("2", "9"),
               make_opt("3", "5"), make_opt("t", "30"), make_opt("p", "7777"),
-              make_opt("s", "subexperiment_01.bin"), make_opt("v", server_pid),
-              make_opt("q", "20"));
+              make_opt("s", "subexperiment_17.bin"), make_opt("v", server_pid),
+              make_opt("q", "11"));
   }
   sleep(1);
 
