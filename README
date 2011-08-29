@@ -52,6 +52,11 @@ distribution of the task response times as the last line in its
 output. The command will not be output if the task log file carries no
 record of job execution statistics.
 
+The infrastructure component sched_switch can be used to generate the
+execution time line of a set of real-time tasks in the form of .vcd
+file to be read and displayed by gtkwave from the output of ftrace
+sched_switch plugin. Source: https://www.osadl.org/Single-View.111+M530bed48137.0.html?&tx_ttnews[month]=06&tx_ttnews[year]=2009
+
 Each file defining main() function must also define two global
 variables and initialize them appropriately as follows:
 const char prog_name[] = "PROGRAM_NAME";
