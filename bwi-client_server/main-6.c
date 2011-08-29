@@ -46,7 +46,7 @@ MAIN_BEGIN("bwi-client_server-6", "stderr", NULL)
 
   fork_proc(hrt_cbs_proc) {
     exec_proc("./hrt_cbs", make_opt("n", "HRT-1"), make_opt("s", "/dev/null"),
-              make_opt("c", "5"), make_opt("q", "6"), make_opt("t", "30"));
+              make_opt("c", "5"), make_opt("q", "6"), make_opt("t", "20"));
   }
   sleep(1);
 

@@ -87,7 +87,14 @@ line at 19 ms.
 [Sub-experiment 5]
 Same as sub-experiment 3 but instead of a CPU hogger, a HRT CBS is
 used instead (a HRT CBS never postpones its deadline). The kernel tick
-is taken into account by setting the HRT CBS budget to 6 ms.
+is taken into account by setting the HRT CBS budget to 6 ms. The HRT
+CBS period is set to 20 ms to make it preempt the client when BWI is
+used making the effect of HRT CBS on the client response time
+visible. As documented in
+subexperiment_06-hrt_cbs_period_*-{client,hrt_cbs}_first.png, using
+HRT CBS period 30, 40 and 50 do not ensure that HRT CBS will always
+preempt the client both when the client starts first and when the HRT
+CBS starts first.
 
 This sub-experiment is run by: sudo ./main-5
 The result will be file subexperiment_05.bin.
@@ -100,9 +107,11 @@ done by the server under BWI inheriting the client's CBS server.
 
 This sub-experiment is run by: sudo ./main-6
 The result will be file subexperiment_06.bin.
-The expected CDF graph of the client's response time is not a vertical
-line at 19 ms because there is a competing HRT server. Nevertheless,
-the CDF should end at one at a time t less than or equal to 30 ms.
+The expected CDF graph of the client's response time is a vertical
+line at 19 ms and 24 ms because there is a competing HRT server that
+always preempts the client half of the time as can be seen in
+subexperiment_06-hrt_cbs_period_20-{client,hrt_cbs}_first.png. Nevertheless,
+the CDF should end at a time t less than or equal to 30 ms.
 
 [Sub-experiment 7]
 Same as sub-experiment 1 except that the server is run using a CBS
