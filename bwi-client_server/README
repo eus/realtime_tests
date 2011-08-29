@@ -305,7 +305,7 @@ This sub-experiment is run by: sudo ./main-21
 The result will be file subexperiment_21.bin.
 
 [Sub-experiment 22]
-Same as sub-experiment 18 except that the server CBS budget is set to
+Same as sub-experiment 19 except that the server CBS budget is set to
 9 ms (10 ms actually to take into account the kernel tick).
 
 This sub-experiment is run by: sudo ./main-22
