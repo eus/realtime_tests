@@ -266,11 +266,38 @@ Same as sub-experiment 17 except that an additional CPU hogger is run
 using a CBS whose Q_s is 6 ms and T_s is 30 ms. Kernel tick is not
 taken into account because the CBS will run an infinite loop.
 
+Same as sub-experiment 8 except that the client CBS budget is set to
+10 ms (11 ms actually to take into account the kernel tick).
+
 This sub-experiment is run by: sudo ./main-18
 The result will be file subexperiment_18.bin.
 
 [Sub-experiment 19]
 Same as sub-experiment 18 except that BWI is in use.
 
+Same as sub-experiment 9 except that the client CBS budget is set to
+10 ms (11 ms actually to take into account the kernel tick).
+
 This sub-experiment is run by: sudo ./main-19
 The result will be file subexperiment_19.bin.
+
+[Sub-experiment 20]
+Same as sub-experiment 17 except that the server CBS budget is set to
+9 ms (10 ms actually to take into account the kernel tick).
+
+This sub-experiment is run by: sudo ./main-20
+The result will be file subexperiment_20.bin.
+
+[Sub-experiment 21]
+Same as sub-experiment 18 except that the server CBS budget is set to
+9 ms (10 ms actually to take into account the kernel tick).
+
+This sub-experiment is run by: sudo ./main-21
+The result will be file subexperiment_21.bin.
+
+[Sub-experiment 22]
+Same as sub-experiment 18 except that the server CBS budget is set to
+9 ms (10 ms actually to take into account the kernel tick).
+
+This sub-experiment is run by: sudo ./main-22
+The result will be file subexperiment_22.bin.
