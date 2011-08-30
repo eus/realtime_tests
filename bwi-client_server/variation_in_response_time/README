@@ -1,0 +1,70 @@
+When running this experimental component at commit
+18b1e52bc63f21d3b5802f4b7fae81c4e7a4be0f using SCHED_DEADLINE kernel
+fork on https://github.com/eus/cbs_inheritance at commit
+7071283d1004cf7dfdef8d4839f67b348b36213b with config file
+linux.config, some sub-experiments are observed to have some jobs with
+large response times. As a sample, the result of sub-experiment 2 is
+discussed here.
+
+As can be seen using "read_task_stats_file subexperiment_02.bin", job
+258 has a response time of 0.031982895 s. From ftrace data
+trace.dat.xz, one can do:
+xzcat trace.dat.xz | grep 'sys_bwi_give_server <-- sysenter_do_call'
+to find the trace of job 258. The result of running the above command
+is stored in file locating_the_bad_job.txt. Then, by
+"tail -n +258 locating_the_bad_job.txt | head -n 1", one can see
+that job 258 should start in the trace data before time 3996.683715.
+
+Using kernelshark to have a visualizalization around that time, it is
+clear that the large response time of job 258 happens in the
+prologue. To see what actually happens there, the trace data from the
+start of the prologue of job 258 to the end of the prologue is stored
+in file prologue_bad.txt. Then, the trace of the prologue of job 257,
+which is good with execution time of around 5 ms, is stored in file
+prologue_good.txt
+
+Using the following command to see the time taken from the invocation
+of system call sys_bwi_give_server to the end of the prologue shows
+that both the good and the bad prologues have approximately the same
+duration, and therefore, the problem does not lie in the BWI
+mechanism:
+
+(file=prologue_bad.txt
+ echo $(tail -n 1 $file \
+        | sed -e 's%.* \([0-9.]\+\): function: .*%\1%') \
+      - $(grep 'sys_bwi_give_server <-- sysenter_do_call' $file \
+          | sed -e 's%.* \([0-9.]\+\): function: .*%\1%') \
+ | bc)
+
+Extracting just the function names from prologue_good.txt and
+prologue_bad.txt to prologue_good_fn_list.txt and
+prologue_bad_fn_list.txt, respectively, and doing the following to see
+what functions the good and bad prologue have in common and the number
+of invocations to those functions:
+
+sort prologue_good_fn_list.txt > /tmp/1.txt
+sort prologue_bad_fn_list.txt > /tmp/2.txt
+diff -u /tmp/1.txt /tmp/2.txt
+
+reveals that the bad prologue has a lot more invocations to functions:
+1. page_address <-- on_freelist (10,299 more)
+2. check_bytes_and_report <-- check_object (1,938 more)
+3. memset <-- init_object (1,936 more)
+4. page_address <-- slab_pad_check (968 more)
+5. on_freelist <-- __slab_free (967 more)
+6. page_address <-- __slab_free (967 more)
+7. page_address <-- __slab_free (967 more)
+8. __slab_free <-- kfree (967 more)
+9. rcu_free_va <-- __rcu_process_callbacks (967 more)
+10. _raw_spin_unlock_irqrestore <-- debug_check_no_obj_freed (967 more)
+11. check_slab <-- __slab_free (967 more)
+12. kfree <-- rcu_free_va (967 more)
+13. check_object <-- __slab_free (967 more)
+14. trace <-- __slab_free (967 more)
+15. set_track <-- __slab_free (967 more)
+16. page_address <-- check_object (823 more)
+
+Since those functions are debugging functions, the observed large
+response time of job 258 should not happen in production machine, and
+therefore, there is no need to worry about bad BWI mechanism or
+SCHED_DL performance.
