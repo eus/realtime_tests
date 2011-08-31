@@ -96,10 +96,9 @@ static void *periodic_task_thread(void *args)
     if (clock_gettime(CLOCK_MONOTONIC, &t_now) != 0) {
       fatal_syserror("Cannot get t_now");
     }
-    struct timespec t_release;
-    to_timespec_gc(utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
-                                           to_utility_time_dyn(1, s)),
-                   &t_release);
+    absolute_time *t_release;
+    t_release = utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
+					to_utility_time_dyn(1, s));
 
     int rc = task_create(prms->task_name,
                          to_utility_time_dyn(prms->wcet_ms, ms),
@@ -107,7 +106,7 @@ static void *periodic_task_thread(void *args)
                          to_utility_time_dyn(prms->deadline_ms == -1
                                              ? prms->period_ms
                                              : prms->deadline_ms, ms),
-                         timespec_to_utility_time_dyn(&t_release),
+                         t_release,
                          to_utility_time_dyn(0, ms),
                          NULL, NULL,
                          prms->stats_file_path,
