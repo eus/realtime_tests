@@ -1,0 +1,48 @@
+When running this experimental component that is similar to commit
+17612ca0b9a38fea720eb4895c0a914387ab1820 using SCHED_DEADLINE kernel
+fork on https://github.com/eus/cbs_inheritance at commit
+7071283d1004cf7dfdef8d4839f67b348b36213b with config file
+linux.config, sub-experiment 2 has a job with a large response
+time. Previously, this happens because the kernel is busy doing doing
+kernel debugging chores. But, in this new kernel config file, the
+kernel debugging facilities have been turned off.
+
+To reproduce this, run the following command:
+./run_experiment_ftraced.sh 2
+
+As can be seen using "read_task_stats_file subexperiment_02.bin", job
+765 has a response time of 0.033791956 s. From ftrace data
+trace.dat.xz, one can see using kernelshark as depicted in file
+screenshot-kernelshark.png that the large response time happens
+because the job does not start at the beginning of its interval
+although there is no competing SCHED_DL task.
+
+To see why it is so, the long interval in SCHED_FAIR before the start
+of job 765 is extracted to file cfs_interval_bad.txt while the
+SCHED_FAIR interval before job 764 is extracted to file
+cfs_interval_good.txt.
+
+Extracting just the function names from both of them to file
+cfs_interval_bad_fn_list.txt and cfs_interval_good_fn_list.txt do not
+show any significant difference in the number of function invocations
+unlike in the previous case.
+
+A closer look in kernelshark around the time where job 765 should have
+woken up, at time 783.648719 there is only the firing of dl_task_timer
+but the CBS queue is found to be empty. This is different from the
+release of job 764 at time 783.618758 that does not have dl_task_timer
+firing and the client task is directly enqueued to its CBS queue.
+
+Since dl_task_timer finds the CBS queue to be empty, this means that
+at the time job 765 should wake up, it does not. Instead, job 765
+wakes up at time 783.662331, which is around 14 ms after the time job
+765 is supposed to wake up, after several hard- and soft-IRQs have
+been raised.
+
+After several retries, it is apparent that this problem is very
+obvious when the machine has just been rebooted and has little
+uptime. After several minutes, it is becoming harder to get job that
+has a large response time. Therefore, it seems that this problem has
+got something to do with hard- and soft-IRQs that are more frequent in
+the machine early uptime, not with the SCHED_DL and BWI mechanisms
+themselves per se.
