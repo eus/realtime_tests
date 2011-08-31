@@ -54,6 +54,8 @@ static void sighand(int signo)
   if (signo == SIGTERM) {
     print_stats(&t1_abs, chunk_counter, silent);
     siglongjmp(jmp_env, 0);
+  } else if (signo == SIGHUP) {
+    print_stats(&t1_abs, chunk_counter, 0);
   }
 }
 
@@ -173,6 +175,10 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
     fatal_syserror("Cannot install SIGUSR1 handler");
   }
 
+  if (sigaction(SIGHUP, &signalhandler, NULL) != 0) {
+    fatal_syserror("Cannot install SIGHUP handler");
+  }
+
   int exec_time_ms = -1;
   int break_time_ms = -1;
   struct timespec break_time;
@@ -219,7 +225,10 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
                "elapsed time in second since the first chunk execution\n"
                "followed by a newline.\n"
                "SIGUSR1 must be sent to this program to start chunk execution."
-               "\n\n"
+               "\n"
+               "SIGHUP can be sent to this program to print the number of\n"
+               "cycles fully performed and the elapsed time in stdout.\n"
+               "\n"
                "-e EXEC_TIME is the busyloop duration in millisecond.\n"
                "   This should be greater than zero.\n"
                "-b SLEEP_TIME is the sleeping duration in millisecond.\n"
