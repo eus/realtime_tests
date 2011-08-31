@@ -228,7 +228,7 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
                "   This should be greater than zero.\n"
                "-t CBS_PERIOD is the CBS period in millisecond.\n"
                "   This should be greater than or equal to CBS_BUDGET.\n"
-               "-i STOPPING_TIME is the elapsed time in ms since the\n"
+               "-s STOPPING_TIME is the elapsed time in ms since the\n"
                "   beginning of the first busyloop-sleep cycle after which\n"
                "   this program will quit before beginning the next cycle.\n"
                "-z BE_SILENT will disable cycle count and elapsed time\n"
