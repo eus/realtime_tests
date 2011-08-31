@@ -6,7 +6,9 @@ if [ $# -ne 1 ]; then
 fi
 
 subexperiment_no=$1
+name=`printf 'subexperiment_%02d' $subexperiment_no`
 
-sudo ./main-$subexperiment_no
-output_name=`printf 'subexperiment_%02d' $subexperiment_no`
-../read_task_stats_file -c matlab ${output_name}.bin > ./${output_name}.m
+set -e
+
+sudo ./main -t 60s -p 20 -f ${name}.cfg
+../read_task_stats_file -c matlab ${name}.bin > ./${name}.m
