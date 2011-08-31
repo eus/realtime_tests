@@ -37,7 +37,25 @@
 #include "../utility_sched_deadline.h"
 #include "../task.h"
 
-struct client_prog_prms;
+struct client_prog_prms {
+  pthread_t main_thread;
+  cpu_busyloop *prologue_busyloop;
+  void *request;
+  void *response;
+  size_t len;
+  cpu_busyloop *epilogue_busyloop;
+  int *client_socket_ptr;
+  int server_pid;
+  int nth_iteration;
+  int stopping_iteration;
+  int ftrace_iteration;
+  FILE *ftrace_file;
+  sigset_t send_recv_interrupt_mask;
+  absolute_time next_release;
+  relative_time ftrace_response_time;
+  relative_time period;
+  int ftrace_response_time_hit;
+};
 static void client_prog(void *args);
 
 struct client_thread_prms {
@@ -101,16 +119,15 @@ static void *client_thread(void *args)
     if (clock_gettime(CLOCK_MONOTONIC, &t_now) != 0) {
       fatal_syserror("Cannot get t_now");
     }
-    struct timespec t_release;
-    to_timespec_gc(utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
-                                           to_utility_time_dyn(1, s)),
-                   &t_release);
+    utility_time_add_gc(timespec_to_utility_time_dyn(&t_now),
+                        to_utility_time_dyn(1, s),
+                        &prms->client_prog_args->next_release);
 
     int rc = task_create("client",
                          to_utility_time_dyn(prms->wcet_ms, ms),
                          to_utility_time_dyn(prms->period_ms, ms),
                          to_utility_time_dyn(prms->wcet_ms, ms),
-                         timespec_to_utility_time_dyn(&t_release),
+                         &prms->client_prog_args->next_release,
                          to_utility_time_dyn(0, ms),
                          NULL, NULL,
                          prms->stats_file_path,
@@ -128,6 +145,9 @@ static void *client_thread(void *args)
   /* END: Create client task */
 
   /* Run the task */
+  if (prms->client_prog_args->ftrace_iteration == 0) {
+    fprintf(prms->client_prog_args->ftrace_file, "1");
+  }
   if (task_start(prms->client_task) != 0) {
     log_error("Client task cannot be completed successfully");
     return &prms->rc;
@@ -269,21 +289,6 @@ static relative_time *measure_send_recv_overhead(int server_pid,
   return args.overhead;
 }
 
-struct client_prog_prms {
-  pthread_t main_thread;
-  cpu_busyloop *prologue_busyloop;
-  void *request;
-  void *response;
-  size_t len;
-  cpu_busyloop *epilogue_busyloop;
-  int *client_socket_ptr;
-  int server_pid;
-  int nth_iteration;
-  int stopping_iteration;
-  int ftrace_iteration;
-  FILE *ktrace_file;
-  sigset_t send_recv_interrupt_mask;
-};
 static void client_prog(void *args)
 {
   struct client_prog_prms *prms = args;
@@ -297,7 +302,7 @@ static void client_prog(void *args)
 
   /* BWI */
   if (prms->nth_iteration == prms->ftrace_iteration) {
-    fprintf(prms->ktrace_file, "1");
+    fprintf(prms->ftrace_file, "1");
   }
   if (prms->server_pid != -1) {
     if (syscall(344, prms->server_pid, &bwi_key) != 0) {
@@ -321,11 +326,30 @@ static void client_prog(void *args)
     }
   }
   if (prms->nth_iteration == prms->ftrace_iteration) {
-    fprintf(prms->ktrace_file, "0");
+    fprintf(prms->ftrace_file, "0");
   }  
   /* END: BWI revocation */
 
   keep_cpu_busy(prms->epilogue_busyloop);
+
+  /* Stop tracing when too large response time detected */
+  if (prms->ftrace_iteration == 0 && !prms->ftrace_response_time_hit) {
+    absolute_time t;
+    struct timespec t_now;
+    clock_gettime(CLOCK_MONOTONIC, &t_now);
+
+    utility_time_init(&t);
+    timespec_to_utility_time(&t_now, &t);
+    utility_time_sub(&t, &prms->next_release, &t);
+
+    if (utility_time_gt(&t, &prms->ftrace_response_time)) {
+      fprintf(prms->ftrace_file, "0");
+      prms->ftrace_response_time_hit = prms->nth_iteration;
+    }
+
+    utility_time_inc(&prms->next_release, &prms->period);
+  }  
+  /* END: Stop tracing when too large response time detected */
 
   if (byte_sent == -1) {
     errno = send_errno;
@@ -368,8 +392,8 @@ static void signal_handler(int signum)
 
 MAIN_BEGIN("client", "stderr", NULL)
 {
-  const char *ktrace_path = "/sys/kernel/debug/tracing/tracing_enabled";
-  FILE *ktrace_file = NULL;
+  const char *ftrace_path = "/sys/kernel/debug/tracing/tracing_on";
+  FILE *ftrace_file = NULL;
 
   if (atexit(cleanup) == -1) {
     log_syserror("Cannot register fn cleanup at exit");
@@ -402,12 +426,19 @@ MAIN_BEGIN("client", "stderr", NULL)
   int stopping_iteration = -1;
   int ftrace_iteration = -1;
   int cbs_budget_ms = -1;
+  int response_time_limit_ms = -1;
   const char *stats_file_path = NULL;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hv:s:i:r:1:2:3:t:p:q:b")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hl:v:s:i:r:1:2:3:t:p:q:b")) != -1) {
       switch (optchar) {
+      case 'l':
+        response_time_limit_ms = atoi(optarg);
+        if (response_time_limit_ms <= 0) {
+          fatal_error("LIMIT must be greater than 0 (-h for help)");
+        }
+        break;
       case '1':
         prologue_duration_ms = atoi(optarg);
         if (prologue_duration_ms < 0) {
@@ -464,7 +495,8 @@ MAIN_BEGIN("client", "stderr", NULL)
         printf("Usage: %s -1 PROLOGUE_DURATION -2 EXPECTED_SERVICE_TIME\n"
                "       -3 EPILOGUE_DURATION -t PERIOD -p SERVER_PORT\n"
                "       -s STATS_FILE_PATH -v SERVER_PID\n"
-               "       [-i ITERATION] [-b] [-r NTH_ITERATION] [-q BUDGET]\n"
+               "       [-i ITERATION] [-b] [-r NTH_ITERATION [-l LIMIT]]\n"
+               "       [-q BUDGET]\n"
                "\n"
                "This client periodically sends a message to a local UDP port.\n"
                "In each period, the client will do processing for the given\n"
@@ -499,10 +531,19 @@ MAIN_BEGIN("client", "stderr", NULL)
                "   cycles to be performed before this client exits.\n"
                "-b is specified when this client should give its bandwidth\n"
                "   to the server (the kernel must support BWI syscalls).\n"
-               "-r NTH_ITERATION is used to start ktrace at the beginning of\n"
-               "   the n-th period and to stop ktrace at the end of the\n"
+               "-r NTH_ITERATION is used to start ftrace at the beginning of\n"
+               "   the n-th period and to stop ftrace at the end of the\n"
                "   epilogue in that period. This is useful for debugging\n"
-               "   kernel BWI timing by analyzing ftrace output.\n"
+               "   kernel BWI timing by analyzing ftrace output. If this is\n"
+               "   set to 0, ftrace will be enabled continuously up to either\n"
+               "   the time where the response time is more than the stated\n"
+               "   limit in millisecond specified using -l or the end of this\n"
+               "   program.\n"
+               "-l LIMIT is used as the threshold to stop ftrace when -r is\n"
+               "   set to 0 and the response time exceeds the threshold.\n"
+               "   When ftrace is stopped in this way, this client program\n"
+               "   will print the job number that turns the ftrace off in\n"
+	       "   stdout in the format: Job #JOB_NUMBER\n"
                "-q BUDGET is the client CBS budget in millisecond. If this\n"
                "   not specified, the budget is calculated by summing\n"
                "   PROLOGUE_DURATION, EXPECTED_SERVICE_TIME and\n"
@@ -549,19 +590,24 @@ MAIN_BEGIN("client", "stderr", NULL)
   if (server_pid == -1) {
     fatal_error("-v must be specified (-h for help)");
   }
+  if (ftrace_iteration != 0 && response_time_limit_ms != -1) {
+    fatal_error("-l must only be used when -r is set to 0 (-h for help)");
+  } else if (ftrace_iteration == 0 && response_time_limit_ms == -1) {
+    fatal_error("-l must be used when -r is set to 0 (-h for help)");
+  }
 
   /* Prepare for tracing */
   if (ftrace_iteration != -1) {
-    ktrace_file = utility_file_open_for_writing(ktrace_path);
-    if (ktrace_file == NULL) {
-      fatal_error("Cannot open ktrace file");
+    ftrace_file = utility_file_open_for_writing(ftrace_path);
+    if (ftrace_file == NULL) {
+      fatal_error("Cannot open ftrace file");
     }
     errno = 0;
-    if (setvbuf(ktrace_file, NULL, _IONBF, 0) != 0) {
+    if (setvbuf(ftrace_file, NULL, _IONBF, 0) != 0) {
       if (errno) {
-        fatal_syserror("Cannot unbuffer ktrace_file");
+        fatal_syserror("Cannot unbuffer ftrace_file");
       } else {
-        fatal_error("Cannot unbuffer ktrace_file");
+        fatal_error("Cannot unbuffer ftrace_file");
       }
     }
   }
@@ -692,10 +738,19 @@ MAIN_BEGIN("client", "stderr", NULL)
     .nth_iteration = 0,
     .stopping_iteration = stopping_iteration,
     .ftrace_iteration = ftrace_iteration,
-    .ktrace_file = ktrace_file,
+    .ftrace_file = ftrace_file,
+    .ftrace_response_time_hit = 0,
   };
   sigemptyset(&client_prog_args.send_recv_interrupt_mask);
   sigaddset(&client_prog_args.send_recv_interrupt_mask, SIGUSR2);
+  utility_time_init(&client_prog_args.next_release);
+  utility_time_init(&client_prog_args.ftrace_response_time);
+  if (response_time_limit_ms != -1) {
+    to_utility_time(response_time_limit_ms, ms,
+                    &client_prog_args.ftrace_response_time);
+  }
+  utility_time_init(&client_prog_args.period);
+  to_utility_time(period_ms, ms, &client_prog_args.period);
   /* END: Prepare client task */
 
   /* Launching client task */
@@ -732,6 +787,9 @@ MAIN_BEGIN("client", "stderr", NULL)
     log_syserror("Cannot delete SIGUSR1 from waited_signal");
   }
   sigwait(&waited_signal, &rcvd_signo);
+  if (ftrace_iteration == 0 && !client_prog_args.ftrace_response_time_hit) {
+    fprintf(ftrace_file, "0");
+  }
   pthread_sigmask(SIG_UNBLOCK, &waited_signal, NULL);
 
   task_stop(client_thread_args.client_task);
@@ -756,10 +814,14 @@ MAIN_BEGIN("client", "stderr", NULL)
   utility_time_gc(job_stats_overhead);
   utility_time_gc(task_overhead);
   utility_time_gc(overhead);
-  if (ktrace_file != NULL) {
-    utility_file_close(ktrace_file, ktrace_path);
+  if (ftrace_file != NULL) {
+    utility_file_close(ftrace_file, ftrace_path);
   }
   /* END: Clean-up */
+
+  if (client_prog_args.ftrace_response_time_hit != 0) {
+    printf("Job #%d\n", client_prog_args.ftrace_response_time_hit);
+  }
 
   return EXIT_SUCCESS;
 
