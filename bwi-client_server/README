@@ -274,3 +274,7 @@ Same as sub-experiment 18 except that the server CBS budget is set to
 [Sub-experiment 22]
 Same as sub-experiment 19 except that the server CBS budget is set to
 9 ms (10 ms actually to take into account the kernel tick).
+
+[Sub-experiment 23]
+Same as sub-experiment 21 except that the CPU hogger CBS budget is set
+to 5 ms and the period to 20 ms.
