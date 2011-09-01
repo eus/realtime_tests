@@ -1,0 +1,58 @@
+When running this experimental component at commit
+6cf03bd2c697b67676d0227b643a17b7d717a3e9 using SCHED_DEADLINE kernel
+fork on https://github.com/eus/cbs_inheritance at commit
+7071283d1004cf7dfdef8d4839f67b348b36213b with config file
+linux.config, sub-experiment 23 has a job with a large response
+time. Previously, this happens because in the early uptime of the
+machine, there are many hard- and soft-IRQs being raised that
+interfere with the client execution. But, the sub-experiment is now
+run long time after the machine has been up.
+
+To reproduce this, run the following command:
+./run_experiment_ftraced.sh 23
+
+This is frequently reproducible but not always.
+
+As can be seen using "read_task_stats_file subexperiment_23.bin", job
+12 has a response time of 0.031763678 s. From ftrace data
+trace_23.dat.xz, one can see using kernelshark as depicted in file
+screenshot-kernelshark-23.png that the large response time might
+happen because some jobs of the client or the server do not finish at
+their stated WCETs.
+
+To see that the problem does not lie in the use of CPU hog CBS,
+sub-experiment 24 is produced from sub-experiment 23 by replacing the
+CPU hog CBS with HRT CBS. As can be seen using "read_task_stats_file
+subexperiment_24.bin", job 253 has a response time of 0.038625787
+s. As depicted in screenshot-kernelshark-24.png, HRT CBS behaves very
+similar to CPU hog CBS around job 253. Therefore, the problem does not
+lie in the use of CPU hog CBS.
+
+Finally, sub-experiment 25 is generated from sub-experiment 23 by
+reducing the client prologue duration by 2 ms. As can be seen using
+"read_task_stats_file subexperiment_25.bin", job 253 has a response
+time of 0.033337550 s. From ftrace data trace_25.dat.xz, one can see
+using kernelshark as depicted in file screenshot-kernelshark-25.png
+that the large response time happens because the client budget is used
+to serve disk-related activities that starts at the green marker. The
+client budget is then exhausted at the red marker. The blue marker
+shows some activities that happens at the marker and a short time
+afterwards. To be exact, the client moves from idle to active at time
+32080.051966 s, which is the latest beginning before the green marker,
+and gets a new deadline with a full budget of 11 ms. From the tiny
+spikes that signify kernel ticks, the client had almost completed its
+epilogue of around 5 ms before the disk-related activities starts. The
+client clock_nanosleep happens at time 32080.064900 s after the
+disk-related activities finished in the second part of the job after
+being preempted by CPU hog CBS. The clock_nanosleep quickly returns at
+time 32080.064953 s using the old CBS deadline. The budget is then
+exhausted at the red marker.
+
+To conclude, it is confirmed that the large response time happens
+because the stated WCET is violated due to not calculating additional
+activities that may happen aside from the busyloop. It is highly
+suspected that the disk-related activities happen because the client
+task is recording its job statistics directly to a file. Therefore,
+the client task should record the statistics to the memory
+instead. Nevertheless, this confirms that the problem does not lie in
+neither the SCHED_DL nor BWI mechanisms.
