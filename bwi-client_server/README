@@ -278,3 +278,8 @@ Same as sub-experiment 19 except that the server CBS budget is set to
 [Sub-experiment 23]
 Same as sub-experiment 21 except that the CPU hogger CBS budget is set
 to 5 ms and the period to 20 ms.
+
+[Sub-experiment 24]
+Same as sub-experiment 23 except that the CPU hogger CBS is replaced
+by HRT CBS with the same budget and period but whose HRT task WCET is
+4 ms to take into account the finest kernel tick.
