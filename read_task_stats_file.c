@@ -210,9 +210,11 @@ struct task_stats
   relative_time deadline;
   absolute_time t_0;
   relative_time offset;
-  unsigned nth_job;
+  unsigned long nth_job;
+  unsigned long total_job_count;
   unsigned late_count;
   int suppress_printout;
+  int first_time;
 
   struct response_time_list *response_times;
 };
@@ -240,6 +242,8 @@ static int print_task_stats(task *tau, void *args)
     fprintf(prms->report, "Timing recording is %s\n",
             task_statistics_job_statistics_disabled(tau)
             ? "disabled" : "enabled");
+    fprintf(prms->report, "Lost job count: %lu\n",
+            task_statistics_lost_job_count(tau));
   }
 
   utility_time_to_utility_time_gc(task_statistics_period(tau),
@@ -250,6 +254,7 @@ static int print_task_stats(task *tau, void *args)
                                   &prms->t_0);
   utility_time_to_utility_time_gc(task_statistics_offset(tau),
                                   &prms->offset);
+  prms->nth_job = task_statistics_oldest_job_pos(tau);
   
   return 0;
 }
@@ -259,13 +264,14 @@ static int print_job_stats(job_statistics *stats, void *args)
   struct task_stats *prms = args;
 
   if (!prms->suppress_printout) {
-    if (prms->nth_job == 1) {
+    if (prms->first_time) {
       fprintf(prms->report, "%5s%15s%15s%15s%15s%15s%15s%15s%15s\n",
               "#job", "release", "delta_s", "start", "deadline", "delta_f",
               "finish", "exec_time", "response_time");
+      prms->first_time = 0;
     }
 
-    fprintf(prms->report, "%5d", prms->nth_job);
+    fprintf(prms->report, "%5lu", prms->nth_job);
   }
 
   /* Start time */
@@ -408,6 +414,7 @@ static int print_job_stats(job_statistics *stats, void *args)
   }
 
   prms->nth_job++;
+  prms->total_job_count++;
 
   return 0;
 }
@@ -474,10 +481,11 @@ int main(int argc, char **argv, char **envp)
 
   struct task_stats stats_prms = {
     .report = stdout,
-    .nth_job = 1,
     .late_count = 0,
     .response_times = NULL,
     .suppress_printout = (cdf_fmt != NO_CDF),
+    .first_time = 1,
+    .total_job_count = 0,
   };
   utility_time_init(&stats_prms.period);
   utility_time_init(&stats_prms.deadline);
@@ -491,7 +499,8 @@ int main(int argc, char **argv, char **envp)
 
   utility_file_close(stats_file, argv[1]);
 
-  print_response_time_cdf(stats_prms.response_times, stats_prms.nth_job - 1,
+  print_response_time_cdf(stats_prms.response_times,
+                          stats_prms.total_job_count,
                           stats_prms.report, cdf_fmt);
 
   free_response_time_list(stats_prms.response_times);
