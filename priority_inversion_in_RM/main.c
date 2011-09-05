@@ -27,6 +27,7 @@
 #include "../utility_experimentation.h"
 #include "../utility_time.h"
 #include "../task.h"
+#include "../utility_memory.h"
 
 struct tau_prog_prms
 {
@@ -134,6 +135,8 @@ static void *task_thread(void *args)
     goto out;
   }
 
+  memory_preallocate_stack(1024);
+
   if (task_start(prms->tau) != 0) {
     log_error("Task %s does not complete successfully",
               task_statistics_name(prms->tau));
@@ -149,6 +152,17 @@ static void *task_thread(void *args)
 
 MAIN_BEGIN("priority_inversion_in_RM", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
   int mutex_protocol = PTHREAD_PRIO_NONE;
 
   if (argc != 2) {
@@ -347,10 +361,9 @@ MAIN_BEGIN("priority_inversion_in_RM", "stderr", NULL)
                          timespec_to_utility_time_dyn(&t_release),      \
                          offset_ ## id,                                 \
                          one_time_release, &tau_ ## id ## _release_prms, \
-                         "tau_" #id "_stats.bin",                       \
-                         job_stats_overhead,                            \
-                         task_overhead,                                 \
-                         0, tau_ ## id ## _prog, &tau_ ## id ## _prog_prms, \
+                         "tau_" #id "_stats.bin", 1, 1,                 \
+                         job_stats_overhead, task_overhead,             \
+                         tau_ ## id ## _prog, &tau_ ## id ## _prog_prms, \
                          &tau_ ## id);                                  \
     if (rc == -2) {                                                     \
       log_error("Cannot open tau_" #id "_stats.bin");                   \

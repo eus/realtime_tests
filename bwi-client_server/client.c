@@ -36,6 +36,7 @@
 #include "../utility_time.h"
 #include "../utility_sched_deadline.h"
 #include "../task.h"
+#include "../utility_memory.h"
 
 struct client_prog_prms {
   pthread_t main_thread;
@@ -68,6 +69,7 @@ struct client_thread_prms {
   const relative_time *task_overhead;
   task *client_task;
   int rc;
+  unsigned long ringbuf_slot_count;
 };
 static void *client_thread(void *args)
 {
@@ -130,10 +132,9 @@ static void *client_thread(void *args)
                          &prms->client_prog_args->next_release,
                          to_utility_time_dyn(0, ms),
                          NULL, NULL,
-                         prms->stats_file_path,
+                         prms->stats_file_path, prms->ringbuf_slot_count, 1,
                          prms->job_stats_overhead,
                          prms->task_overhead,
-                         0,
                          client_prog, prms->client_prog_args,
                          &prms->client_task);
     if (rc == -2) {
@@ -143,6 +144,8 @@ static void *client_thread(void *args)
     }
   }  
   /* END: Create client task */
+
+  memory_preallocate_stack(1024);
 
   /* Run the task */
   if (prms->client_prog_args->ftrace_iteration == 0) {
@@ -392,6 +395,17 @@ static void signal_handler(int signum)
 
 MAIN_BEGIN("client", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
   const char *ftrace_path = "/sys/kernel/debug/tracing/tracing_on";
   FILE *ftrace_file = NULL;
 
@@ -427,12 +441,20 @@ MAIN_BEGIN("client", "stderr", NULL)
   int ftrace_iteration = -1;
   int cbs_budget_ms = -1;
   int response_time_limit_ms = -1;
+  int duration_ms = -1;
   const char *stats_file_path = NULL;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hl:v:s:i:r:1:2:3:t:p:q:b")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hl:v:s:i:r:1:2:3:t:p:q:x:b"))
+           != -1) {
       switch (optchar) {
+      case 'x':
+        duration_ms = atoi(optarg);
+        if (duration_ms <= 0) {
+          fatal_error("DURATION must be greater than 0 (-h for help)");   
+        }
+        break;
       case 'l':
         response_time_limit_ms = atoi(optarg);
         if (response_time_limit_ms <= 0) {
@@ -494,7 +516,7 @@ MAIN_BEGIN("client", "stderr", NULL)
       case 'h':
         printf("Usage: %s -1 PROLOGUE_DURATION -2 EXPECTED_SERVICE_TIME\n"
                "       -3 EPILOGUE_DURATION -t PERIOD -p SERVER_PORT\n"
-               "       -s STATS_FILE_PATH -v SERVER_PID\n"
+               "       -s STATS_FILE_PATH -v SERVER_PID -x DURATION\n"
                "       [-i ITERATION] [-b] [-r NTH_ITERATION [-l LIMIT]]\n"
                "       [-q BUDGET]\n"
                "\n"
@@ -521,6 +543,8 @@ MAIN_BEGIN("client", "stderr", NULL)
                "   this client will keep the CPU busy before blocking\n"
                "   waiting for the next period.\n"
                "-t PERIOD is the period in millisecond.\n"
+               "-x DURATION in millisecond will be divided by PERIOD to\n"
+               "   determine the number of slots in the ring buffer."
                "-p SERVER_PORT is the server UDP port number at which the\n"
                "   server is receiving requests.\n"
                "-s STATS_FILE_PATH is the path to the file to store the\n"
@@ -543,7 +567,7 @@ MAIN_BEGIN("client", "stderr", NULL)
                "   set to 0 and the response time exceeds the threshold.\n"
                "   When ftrace is stopped in this way, this client program\n"
                "   will print the job number that turns the ftrace off in\n"
-	       "   stdout in the format: Job #JOB_NUMBER\n"
+               "   stdout in the format: Job #JOB_NUMBER\n"
                "-q BUDGET is the client CBS budget in millisecond. If this\n"
                "   not specified, the budget is calculated by summing\n"
                "   PROLOGUE_DURATION, EXPECTED_SERVICE_TIME and\n"
@@ -568,8 +592,15 @@ MAIN_BEGIN("client", "stderr", NULL)
   if (epilogue_duration_ms == -1) {
     fatal_error("-3 must be specified (-h for help)");
   }
+  if (duration_ms == -1) {
+    fatal_error("-x must be specified (-h for help)");
+  }
   if (period_ms == -1) {
     fatal_error("-t must be specified (-h for help)");
+  }
+  if (period_ms > duration_ms) {
+    fatal_error("DURATION must be greater than or equal to PERIOD"
+                " (-h for help)");
   }
   if (cbs_budget_ms == -1) {
     if (prologue_duration_ms + expected_waiting_ms + epilogue_duration_ms
@@ -776,6 +807,7 @@ MAIN_BEGIN("client", "stderr", NULL)
     .job_stats_overhead = job_stats_overhead,
     .task_overhead = task_overhead,
     .client_task = NULL,
+    .ringbuf_slot_count = duration_ms / period_ms,
   };
   if ((errno = pthread_create(&client_tid, NULL,
                               client_thread, &client_thread_args)) != 0) {

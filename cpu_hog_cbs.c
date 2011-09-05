@@ -26,6 +26,7 @@
 #include "utility_sched_deadline.h"
 #include "utility_time.h"
 #include "utility_cpu.h"
+#include "utility_memory.h"
 
 static inline void print_stats(const absolute_time *t1_abs, int chunk_counter,
                                int silent)
@@ -158,6 +159,17 @@ static void hog_cpu(const struct timespec *break_time,
 
 MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
   struct sigaction signalhandler = {
     .sa_handler = sighand,
   };
@@ -312,6 +324,8 @@ MAIN_BEGIN("cpu_hog_cbs", "stderr", NULL)
     }
 
     sigsuspend(&start_signal);
+
+    memory_preallocate_stack(1024);
 
     hog_cpu(break_time_ms == 0 ? NULL : &break_time,
             stopping_time == -1 ? NULL : &max_duration,

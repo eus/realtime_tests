@@ -36,6 +36,7 @@ struct proc {
   char **argv;
   pid_t proc_id;
   pid_t *server_pid; /* Only used by client process */
+  unsigned long *duration_ms; /* Only used by client and hrt_cbs processes */
 };
 
 static struct proc *proc_new(void)
@@ -207,6 +208,25 @@ static int procs_create(struct proc_head *head)
 }
 
 const char *delimiter = " \t";
+static char *find_argv_to_adjust(int target_optchar, struct proc *itr)
+{
+  int i;
+
+  for (i = 0; itr->argv[i] != NULL; i++) {
+    if (itr->argv[i][0] == '-' && itr->argv[i][1] == target_optchar) {
+      char *arg_buffer;
+      if (itr->argv[i][2] == '\0') {
+        arg_buffer = itr->argv[i + 1];
+      } else {
+        arg_buffer = &itr->argv[i][2];
+      }
+
+      return arg_buffer;
+    }
+  }
+
+  return NULL;
+}
 static int procs_make_argv(struct proc_head *head)
 {
   struct proc *itr;
@@ -252,37 +272,28 @@ static int procs_make_argv(struct proc_head *head)
     }
     /* END: Craft argv */
 
-    /* Adjust client -v server_pid */
+    /* Adjust client -v server_pid, -x duration or hrt_cbs -x duration */
     if (itr->server_pid != NULL) {
-      int i;
-      for (i = 0; itr->argv[i] != NULL; i++) {
-        if (itr->argv[i][0] == '-' && itr->argv[i][1] == 'v') {
-          char *arg_buffer;
-          if (itr->argv[i][2] == '\0') {
-            arg_buffer = itr->argv[i + 1];
-          } else {
-            arg_buffer = &itr->argv[i][2];
-          }
-
-          snprintf(arg_buffer, strlen(arg_buffer), "%d", *itr->server_pid);
-
-          break;
-        }
+      char *argv_to_adjust = find_argv_to_adjust('v', itr);
+      if (argv_to_adjust != NULL) {
+        snprintf(argv_to_adjust, strlen(argv_to_adjust),
+                 "%d", *itr->server_pid);
       }
     }
-    /* END: Adjust client -v server_pid */
+    if (itr->duration_ms != NULL) {
+      char *argv_to_adjust = find_argv_to_adjust('x', itr);
+      if (argv_to_adjust != NULL) {
+        snprintf(argv_to_adjust, strlen(argv_to_adjust),
+                 "%lu", *itr->duration_ms);
+      }
+    }
+    /* END: Adjust client -v server_pid, -x duration or hrt_cbs -x duration */
   }
 
   return 0;
 }
 
 /* Procs management section */
-enum duration_unit {
-  UNSPECIFIED,
-  S,
-  MS,
-};
-
 enum program_ids_idx {
   SERVER, CLIENT, CPU_HOG, CPU_HOG_CBS, HRT_CBS, SERVER_HOG,
 };
@@ -313,9 +324,14 @@ static void terminate_driver(void)
   procs_free(&server_hog_procs);
 }
 
+struct parse_config_file_prms
+{
+  struct proc *preceding_server;
+  unsigned long *duration_ms;
+};
 static int parse_config_file(const char *line, void *args)
 {
-  struct proc **preceding_server_ptr = (struct proc **) args;
+  struct parse_config_file_prms *prms = (struct parse_config_file_prms *) args;
   char *token;
   size_t buflen = strlen(line) + 1;
   char *buffer = malloc(buflen);
@@ -344,13 +360,14 @@ static int parse_config_file(const char *line, void *args)
       switch (i) {
       case SERVER:
         procs_add(&server_procs, p);
-        *preceding_server_ptr = p;
+        prms->preceding_server = p;
         break;
       case CLIENT:
         procs_add(&client_procs, p);
-        if (*preceding_server_ptr != NULL) {
-          p->server_pid = &(*preceding_server_ptr)->proc_id;
+        if (prms->preceding_server != NULL) {
+          p->server_pid = &prms->preceding_server->proc_id;
         }
+        p->duration_ms = prms->duration_ms;
         break;
       case CPU_HOG:
         procs_add(&cpu_hog_procs, p);
@@ -360,6 +377,7 @@ static int parse_config_file(const char *line, void *args)
         break;
       case HRT_CBS:
         procs_add(&hrt_cbs_procs, p);
+        p->duration_ms = prms->duration_ms;
         break;
       case SERVER_HOG:
         procs_add(&server_hog_procs, p);
@@ -374,8 +392,18 @@ static int parse_config_file(const char *line, void *args)
         remaining_line = "";
       }
 
-      if (i == CLIENT && *preceding_server_ptr != NULL) {
-        args_buflen = snprintf(NULL, 0, SNPRINTF_ARGS(" -v %d", INT_MAX)) + 1;
+      if (i == CLIENT) {
+        if (prms->preceding_server == NULL) {
+          args_buflen = snprintf(NULL, 0,
+                                 SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+        } else {
+          args_buflen = snprintf(NULL, 0,
+                                 SNPRINTF_ARGS(" -v %d -x %lu",
+                                               INT_MAX, ULONG_MAX)) + 1;
+        }
+      } else if (i == HRT_CBS) {
+        args_buflen = snprintf(NULL, 0,
+                               SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
       } else {
         args_buflen = snprintf(NULL, 0, SNPRINTF_ARGS("")) + 1;
       }
@@ -386,10 +414,20 @@ static int parse_config_file(const char *line, void *args)
         goto error;
       }
 
-      if (i == CLIENT && *preceding_server_ptr != NULL) {
-        snprintf(p->args, args_buflen, SNPRINTF_ARGS(" -v %d", INT_MAX));
+      if (i == CLIENT) {
+        if (prms->preceding_server == NULL) {
+          args_buflen = snprintf(p->args, args_buflen,
+                                 SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+        } else {
+          args_buflen = snprintf(p->args, args_buflen,
+                                 SNPRINTF_ARGS(" -v %d -x %lu",
+                                               INT_MAX, ULONG_MAX)) + 1;
+        }
+      } else if (i == HRT_CBS) {
+        args_buflen = snprintf(p->args, args_buflen,
+                               SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
       } else {
-        snprintf(p->args, args_buflen, SNPRINTF_ARGS(""));
+        args_buflen = snprintf(p->args, args_buflen, SNPRINTF_ARGS("")) + 1;
       }
 #undef SNPRINTF_ARGS
 
@@ -414,8 +452,7 @@ static int parse_config_file(const char *line, void *args)
 
 /* Command line args section */
 static const char *config_path = NULL;
-static unsigned long int experiment_duration = -1;
-static enum duration_unit experiment_duration_unit = UNSPECIFIED;
+static unsigned long int experiment_duration_ms = -1;
 static int cbs_budget_period_ms = -1;
 static int parse_cmd_line_args(int argc, char **argv)
 {
@@ -435,17 +472,15 @@ static int parse_cmd_line_args(int argc, char **argv)
       config_path = optarg;
       break;
     case 't':
-      experiment_duration = strtoul(optarg, &duration_unit, 10);
-      if (experiment_duration <= 0) {
+      experiment_duration_ms = strtoul(optarg, &duration_unit, 10);
+      if (experiment_duration_ms <= 0) {
         log_error("Experiment duration must be greater than 0 (-h for help)");
         return -1;
       }
 
       if (strcasecmp(duration_unit, "s") == 0) {
-        experiment_duration_unit = S;
-      } else if (strcasecmp(duration_unit, "ms") == 0) {
-        experiment_duration_unit = MS;
-      } else {
+        experiment_duration_ms *= 1000;
+      } else if (strcasecmp(duration_unit, "ms") != 0) {
         log_error("Experimentation duration must be directly followed by"
                   " either 's' or 'ms' (-h for help)");
         return -1;
@@ -476,7 +511,7 @@ static int parse_cmd_line_args(int argc, char **argv)
              "-f CONFIG_FILE is the file listing in each line the program ID\n"
              "   and the executable command line arguments like:\n"
              "     SERVER -d 9 -p 7777\n"
-             "     CLIENT -1 5 -2 9 -3 5 -q 20 -t 30 -p 7777 -s x.bin\n"
+             "     CLIENT -1 5 -2 9 -3 5 -q 20 -t 30 -p 7777 -s x.bin -x 60\n"
              "   Available program IDs: SERVER, CLIENT, CPU_HOG, CPU_HOG_CBS,\n"
              "                          HRT_CBS.\n"
              "   The option arguments must not contain any whitespace.\n"
@@ -485,7 +520,10 @@ static int parse_cmd_line_args(int argc, char **argv)
              "   program ID, the option -v will be forced to have the value\n"
              "   of the preceding SERVER PID. To have a client process that\n"
              "   is not associated with any specified server process,\n"
-             "   specify the CLIENT program ID before any SERVER program ID.\n",
+             "   specify the CLIENT program ID before any SERVER program ID.\n"
+             "   Also special for CLIENT and HRT_CBS program ID is that -x\n"
+             "   will be forced to have the DURATION value specified to the\n"
+             "   driver using -t",
              prog_name);
       return EXIT_SUCCESS;
     case '?':
@@ -500,7 +538,7 @@ static int parse_cmd_line_args(int argc, char **argv)
     }
   }
 
-  if (experiment_duration == -1) {
+  if (experiment_duration_ms == -1) {
     log_error("-t must be specified (-h for help)");
     return -1;
   }
@@ -545,9 +583,11 @@ MAIN_BEGIN("bwi-client_server", "stderr", NULL)
     if (config_file == NULL) {
       goto error;
     }
-    struct proc *preceding_server = NULL;
-    if (utility_file_read(config_file, 1024, parse_config_file,
-                          &preceding_server) != 0) {
+    struct parse_config_file_prms args = {
+      .preceding_server = NULL,
+      .duration_ms = &experiment_duration_ms,
+    };
+    if (utility_file_read(config_file, 1024, parse_config_file, &args) != 0) {
       log_error("Cannot completely parse the config file");
       goto error;
     }
@@ -600,14 +640,7 @@ MAIN_BEGIN("bwi-client_server", "stderr", NULL)
   /* END: Start processes */
 
   /* Sleep for the duration of the experiment */
-  switch (experiment_duration_unit) {
-  case S:
-    sleep(experiment_duration);
-  case MS:
-    usleep(experiment_duration * 1000);
-  case UNSPECIFIED:
-    break;
-  }
+  usleep(experiment_duration_ms * 1000);
   /* END: Sleep for the duration of the experiment */
 
   /* Stop processes */

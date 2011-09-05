@@ -32,6 +32,7 @@
 #include "utility_time.h"
 #include "utility_sched_deadline.h"
 #include "task.h"
+#include "utility_memory.h"
 
 struct periodic_task_thread_prms {
   int wcet_ms;
@@ -45,6 +46,7 @@ struct periodic_task_thread_prms {
   const relative_time *task_overhead;
   task *periodic_task;
   int rc;
+  unsigned long ringbuf_slot_count;
 };
 static void *periodic_task_thread(void *args)
 {
@@ -98,7 +100,7 @@ static void *periodic_task_thread(void *args)
     }
     absolute_time *t_release;
     t_release = utility_time_add_dyn_gc(timespec_to_utility_time_dyn(&t_now),
-					to_utility_time_dyn(1, s));
+                                        to_utility_time_dyn(1, s));
 
     int rc = task_create(prms->task_name,
                          to_utility_time_dyn(prms->wcet_ms, ms),
@@ -109,10 +111,9 @@ static void *periodic_task_thread(void *args)
                          t_release,
                          to_utility_time_dyn(0, ms),
                          NULL, NULL,
-                         prms->stats_file_path,
+                         prms->stats_file_path, prms->ringbuf_slot_count, 1,
                          prms->job_stats_overhead,
                          prms->task_overhead,
-                         0,
                          busyloop_exact, &prms->busyloop_exact_args,
                          &prms->periodic_task);
     if (rc == -2) {
@@ -122,6 +123,10 @@ static void *periodic_task_thread(void *args)
     }
   }  
   /* END: Create periodic task */
+
+  /* Preallocate stack */
+  memory_preallocate_stack(1024);
+  /* END: Preallocate stack */
 
   /* Run the task */
   if (task_start(prms->periodic_task) != 0) {
@@ -136,16 +141,28 @@ static void *periodic_task_thread(void *args)
 
 MAIN_BEGIN("hrt_cbs", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
   const char *task_name = NULL;
   const char *stats_file_path = NULL;
   int wcet_ms = -1;
   int budget_ms = -1;
   int deadline_ms = -1;
   int period_ms = -1;
+  int duration_ms = -1;
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hn:s:c:d:q:t:")) != -1) {
+    while ((optchar = getopt(argc, argv, ":hn:s:c:d:q:t:x:")) != -1) {
       switch (optchar) {
       case 'n':
         task_name = optarg;
@@ -157,6 +174,12 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
         wcet_ms = atoi(optarg);
         if (wcet_ms <= 0) {
           fatal_error("WCET must be at least 1 ms (-h for help)");
+        }
+        break;
+      case 'x':
+        duration_ms = atoi(optarg);
+        if (duration_ms <= 0) {
+          fatal_error("DURATION must be at least 1 ms (-h for help)");
         }
         break;
       case 't':
@@ -179,7 +202,7 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
         break;
       case 'h':
         printf("Usage: %s -n NAME -s STATS_FILE -c WCET -q BUDGET -t PERIOD\n"
-               "       [-d DEADLINE]"
+               "       -x DURATION [-d DEADLINE]"
                "\n"
                "A HRT CBS is a CBS that never postpones its deadline because\n"
                "it serves a periodic task that obeys the stated WCET and\n"
@@ -195,7 +218,9 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
                "   CBS, in millisecond. If this is omitted, the relative\n"
                "   deadline of the task is equal to the CBS period.\n"
                "-q BUDGET is the CBS budget in millisecond.\n"
-               "-t PERIOD is the CBS period in millisecond.\n",
+               "-t PERIOD is the CBS period in millisecond.\n"
+               "-x DURATION in ms will be divided by PERIOD to determine the\n"
+               "   number of slots in the job statistics ring buffer\n",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -221,6 +246,13 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
   }
   if (period_ms == -1) {
     fatal_error("-t must be specified (-h for help)");
+  }
+  if (duration_ms == -1) {
+    fatal_error("-x must be specified (-h for help)");
+  }
+  if (period_ms > duration_ms) {
+    fatal_error("DURATION must be greater than or equal to PERIOD"
+                " (-h for help)");
   }
   if (deadline_ms == -1) {
     if (wcet_ms > budget_ms) {
@@ -324,6 +356,7 @@ MAIN_BEGIN("hrt_cbs", "stderr", NULL)
     .job_stats_overhead = job_stats_overhead,
     .task_overhead = task_overhead,
     .periodic_task = NULL,
+    .ringbuf_slot_count = duration_ms / period_ms,
   };
   if ((errno = pthread_create(&periodic_task_tid, NULL, periodic_task_thread,
                               &periodic_task_thread_args)) != 0) {

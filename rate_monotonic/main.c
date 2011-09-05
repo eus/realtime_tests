@@ -25,28 +25,66 @@
 #include "../utility_log.h"
 #include "../utility_time.h"
 #include "../utility_sched_fifo.h"
+#include "../utility_memory.h"
 
 MAIN_BEGIN("rate_monotonic", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
+  memory_preallocate_stack(1024);
+
   /* Tuneable parameters */
+  int second_to_start = 3;
+  int second_to_stop = 13;
+
   relative_time *tau_1_wcet = to_utility_time_dyn(2, ms);
-  relative_time *tau_1_period = to_utility_time_dyn(10, ms);
+  int tau_1_period_ms = 10;
 
   relative_time *tau_2_wcet = to_utility_time_dyn(3, ms);
-  relative_time *tau_2_period = to_utility_time_dyn(15, ms);
+  int tau_2_period_ms = 15;
 
   relative_time *tau_3_wcet = to_utility_time_dyn(6, ms);
-  relative_time *tau_3_period = to_utility_time_dyn(26, ms);
+  int tau_3_period_ms = 26;
 
   relative_time *tau_4_wcet = to_utility_time_dyn(6, ms);
-  relative_time *tau_4_period = to_utility_time_dyn(36, ms);
+  int tau_4_period_ms = 36;
 
   relative_time *busyloop_tolerance = to_utility_time_dyn(100, us);
   unsigned busyloop_search_passes = 10;
-
-  relative_time *offset_to_start = to_utility_time_dyn(3, s);
-  relative_time *offset_to_stop = to_utility_time_dyn(13, s);
   /* END: Tuneable parameters */
+
+#define make_period(id)                                 \
+  relative_time *tau_ ## id ## _period                  \
+    = to_utility_time_dyn(tau_ ## id ## _period_ms, ms)
+
+  make_period(1);
+  make_period(2);
+  make_period(3);
+  make_period(4);
+
+#undef make_period
+
+#define make_slot_count(id)                                             \
+  unsigned long tau_ ## id ## _slot_count                               \
+    = (second_to_stop - second_to_start) * 1000 / tau_ ## id ## _period_ms
+
+  make_slot_count(1);
+  make_slot_count(2);
+  make_slot_count(3);
+  make_slot_count(4);
+#undef make_slot_count
+
+  relative_time *offset_to_start = to_utility_time_dyn(second_to_start, s);
+  relative_time *offset_to_stop = to_utility_time_dyn(second_to_stop, s);
 
   int exit_code = EXIT_FAILURE;
   int rc = 0;
@@ -160,9 +198,9 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
                    timespec_to_utility_time_dyn(&t_release),            \
                    to_utility_time_dyn(0, ms),                          \
                    NULL, NULL,                                          \
-                   "tau_" #id "_stats.bin", job_stats_overhead,         \
-                   task_overhead,                                       \
-                   0, busyloop_exact, &tau_ ## id ## _busyloop_args,    \
+                   "tau_" #id "_stats.bin", tau_ ## id ## _slot_count,  \
+                   1, job_stats_overhead, task_overhead,                \
+                   busyloop_exact, &tau_ ## id ## _busyloop_args,       \
                    &tau_ ## id);                                        \
   if (rc == -2) {                                                       \
     log_error("Cannot open tau_" #id "_stats.bin");                     \
@@ -227,6 +265,8 @@ MAIN_BEGIN("rate_monotonic", "stderr", NULL)
                 task_statistics_name(prms->tau));
       goto out;
     }
+
+    memory_preallocate_stack(1024);
 
     if (task_start(prms->tau) != 0) {
       log_error("Task %s does not complete successfully",

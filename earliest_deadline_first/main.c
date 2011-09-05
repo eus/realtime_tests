@@ -25,31 +25,66 @@
 #include "../utility_log.h"
 #include "../utility_time.h"
 #include "../utility_sched_deadline.h"
+#include "../utility_memory.h"
 
 MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
 {
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
   /* Tuneable parameters */
   /* Beware that if the total SCHED_DEADLINE bandwidth is 1 or more,
      this thread serving as a manager might not be able to stop any of
      them because this thread will use the normal scheduler. */
+  int offset_to_start_ms = 2000;
+  int offset_to_stop_ms = 2405;
+
   relative_time *tau_1_wcet = to_utility_time_dyn(1, ms);
-  relative_time *tau_1_period = to_utility_time_dyn(4, ms);
+  int tau_1_period_ms = 4;
   relative_time *tau_1_deadline = to_utility_time_dyn(2, ms);
 
   relative_time *tau_2_wcet = to_utility_time_dyn(2, ms);
-  relative_time *tau_2_period = to_utility_time_dyn(5, ms);
+  int tau_2_period_ms = 5;
   relative_time *tau_2_deadline = to_utility_time_dyn(5, ms);
 
   relative_time *tau_3_wcet = to_utility_time_dyn(3, ms);
-  relative_time *tau_3_period = to_utility_time_dyn(10, ms);
+  int tau_3_period_ms = 10;
   relative_time *tau_3_deadline = to_utility_time_dyn(7, ms);
 
   relative_time *busyloop_tolerance = to_utility_time_dyn(100, us);
   unsigned busyloop_search_passes = 10;
-
-  relative_time *offset_to_start = to_utility_time_dyn(2, s);
-  relative_time *offset_to_stop = to_utility_time_dyn(2405, ms);
   /* END: Tuneable parameters */
+
+#define make_period(id)                                 \
+  relative_time *tau_ ## id ## _period                  \
+    = to_utility_time_dyn(tau_ ## id ## _period_ms, ms)
+
+  make_period(1);
+  make_period(2);
+  make_period(3);
+
+#undef make_period
+
+#define make_slot_count(id)                                             \
+  unsigned long tau_ ## id ## _slot_count                               \
+    = (offset_to_stop_ms - offset_to_start_ms) / tau_ ## id ## _period_ms
+
+  make_slot_count(1);
+  make_slot_count(2);
+  make_slot_count(3);
+
+#undef make_slot_count
+
+  relative_time *offset_to_start = to_utility_time_dyn(offset_to_start_ms, ms);
+  relative_time *offset_to_stop = to_utility_time_dyn(offset_to_stop_ms, ms);
 
 #define set_manual_gc(id)                                       \
   do {                                                          \
@@ -174,9 +209,10 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
                      timespec_to_utility_time_dyn(&t_release),          \
                      to_utility_time_dyn(0, ms),                        \
                      NULL, NULL,                                        \
-                     "tau_" #id "_stats.bin", job_stats_overhead,       \
-                     task_overhead,                                     \
-                     0, busyloop_exact, &tau_ ## id ## _busyloop_args,  \
+                     "tau_" #id "_stats.bin",                           \
+                     tau_ ## id ## _slot_count, 1,                      \
+                     job_stats_overhead, task_overhead,                 \
+                     busyloop_exact, &tau_ ## id ## _busyloop_args,     \
                      &tau_ ## id);                                      \
     if (rc == -2) {                                                     \
       log_error("Cannot open tau_" #id "_stats.bin");                   \
@@ -227,6 +263,8 @@ MAIN_BEGIN("earliest_deadline_first", "stderr", NULL)
                 task_statistics_name(prms->tau));
       goto out;
     }
+
+    memory_preallocate_stack(1024);
 
     if (task_start(prms->tau) != 0) {
       log_error("Task %s does not complete successfully",
