@@ -286,3 +286,9 @@ period to 20 ms.
 Same as sub-experiment 23 except that the CPU hogger CBS is replaced
 by HRT CBS with the same budget and period but whose HRT task WCET is
 4 ms to take into account the finest kernel tick.
+
+[Sub-experiment 26]
+Same as sub-experiment 23 except that BWI is in use.
+
+[Sub-experiment 27]
+Same as sub-experiment 24 except that BWI is in use.
