@@ -44,7 +44,7 @@ extern "C" {
    * Schedule the caller as a SCHED_FIFO real-time thread with the
    * given priority.
    *
-   * @param prio the desired priority (c.f., sched_fifo_prio()).
+   * @param prio the desired priority (cf., sched_fifo_prio()).
    * @param old_scheduler if this is not NULL, the current scheduler
    * is stored in the pointed location so that it can be restored
    * using sched_fifo_leave().
