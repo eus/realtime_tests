@@ -19,18 +19,21 @@
  * @file job.h
  * @brief Various functionalities to start the next job of a real-time
  * task while as accurately as possible recording the absolute start
- * time and absolute finishing time of the job. The most crucial
- * function is job_start() whose documentation details the associated
- * timing problem. To avoid costly timing overhead associated with
- * saving job statistics into a disk, the job statistics are written
- * into a ring buffer that can overrun. The content of the ring buffer
- * can then be stored in a file after the program completes and no
- * temporal guarantee is needed anymore. Since the ring buffer can
- * overrun, depending on the user requirement, the user might want to
- * serialize the release position of the oldest job in the ring buffer
- * into the file storing the content of the ring buffer to aid later
- * analysis (e.g., to determine the expected release time of the
- * oldest job). The test unit provides complete usage example.
+ * time and absolute finishing time of the job.
+ *
+ * The most crucial function is job_start() whose documentation
+ * details the associated timing problem. To avoid costly timing
+ * overhead associated with saving job statistics into a disk, the job
+ * statistics are written into a ring buffer that can overrun. The
+ * content of the ring buffer can then be stored in a file after the
+ * program completes and no temporal guarantee is needed
+ * anymore. Since the ring buffer can overrun, depending on the user
+ * requirement, the user might want to serialize the release position
+ * of the oldest job in the ring buffer into the file storing the
+ * content of the ring buffer to aid later analysis (e.g., to
+ * determine the expected release time of the oldest job). The test
+ * unit provides complete usage example.
+ *
  * @author Tadeus Prastowo <eus@member.fsf.org>
  */
 
@@ -80,6 +83,7 @@ extern "C" {
    * ring buffer to avoid expensive disk writing cost. The user of
    * this infrastructure component is then responsible for allocating
    * large enough ring buffer if all statistics are to be recorded.
+   * This is an opaque type; do not manipulate any of its instances directly.
    */
   typedef struct
   {

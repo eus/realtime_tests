@@ -81,9 +81,9 @@ MAIN_UNIT_TEST_BEGIN("job_test", "stderr", NULL, cleanup)
   unsigned overhead_approximation_scaling = 10;
 
   /** The number of jobs to be generated and checked for
-      lateness. Beware that a large number of samples may cause memory
-      swapping invalidating the approximation given by function
-      job_statistics_overhead. */
+      lateness. Since the use of ring buffer, there is no need to
+      worry about setting this number too big since expensive swapping
+      to disk never happens. */
   int sample_count = 512;
 
   /** Change this to /dev/stdout to see the job statistics */

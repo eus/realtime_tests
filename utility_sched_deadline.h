@@ -19,9 +19,11 @@
  * @file utility_sched_deadline.h
  * @brief Various convenient functions to use SCHED_DEADLINE of
  *        git://gitorious.org/sched_deadline/linux-deadline.git.
+ *
  *        SCHED_DEADLINE treats each thread as a CBS (Constant
  *        Bandwidth Server) and schedule the threads using EDF
  *        (Earliest Deadline First) scheduling algorithm.
+ *
  * @author Tadeus Prastowo <eus@member.fsf.org>
  */
 
