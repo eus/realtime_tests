@@ -33,21 +33,33 @@
   if (logging_enabled)                                  \
     rc -= clock_gettime(CLOCK_TYPE, t_end)
 
-int job_start(FILE *stats_log, struct job *job)
+int job_start(jobstats_ringbuf *stats_log, struct job *job)
 {
+  job_statistics dummy;
+  job_statistics *stats = &dummy;
   int rc = 0;
-  job_statistics stats;
-
-  common_code_section(rc, stats_log != NULL, job, &stats.t_begin, &stats.t_end);
 
   /* Log the job statistics (this is the biggest unaccountable overhead) */
   if (stats_log != NULL) {
-    if (fwrite(&stats, sizeof(stats), 1, stats_log) == 0) {
-      log_syserror("Cannot write job statistics");
-      rc--;
+    if (stats_log->next == stats_log->slot_count) {
+      if (!stats_log->overrun) {
+        stats_log->overrun = 1;
+      }
+      if (!stats_log->overrun_disabled) {
+        stats_log->next = 0;
+        stats_log->overrun_count++;
+        stats = &stats_log->ringbuf[stats_log->next++];
+      }
+    } else {
+      stats = &stats_log->ringbuf[stats_log->next++];
     }
+
+    stats_log->write_count++;
   }
   /* End of logging the job statistics */
+
+  common_code_section(rc, stats_log != NULL, job,
+                      &stats->t_begin, &stats->t_end);
 
   return rc;
 }
@@ -179,4 +191,126 @@ absolute_time *job_statistics_time_start(const job_statistics *stats)
 absolute_time *job_statistics_time_finish(const job_statistics *stats)
 {
   return timespec_to_utility_time_dyn(&stats->t_end);
+}
+
+jobstats_ringbuf *jobstats_ringbuf_create(unsigned long slot_count,
+                                          int disable_overrun)
+{
+  if (slot_count == 0) {
+    return NULL;
+  }
+
+  jobstats_ringbuf *res = malloc(sizeof(jobstats_ringbuf));
+  if (res == NULL) {
+    return NULL;
+  }
+  memset(res, 0, sizeof(*res));
+
+  res->ringbuf = malloc(sizeof(*res->ringbuf) * slot_count);
+  if (res->ringbuf == NULL) {
+    free(res);
+    return NULL;
+  }
+  memset(res->ringbuf, 0, sizeof(*res->ringbuf) * slot_count);
+
+  res->slot_count = slot_count;
+  res->overrun_disabled = !!disable_overrun;
+
+  return res;
+}
+
+void jobstats_ringbuf_destroy(jobstats_ringbuf *ringbuf)
+{
+  free(ringbuf->ringbuf);
+  free(ringbuf);
+}
+
+int jobstats_ringbuf_save(const jobstats_ringbuf *ringbuf, FILE *record_file)
+{
+  unsigned long i, end;
+
+  if (ringbuf->write_count == 0) {
+    return 0;
+  }
+
+  if (ringbuf->overrun_disabled || !ringbuf->overrun) {
+    i = 0;
+  } else {
+    i = ringbuf->next;
+  }
+
+  if (!ringbuf->overrun_disabled && ringbuf->overrun
+      && ringbuf->slot_count == 1) {
+    end = 1;
+  } else {
+    end = ringbuf->next;
+  }
+
+  do {
+    i %= ringbuf->slot_count;
+
+    if (fwrite(&ringbuf->ringbuf[i], sizeof(*ringbuf->ringbuf), 1, record_file)
+        == 0) {
+      log_syserror("Cannot write job statistics at ring buffer slot #%lu", i);
+      return -1;
+    }
+
+    i++;
+  } while (i != end);
+
+  return 0;
+}
+
+int jobstats_ringbuf_overrun(const jobstats_ringbuf *ringbuf)
+{
+  return (ringbuf->overrun_disabled
+          ? ringbuf->overrun
+          : !!ringbuf->overrun_count);
+}
+
+unsigned long jobstats_ringbuf_overrun_count(const jobstats_ringbuf *ringbuf)
+{
+  return ringbuf->overrun_count;
+}
+
+int jobstats_ringbuf_overrun_disabled(const jobstats_ringbuf *ringbuf)
+{
+  return ringbuf->overrun_disabled;
+}
+
+unsigned long jobstats_ringbuf_size(const jobstats_ringbuf *ringbuf)
+{
+  return ringbuf->slot_count;
+}
+
+unsigned long jobstats_ringbuf_write_count(const jobstats_ringbuf *ringbuf)
+{
+  return ringbuf->write_count;
+}
+
+unsigned long jobstats_ringbuf_oldest_pos(const jobstats_ringbuf *ringbuf)
+{
+  if (jobstats_ringbuf_write_count(ringbuf) == 0) {
+    return 0;
+  }
+
+  if (jobstats_ringbuf_overrun_disabled(ringbuf)
+      || !jobstats_ringbuf_overrun(ringbuf)) {
+    return 1;
+  } else {
+    return (jobstats_ringbuf_write_count(ringbuf)
+            - jobstats_ringbuf_size(ringbuf) + 1);
+  }
+}
+
+unsigned long jobstats_ringbuf_lost_count(const jobstats_ringbuf *ringbuf)
+{
+  if (!jobstats_ringbuf_overrun(ringbuf)) {
+    return 0;
+  } else if (jobstats_ringbuf_overrun_disabled(ringbuf)) {
+    return (jobstats_ringbuf_write_count(ringbuf)
+            - jobstats_ringbuf_size(ringbuf));
+  } else {
+    return (jobstats_ringbuf_oldest_pos(ringbuf) - 1);
+  }
 }

@@ -21,7 +21,16 @@
  * task while as accurately as possible recording the absolute start
  * time and absolute finishing time of the job. The most crucial
  * function is job_start() whose documentation details the associated
- * timing problem.
+ * timing problem. To avoid costly timing overhead associated with
+ * saving job statistics into a disk, the job statistics are written
+ * into a ring buffer that can overrun. The content of the ring buffer
+ * can then be stored in a file after the program completes and no
+ * temporal guarantee is needed anymore. Since the ring buffer can
+ * overrun, depending on the user requirement, the user might want to
+ * serialize the release position of the oldest job in the ring buffer
+ * into the file storing the content of the ring buffer to aid later
+ * analysis (e.g., to determine the expected release time of the
+ * oldest job). The test unit provides complete usage example.
  * @author Tadeus Prastowo <eus@member.fsf.org>
  */
 
@@ -65,6 +74,28 @@ extern "C" {
     struct timespec t_begin; /* The start time (s_{i,j}) of the job */
     struct timespec t_end; /* The finishing time (f_{i,j}) of the job */
   } job_statistics;
+
+  /**
+   * Following the idea of Linux ftrace, job statistics are logged to
+   * ring buffer to avoid expensive disk writing cost. The user of
+   * this infrastructure component is then responsible for allocating
+   * large enough ring buffer if all statistics are to be recorded.
+   */
+  typedef struct
+  {
+    job_statistics *ringbuf; /* The ring buffer as an array */
+    unsigned long slot_count; /* The number of slots in the ring
+                                 buffer array */
+    unsigned long next; /* The next slot in the ring buffer to write to */
+    unsigned long overrun_count; /* The number of times the first
+                                    slot in ring buffer has been
+                                    overwritten */
+    int overrun_disabled; /* Non-zero if the ring must not wrap around. */
+    int overrun; /* Non-zero if overrun has happened. */
+    unsigned long write_count; /* The number of times fn job_start has
+                                  tried to save data into this ring
+                                  buffer. */
+  } jobstats_ringbuf;
   /* End of main data structures */
 
   /* II */
@@ -131,15 +162,14 @@ extern "C" {
    * the job must complete within approximately 100 ms - (unaccounted
    * overhead) - job_statistics_overhead(). Since the approximated
    * overhead differs from one host to another, it is strongly
-   * recommended to serialize the result of invoking function
-   * job_statistics_overhead() to stats_log before releasing the first
-   * job so that a more accurate analysis of the job statistics can be
-   * made at a later time by taking into account the recorded
-   * approximated overhead for a particular collection of job
-   * statistics. An example of such an analysis can be found in the
-   * unit test.
+   * recommended to note down the result of invoking function
+   * job_statistics_overhead() before releasing the first job so that
+   * a more accurate analysis of the job statistics can be made at a
+   * later time by taking into account the noted approximated overhead
+   * for a particular collection of job statistics. An example of such
+   * an analysis can be found in the unit test.
    *
-   * @param stats_log a pointer to the FILE object to which the
+   * @param stats_log a pointer to the jobstats_ringbuf object to which the
    * statistics of each job is to be logged. Set this to NULL to
    * disable job statistics logging that can reduce the amount of
    * unaccountable overhead.
@@ -152,7 +182,7 @@ extern "C" {
    * utility_log.h "logged"). Even in case of hard error, the job
    * statistics are still written to stats_log.
    */
-  int job_start(FILE *stats_log, struct job *job);
+  int job_start(jobstats_ringbuf *stats_log, struct job *job);
   /** @} End of collection of job execution functions */
 
   /* IV */
@@ -218,6 +248,160 @@ extern "C" {
    */
   absolute_time *job_statistics_time_finish(const job_statistics *stats);
   /** @} End of collection of job statistics functions */
+
+  /* V */
+  /**
+   * @name Collection of job statistics ring buffer functions.
+   * @{
+   */
+
+  /**
+   * Create a ring buffer to store the recorded job statistics.
+   *
+   * @param slot_count is the number of job statistics that the buffer
+   * should be able to store before wrapping around. This must be at least one.
+   * @param disable_overrun if non-zero, once the ring buffer is full,
+   * additional job statistics is not recorded. Otherwise, the ring
+   * buffer will wrap around and the data will be overwritten starting
+   * from the oldest one.
+   *
+   * @return the ring buffer object or NULL if there is not enough
+   * memory or slot_count is zero.
+   */
+  jobstats_ringbuf *jobstats_ringbuf_create(unsigned long slot_count,
+                                            int disable_overrun);
+
+  /**
+   * Destroy a job statistics ring buffer object. An already destroyed
+   * ring buffer must not be passed to this function again.
+   *
+   * @param ringbuf the ring buffer to be destroyed.
+   */
+  void jobstats_ringbuf_destroy(jobstats_ringbuf *ringbuf);
+
+  /**
+   * Save the content of a job statistics ring buffer to a file.
+   *
+   * @param ringbuf a pointer to the ring buffer object whose contents
+   * are to be saved.
+   * @param record_file a binary file stream to which the content of
+   * the ring buffer will be saved.
+   *
+   * @return 0 if there is no error or -1 if there is an I/O error to
+   * open the file for reading (the error is @ref utility_log.h
+   * "logged" directly).
+   */
+  int jobstats_ringbuf_save(const jobstats_ringbuf *ringbuf, FILE *record_file);
+
+  /**
+   * Test if a job statistics ring buffer object has overrun.
+   *
+   * @param ringbuf a pointer to the ring buffer object.
+   *
+   * @return non-zero if the ring buffer has overrun, zero
+   * otherwise. If the ring buffer is not allowed to overrun, the test
+   * will return non-zero if additional data have been lost due to
+   * overrun.
+   */
+  int jobstats_ringbuf_overrun(const jobstats_ringbuf *ringbuf);
+
+  /**
+   * Return the number of times the first slot in ring buffer has been
+   * overwritten.
+   *
+   * @param ringbuf a pointer to the ring buffer object.
+   *
+   * @return the overrun count.
+   */
+  unsigned long jobstats_ringbuf_overrun_count(const jobstats_ringbuf *ringbuf);
+
+  /**
+   * Test if a job statistics ring buffer object is not allowed to overrun.
+   *
+   * @param ringbuf a pointer to the ring buffer object.
+   *
+   * @return non-zero if the ring buffer is not allowed to overrun, zero
+   * otherwise.
+   */
+  int jobstats_ringbuf_overrun_disabled(const jobstats_ringbuf *ringbuf);
+
+  /**
+   * Return the number of slots available in the ring buffer.
+   *
+   * @param ringbuf a pointer to the ring buffer object.
+   *
+   * @return the number of slots in the ring buffer.
+   */
+  unsigned long jobstats_ringbuf_size(const jobstats_ringbuf *ringbuf);
+
+  /**
+   * Return the number of job statistics data that have been written
+   * into the buffer. If overrun is not disabled and overrun happens,
+   * subtracting the number of slots in the ring buffer from this
+   * function return value and adding one will yield the release
+   * position of the oldest job in the ring buffer. If overrun is
+   * disabled and overrun happens, doing the same arithmetics but
+   * without adding one will yield the number of job statistics data
+   * that are lost. If either of the above two is the thing that you
+   * need, you can use convenient function
+   * jobstats_ringbuf_oldest_pos() or jobstats_ringbuf_lost_count().
+   *
+   * @param ringbuf a pointer to the ring buffer object to be processed.
+   *
+   * @return zero if the ring buffer is empty or positive integer
+   * indicating the count of job statistics that have been tried to be
+   * saved into the ring buffer.
+   */
+  unsigned long jobstats_ringbuf_write_count(const jobstats_ringbuf *ringbuf);
+
+  /**
+   * Return the release position starting from 1 of the oldest job in
+   * the ring buffer. So, a return value of 1 means that the oldest
+   * job statistics stored in the ring buffer belongs to the first
+   * released job. Zero is returned if the ring buffer is empty.
+   *
+   * @param ringbuf a pointer to the ring buffer object to be processed.
+   *
+   * @return the release position of the oldest job.
+   */
+  extern inline unsigned long
+  jobstats_ringbuf_oldest_pos(const jobstats_ringbuf *ringbuf)
+  {
+    if (jobstats_ringbuf_write_count(ringbuf) == 0) {
+      return 0;
+    }
+
+    if (jobstats_ringbuf_overrun_disabled(ringbuf)
+        || !jobstats_ringbuf_overrun(ringbuf)) {
+      return 1;
+    } else {
+      return (jobstats_ringbuf_write_count(ringbuf)
+              - jobstats_ringbuf_size(ringbuf) + 1);
+    }
+  }
+
+  /**
+   * If overrun is not disabled, return the number of jobs that has
+   * been overwritten. Otherwise, return the number of jobs that
+   * cannot be saved into the ring buffer.
+   *
+   * @param ringbuf a pointer to the ring buffer object to be processed.
+   *
+   * @return the number of job statistics data that are lost.
+   */
+  extern inline unsigned long
+  jobstats_ringbuf_lost_count(const jobstats_ringbuf *ringbuf)
+  {
+    if (!jobstats_ringbuf_overrun(ringbuf)) {
+      return 0;
+    } else if (jobstats_ringbuf_overrun_disabled(ringbuf)) {
+      return (jobstats_ringbuf_write_count(ringbuf)
+              - jobstats_ringbuf_size(ringbuf));
+    } else {
+      return (jobstats_ringbuf_oldest_pos(ringbuf) - 1);
+    }
+  }
+  /** @} End of collection of job statistics ring buffer functions */
 
 #ifdef __cplusplus
 }
