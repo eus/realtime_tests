@@ -366,7 +366,8 @@ static void client_prog(void *args)
   if (byte_rcvd == -1) {
     errno = recv_errno;
     if (errno != EINTR) {
-      fatal_syserror("Cannot retrieve server response");
+      fatal_syserror("Cannot retrieve server response @ iteration %d",
+                     prms->nth_iteration);
     }
   } else if (byte_rcvd != prms->len) {
     log_error("Server response is corrupted");
