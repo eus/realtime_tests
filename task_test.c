@@ -27,6 +27,7 @@
 #include "utility_time.h"
 #include "job.h"
 #include "task.h"
+#include "utility_memory.h"
 
 static char tmp_file_name[] = "task_test_XXXXXX";
 static cpu_freq_governor *used_gov = NULL;
@@ -111,12 +112,13 @@ void *task_manager_thread(void *args)
 
   return &params->exit_status;
 }
-static void testcase_1_periodic_task(FILE *report,
-                                     const relative_time *job_duration,
-                                     unsigned overhead_approximation_scaling,
-                                     const relative_time *job_stats_overhead,
-                                     unsigned sample_count,
-                                     const relative_time *error)
+static void
+testcase_1_periodic_task_overrun_disabled(FILE *report,
+                                          const relative_time *job_duration,
+                                        unsigned overhead_approximation_scaling,
+                                        const relative_time *job_stats_overhead,
+                                          unsigned sample_count,
+                                          const relative_time *error)
 {
   /* Get and print finish-to-start overhead */
   relative_time *finish_to_start;
@@ -168,7 +170,7 @@ static void testcase_1_periodic_task(FILE *report,
 
   /* Create periodic task */
   task *periodic_task = NULL;
-  char task_name[] = "testcase_1_periodic_task";
+  char task_name[] = "testcase_1_periodic_task_overrun_disabled";
   gracious_assert(task_create(task_name,
                               job_duration,
                               task_period,
@@ -177,9 +179,10 @@ static void testcase_1_periodic_task(FILE *report,
                               offset,
                               NULL, NULL,
                               tmp_file_name,
+                              sample_count,
+                              1,
                               job_stats_overhead,
                               &periodic_overhead,
-                              0,
                               busyloop_exact,
                               &busyloop_periodic,
                               &periodic_task) == 0);
@@ -201,8 +204,11 @@ static void testcase_1_periodic_task(FILE *report,
     int job_statistics_disabled;
     const relative_time *job_stats_overhead;
     relative_time *finish_to_start_overhead;
+    unsigned long oldest_job_pos;
+    unsigned long lost_job_count;
+    unsigned long write_count;
   } expected_task_params = {
-    .name = "testcase_1_periodic_task",
+    .name = "testcase_1_periodic_task_overrun_disabled",
     .wcet = job_duration,
     .period = task_period,
     .deadline = task_period,
@@ -212,11 +218,19 @@ static void testcase_1_periodic_task(FILE *report,
     .job_statistics_disabled = 0,
     .job_stats_overhead = job_stats_overhead,
     .finish_to_start_overhead = &periodic_overhead,
+    .oldest_job_pos = 0,
+    .lost_job_count = 0,
+    .write_count = 0,
   };
   int task_stats_checker(task *tau, void *args)
   {
     struct task_stats_checker_params *prms = args;
     gracious_assert(strcmp(task_statistics_name(tau), prms->name) == 0);
+    gracious_assert(task_statistics_oldest_job_pos(tau)
+                    == prms->oldest_job_pos);
+    gracious_assert(task_statistics_lost_job_count(tau)
+                    == prms->lost_job_count);
+    gracious_assert(task_statistics_write_count(tau) == prms->write_count);
 
     gracious_assert(utility_time_eq_gc_t2(prms->wcet,
                                           task_statistics_wcet(tau)));
@@ -266,13 +280,14 @@ static void testcase_1_periodic_task(FILE *report,
 
   struct job_stats_checker_params
   {
-    unsigned nth_job;
+    unsigned nth_job; /* should be initialized to oldest_job_pos */
     unsigned sample_count;
     absolute_time *t_0;
     relative_time *period;
     unsigned late_count;
     FILE *report;
     const relative_time *job_stats_overhead;
+    int first_time;
   } expected_job_params = {
     .nth_job = 1,
     .t_0 = t_0,
@@ -281,6 +296,7 @@ static void testcase_1_periodic_task(FILE *report,
     .report = report,
     .late_count = 0,
     .job_stats_overhead = job_stats_overhead,
+    .first_time = 1,
   };
   int job_stats_checker(job_statistics *stats, void *args)
   {
@@ -290,10 +306,11 @@ static void testcase_1_periodic_task(FILE *report,
       /* Do not check the last job because the timing includes the
          preemption time from manager thread */
       return 0;
-    } else if (prms->nth_job == 1) {
+    } else if (prms->first_time) {
       fprintf(prms->report, "%5s%15s%15s%15s%15s%15s%15s%15s\n",
               "#job", "release", "delta_s", "start", "deadline", "delta_f",
               "finish", "exec_time");
+      prms->first_time = 0;
     }
 
     fprintf(prms->report, "%5d", prms->nth_job);
@@ -392,6 +409,369 @@ static void testcase_1_periodic_task(FILE *report,
 
     return 0;
   }
+
+  expected_task_params.oldest_job_pos = 1;
+  expected_task_params.lost_job_count = 2;
+  expected_task_params.write_count = sample_count + 2;
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_checker,
+                                       &expected_task_params,
+                                       job_stats_checker,
+                                       &expected_job_params) == 0);
+
+  gracious_assert_msg(expected_job_params.late_count == 0,
+                      "Late count = %u is not zero",
+                      expected_job_params.late_count);
+  /* END: Check task timeliness */
+
+  /* Check EOF */
+  int task_stats_nocall(task *tau, void *args)
+  {
+    gracious_assert_msg(0, "task_stats_nocall must never be executed");
+  }
+  int job_stats_nocall(job_statistics *stats, void *args)
+  {
+    gracious_assert_msg(0, "job_stats_nocall must never be executed");
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_nocall, NULL,
+                                       job_stats_nocall, NULL) == -4);
+  /* END: Check EOF */
+
+  /* Check early bailout from task_statistics_fn */
+  gracious_assert(fseek(stats_file, 0, SEEK_SET) == 0);
+  int task_stats_bailout(task *tau, void *args)
+  {
+    return -1;
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_bailout, NULL,
+                                       job_stats_nocall, NULL) == -1);
+  /* END: Check early bailout from task_statistics_fn */
+
+  /* Check early bailout from job_statistics_fn */
+  gracious_assert(fseek(stats_file, 0, SEEK_SET) == 0);
+  int job_stats_bailout(job_statistics *stats, void *args)
+  {
+    return -1;
+  }
+  gracious_assert(task_statistics_read(stats_file,
+                                       task_stats_checker,
+                                       &expected_task_params,
+                                       job_stats_bailout, NULL) == -2);
+  gracious_assert(!feof(stats_file));
+  /* END: Check early bailout from job_statistics_fn */
+
+  /* Clean-up */
+  gracious_assert(utility_file_close(stats_file, tmp_file_name) == 0);
+  utility_time_gc(t_0);
+  utility_time_gc(offset);
+  utility_time_gc(task_period);
+  task_destroy(periodic_task);
+  destroy_cpu_busyloop(busyloop_periodic.busyloop_obj);
+  /* END: Clean-up */
+}
+static void
+testcase_3_periodic_task_overrun_enabled(FILE *report,
+                                         const relative_time *job_duration,
+                                        unsigned overhead_approximation_scaling,
+                                        const relative_time *job_stats_overhead,
+                                         unsigned sample_count,
+                                         const relative_time *error)
+{
+  /* Get and print finish-to-start overhead */
+  relative_time *finish_to_start;
+  gracious_assert(finish_to_start_overhead(0, 0, &finish_to_start) == 0);
+  log_verbose_utility_time(finish_to_start, "Finish-to-start overhead");
+  /* END: Get and print finish-to-start overhead */
+
+  /* Subtracting the periodic overhead from the given job duration */
+  relative_time periodic_overhead;
+  utility_time_init(&periodic_overhead);
+  utility_time_add_gc(finish_to_start, job_stats_overhead, &periodic_overhead);
+  utility_time_mul(&periodic_overhead, overhead_approximation_scaling,
+                   &periodic_overhead);
+  log_verbose_utility_time(&periodic_overhead, "Periodic overhead");
+
+  gracious_assert_msg(utility_time_ge(job_duration, &periodic_overhead),
+                      "job_duration is too short to account for"
+                      " scaled the periodic overhead");
+  /* End of subtracting the periodic overhead from the given job duration */
+
+  /* Prepare the job object using program busyloop_exact */
+  relative_time *loop_duration = utility_time_sub_dyn(job_duration,
+                                                      &periodic_overhead);
+
+  struct busyloop_exact_args busyloop_periodic;
+  gracious_assert(create_cpu_busyloop(0,
+                                      utility_time_sub_dyn_gc(loop_duration,
+                                                              error),
+                                      error, 10,
+                                      &busyloop_periodic.busyloop_obj) == 0);
+  /* End of preparing the job object using program busyloop_exact */
+
+  struct timespec t_now;
+  gracious_assert(clock_gettime(CLOCK_MONOTONIC, &t_now) == 0);
+
+  /* Calculate task offset */
+  absolute_time *t_0 = timespec_to_utility_time_dyn(&t_now);
+  t_0 = utility_time_add_dyn_gc(t_0, to_utility_time_dyn(1, s));
+  utility_time_set_gc_manual(t_0);
+
+  relative_time *offset = to_utility_time_dyn(0, s);
+  utility_time_set_gc_manual(offset);
+  /* END: Calculate task offset */
+
+  /* Calculate task period */
+  relative_time *task_period = utility_time_mul_dyn(job_duration, 1);
+  utility_time_set_gc_manual(task_period);
+  /* END: Calculate task period */
+
+  /* Create periodic task */
+  task *periodic_task = NULL;
+  char task_name[] = "testcase_3_periodic_task_overrun_enabled";
+  gracious_assert(task_create(task_name,
+                              job_duration,
+                              task_period,
+                              task_period,
+                              t_0,
+                              offset,
+                              NULL, NULL,
+                              tmp_file_name,
+                              sample_count,
+                              0,
+                              job_stats_overhead,
+                              &periodic_overhead,
+                              busyloop_exact,
+                              &busyloop_periodic,
+                              &periodic_task) == 0);
+  gracious_assert(periodic_task != NULL);
+  /* END: Create periodic task */
+
+  /* Check task parameters */
+  task_name[0] = 'T';
+
+  struct task_stats_checker_params
+  {
+    char *name;
+    const relative_time *wcet;
+    relative_time *period;
+    relative_time *deadline;
+    absolute_time *t_0;
+    relative_time *offset;
+    int aperiodic;
+    int job_statistics_disabled;
+    const relative_time *job_stats_overhead;
+    relative_time *finish_to_start_overhead;
+    unsigned long oldest_job_pos;
+    unsigned long lost_job_count;
+    unsigned long write_count;
+  } expected_task_params = {
+    .name = "testcase_3_periodic_task_overrun_enabled",
+    .wcet = job_duration,
+    .period = task_period,
+    .deadline = task_period,
+    .t_0 = t_0,
+    .offset = offset,
+    .aperiodic = 0,
+    .job_statistics_disabled = 0,
+    .job_stats_overhead = job_stats_overhead,
+    .finish_to_start_overhead = &periodic_overhead,
+    .oldest_job_pos = 0,
+    .lost_job_count = 0,
+    .write_count = 0,
+  };
+  int task_stats_checker(task *tau, void *args)
+  {
+    struct task_stats_checker_params *prms = args;
+    gracious_assert(strcmp(task_statistics_name(tau), prms->name) == 0);
+    gracious_assert(task_statistics_oldest_job_pos(tau)
+                    == prms->oldest_job_pos);
+    gracious_assert(task_statistics_lost_job_count(tau)
+                    == prms->lost_job_count);
+    gracious_assert(task_statistics_write_count(tau) == prms->write_count);
+
+    gracious_assert(utility_time_eq_gc_t2(prms->wcet,
+                                          task_statistics_wcet(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->period,
+                                        task_statistics_period(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->deadline,
+                                          task_statistics_deadline(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->t_0,
+                                          task_statistics_t0(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->offset,
+                                          task_statistics_offset(tau)));
+    gracious_assert(task_statistics_aperiodic(tau) == prms->aperiodic);
+    gracious_assert(task_statistics_job_statistics_disabled(tau)
+                    == prms->job_statistics_disabled);
+    gracious_assert(utility_time_eq_gc_t2(prms->job_stats_overhead,
+                                 task_statistics_job_statistics_overhead(tau)));
+    gracious_assert(utility_time_eq_gc_t2(prms->finish_to_start_overhead,
+                                task_statistics_finish_to_start_overhead(tau)));
+    return 0;
+  }
+  task_stats_checker(periodic_task, &expected_task_params);
+  /* END: Check task parameters */
+
+  /* Run task */
+  pthread_t task_manager_tid;
+
+  /** Calculate stopping time **/
+  struct task_manager_params params = {
+    .tau = periodic_task,
+  };
+  to_timespec_gc(utility_time_add_dyn_gc(task_statistics_t0(periodic_task),
+                                         utility_time_mul_dyn(task_period,
+                                                              sample_count + 1)
+                                         ),
+                 &params.stopping_time);
+  /** END: Calculate stopping time **/
+
+  gracious_assert(pthread_create(&task_manager_tid, NULL,
+                                 task_manager_thread, &params) == 0);
+  gracious_assert(pthread_join(task_manager_tid, NULL) == 0);
+  gracious_assert(params.exit_status == 0);
+  /* END: Run task */
+
+  /* Check task timeliness */
+  FILE *stats_file = utility_file_open_for_reading_bin(tmp_file_name);
+  gracious_assert(stats_file != NULL);
+
+  struct job_stats_checker_params
+  {
+    unsigned nth_job; /* should be initialized to oldest_job_pos */
+    unsigned sample_count;
+    absolute_time *t_0;
+    relative_time *period;
+    unsigned late_count;
+    FILE *report;
+    const relative_time *job_stats_overhead;
+    int first_time;
+  } expected_job_params = {
+    .nth_job = 3,
+    .t_0 = t_0,
+    .period = task_period,
+    .sample_count = sample_count,
+    .report = report,
+    .late_count = 0,
+    .job_stats_overhead = job_stats_overhead,
+    .first_time = 1,
+  };
+  int job_stats_checker(job_statistics *stats, void *args)
+  {
+    struct job_stats_checker_params *prms = args;
+
+    if (prms->nth_job > prms->sample_count) {
+      /* Do not check the last job because the timing includes the
+         preemption time from manager thread */
+      return 0;
+    } else if (prms->first_time) {
+      fprintf(prms->report, "%5s%15s%15s%15s%15s%15s%15s%15s\n",
+              "#job", "release", "delta_s", "start", "deadline", "delta_f",
+              "finish", "exec_time");
+      prms->first_time = 0;
+    }
+
+    fprintf(prms->report, "%5d", prms->nth_job);
+
+    char abs_t[15];
+
+    char later_buf[15];
+    const size_t later_len = sizeof(later_buf) - 1;
+    later_buf[0] = '+';
+    char *later = &later_buf[1];
+
+    char earlier_buf[15];
+    const size_t earlier_len = sizeof(earlier_buf) - 1;
+    earlier_buf[0] = '-';
+    char *earlier = &earlier_buf[1];
+
+    relative_time delta;
+    utility_time_init(&delta);
+
+    /* Start time */
+    utility_time_mul(prms->period, prms->nth_job - 1, &delta);
+    gracious_assert(to_string(&delta, abs_t, sizeof(abs_t)) == 0);
+    fprintf(prms->report, "%15s", abs_t);
+
+    absolute_time time_start_expected;
+    utility_time_init(&time_start_expected);
+    utility_time_add(prms->t_0, &delta, &time_start_expected);
+
+    absolute_time time_start;
+    utility_time_init(&time_start);
+    utility_time_to_utility_time_gc(job_statistics_time_start(stats),
+                                    &time_start);
+
+    if (utility_time_lt(&time_start_expected, &time_start)) {
+      gracious_assert(to_string_gc(utility_time_sub_dyn(&time_start,
+                                                        &time_start_expected),
+                                   later, later_len) == 0);
+      fprintf(prms->report, "%15s", later_buf);
+    } else {
+      gracious_assert(to_string_gc(utility_time_sub_dyn(&time_start_expected,
+                                                        &time_start),
+                                   earlier, earlier_len) == 0);
+      fprintf(prms->report, "%15s", earlier_buf);
+    }
+
+    gracious_assert(to_string_gc(utility_time_sub_dyn(&time_start,
+                                                      prms->t_0),
+                                 abs_t, sizeof(abs_t)) == 0);
+    fprintf(prms->report, "%15s", abs_t);
+    /* End of start time */
+
+    /* Finishing time */
+    utility_time_mul(prms->period, prms->nth_job, &delta);
+    gracious_assert(to_string(&delta, abs_t, sizeof(abs_t)) == 0);
+    fprintf(prms->report, "%15s", abs_t);
+
+    absolute_time time_finish_expected;
+    utility_time_init(&time_finish_expected);
+    utility_time_add(prms->t_0, &delta, &time_finish_expected);
+
+    absolute_time time_finish;
+    utility_time_init(&time_finish);
+    utility_time_to_utility_time_gc(job_statistics_time_finish(stats),
+                                    &time_finish);
+    if (utility_time_lt(&time_finish_expected, &time_finish)) {
+      gracious_assert(to_string_gc(utility_time_sub_dyn(&time_finish,
+                                                        &time_finish_expected),
+                                   later, later_len) == 0);
+      fprintf(prms->report, "%15s", later_buf);
+
+      log_error("Job #%d of %d is late (deadline - t_finish = %s)",
+                prms->nth_job, prms->sample_count, later_buf);
+      prms->late_count++;
+    } else {
+      gracious_assert(to_string_gc(utility_time_sub_dyn(&time_finish_expected,
+                                                        &time_finish),
+                                   earlier, earlier_len) == 0);
+      fprintf(prms->report, "%15s", earlier_buf);
+    }
+
+    gracious_assert(to_string_gc(utility_time_sub_dyn(&time_finish,
+                                                      prms->t_0),
+                                 abs_t, sizeof(abs_t)) == 0);
+    fprintf(prms->report, "%15s", abs_t);
+    /* End of finishing time */
+
+    /* Execution time */
+    utility_time_sub(&time_finish, &time_start, &delta);
+    gracious_assert(to_string(&delta, abs_t, sizeof(abs_t)) == 0);
+    fprintf(prms->report, "%15s", abs_t);
+    /* End of execution time */
+
+    fprintf(prms->report, "\n");
+
+    prms->nth_job++;
+
+    return 0;
+  }
+
+  expected_task_params.oldest_job_pos = 3;
+  expected_task_params.lost_job_count = 2;
+  expected_task_params.write_count = sample_count + 2;
   gracious_assert(task_statistics_read(stats_file,
                                        task_stats_checker,
                                        &expected_task_params,
@@ -486,6 +866,21 @@ static relative_time *job_stats_overhead(void)
 
 MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
 {
+  /* Lock memory and preallocate stack */
+  switch (memory_lock()) {
+  case 0:
+    break;
+  case -1:
+    fatal_error("Cannot lock current and future memory due to memory limit");
+  case -2:
+    fatal_error("Insufficient privilege to lock current and future memory");
+  default:
+    fatal_error("Cannot lock current and future memory");
+  }
+
+  memory_preallocate_stack(1024);
+  /* END: Lock memory and preallocate stack */
+
   require_valgrind_indicator();
 
   if (under_valgrind()) {
@@ -519,9 +914,9 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
   unsigned overhead_approximation_scaling = 1;
 
   /** The number of jobs to be generated and checked for
-      lateness. Beware that a large number of samples may cause memory
-      swapping invalidating the approximation given by function
-      job_statistics_overhead. */
+      lateness. Since the use of ring buffer, there is no need to
+      worry about setting this number too big since expensive swapping
+      to disk never happens. */
   int sample_count = 512;
 
   /** Change this to /dev/stdout to see the job statistics */
@@ -542,16 +937,20 @@ MAIN_UNIT_TEST_BEGIN("task_test", "stderr", NULL, cleanup)
   relative_time *job_overhead = job_stats_overhead();
   /* END: Obtain worst-case job statistics overhead */
 
-
-  /* Testcase 1: Periodic task */
-  testcase_1_periodic_task(report, &job_duration,
-                           overhead_approximation_scaling,
-                           job_overhead, sample_count, error);
+  /* Testcase 1: Periodic task, ring buffer overrun disabled */
+  testcase_1_periodic_task_overrun_disabled(report, &job_duration,
+                                            overhead_approximation_scaling,
+                                            job_overhead, sample_count, error);
 
   /* [TODO] Testcase 2: Aperiodic task */
   testcase_2_aperiodic_task(report, &job_duration,
                             overhead_approximation_scaling,
                             job_overhead, sample_count, error);
+
+  /* Testcase 3: Periodic task, ring buffer overrun enabled */
+  testcase_3_periodic_task_overrun_enabled(report, &job_duration,
+                                           overhead_approximation_scaling,
+                                           job_overhead, sample_count, error);
 
   /* Clean-up */
   utility_time_gc(error);

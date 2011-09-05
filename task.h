@@ -127,6 +127,16 @@ extern "C" {
     char *stats_log_path; /* NULL-terminated file name of stats_log. */
     int disable_job_statistics; /* Non-zero will disable the recording
                                    of job starting and finishing times*/
+    jobstats_ringbuf *stats_ringbuf; /* The ring buffer to temporary
+                                        store all job statistics. */
+    unsigned long oldest_job_pos; /* The release position of the oldest
+                                     job in the ring buffer. This is zero
+                                     if either the job statistics logging
+                                     is disabled or the ring buffer has
+                                     not been saved into the log file. */
+    unsigned long lost_job_count; /* The number of jobs lost due to
+                                     ring buffer overrun. */
+    unsigned long write_count; /* Total number of job statistics data. */
     relative_time finish_to_start_overhead; /* finish-to-start overhead. */
     relative_time job_statistics_overhead; /* Overhead included in sampled
                                               start and finishing time
@@ -150,6 +160,7 @@ extern "C" {
                                               struct timespec. */
     uint8_t sizeof_struct_timespec_tv_nsec; /* Size of tv_nsec field
                                                of struct timespec. */
+    uint8_t sizeof_unsigned_long; /* Size of unsigned long. */
     /* @} End of I/O-related fields */
 
     uint8_t aperiodic; /* Non-zero if this task is aperiodic. */
@@ -188,6 +199,18 @@ extern "C" {
     uint32_t name_len; /**< The length in bytes of the name of this task. */
     char name[0]; /**< The name of this task. */
   } task_statistics;
+
+  /**
+   * The ring buffer states of the statistics of a real-time task.
+   * This is an opaque type; do not manipulate any of its instances directly.
+   */
+  typedef struct __attribute__((packed))
+  {
+    unsigned long oldest_job_pos; /**< The release position of the
+                                     oldest job. */
+    unsigned long lost_job_count; /**< The number of job lost due to overrun. */
+    unsigned long write_count; /**< Total number of job statistics data. */
+  } task_statistics_ringbuf;
   /* End of main data structures */
 
   /* II */
@@ -197,10 +220,9 @@ extern "C" {
    */
 
   /**
-   * Create a task object. Setting disable_job_statistics_logging to
-   * non-zero will disable the sampling and logging of starting time
-   * and finishing time of a job reducing the finish-to-start
-   * overhead.
+   * Create a task object. Setting ringbuffer_size to zero will
+   * disable the sampling and logging of starting time and finishing
+   * time of a job reducing the finish-to-start overhead.
    *
    * All utility_time objects whose addresses are passed as the
    * arguments are garbage collected automatically if it is possible.
@@ -244,7 +266,15 @@ extern "C" {
    * passed to function aperiodic_release.
    * @param stats_file_path a pointer to a NULL-terminated string
    * object containing a file path to which the task statistics is to
-   * be written.
+   * be saved from the ring buffer when the task is stopped using task_stop().
+   * @param ringbuffer_size the number of job statistics that the ring
+   * buffer will be able to store without overrunning. Setting this to
+   * zero will disable the sampling and logging of job start times and
+   * finishing times reducing the finish-to-start overhead.
+   * @param ringbuffer_disable_overrun if non-zero, once the ring
+   * buffer is full, additional job statistics are not
+   * saved. Otherwise, the ring buffer will overwrite the saved job
+   * statistics starting from the oldest one.
    * @param job_statistics_overhead the result of running
    * job_statistics_overhead(). The utility_time object is garbage
    * collected automatically if it is possible. This overhead is
@@ -255,9 +285,6 @@ extern "C" {
    * be requested to return the worst-case overhead of an aperiodic
    * task). The utility_time object is garbage collected
    * automatically if it is possible.
-   * @param disable_job_statistics_logging set this to non-zero to
-   * disable the sampling and logging of job start times and finishing
-   * times reducing the finish-to-start overhead.
    * @param task_program a pointer to the task's program that will be
    * executed.
    * @param args a pointer to the object that will be passed to the
@@ -280,9 +307,10 @@ extern "C" {
                   void (*aperiodic_release)(void *args),
                   void *aperiodic_release_args,
                   const char *stats_file_path,
+                  unsigned long ringbuffer_size,
+                  int ringbuffer_disable_overrun,
                   const relative_time *job_statistics_overhead,
                   const relative_time *finish_to_start_overhead,
-                  int disable_job_statistics_logging,
                   void (*task_program)(void *args),
                   void *args,
                   task **result);
@@ -347,9 +375,10 @@ extern "C" {
 
   /**
    * Stop the release of a stream of jobs by not releasing the next
-   * job. This must be called by another thread that cannot be
-   * preempted by the thread that is going to be stopped or by the
-   * thread that is going to stop itself.
+   * job and flush the ring buffer into the log file. This must be
+   * called by another thread that cannot be preempted by the thread
+   * that is going to be stopped or by the thread that is going to
+   * stop itself.
    *
    * @param tau a pointer to the task to be stopped.
    */
@@ -449,6 +478,26 @@ extern "C" {
   int task_statistics_job_statistics_disabled(const task *tau);
 
   /**
+   * @return the release position of the oldest job statistics
+   * recorded in the task statistics starting from one. So, if all job
+   * statistics are recorded, the return value will be one. If job
+   * statistics recording is disabled or the ring buffer has not been
+   * flushed into the log file, zero is returned.
+   */
+  unsigned long task_statistics_oldest_job_pos(const task *tau);
+
+  /**
+   * @return the number of jobs that are lost due to ring buffer overrun.
+   */
+  unsigned long task_statistics_lost_job_count(const task *tau);
+
+  /**
+   * @return the total number of job statistics that the ring buffer
+   * should have if suppose no overrun had occured.
+   */
+  unsigned long task_statistics_write_count(const task *tau);
+
+  /**
    * @return the approximated duration of the overhead that is
    * included in the difference between the sampled job start time and
    * finishing time.
@@ -470,7 +519,7 @@ extern "C" {
    * are included in the difference between the finishing time of a
    * previous job and the starting time of a current job in case of
    * periodic task, or the approximated most minimal interarrival time
-   * possible in case of aperiodic task (c.f., task_start()).
+   * possible in case of aperiodic task (cf., task_start()).
    *
    * It is highly recommended to fix the frequency of the CPU at which
    * the overhead is to be measured to a fix value using

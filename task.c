@@ -39,8 +39,7 @@
                           &tau->next_release_time, NULL);               \
     /* End of harnessing the sleeping period to provide starting offset. */ \
                                                                         \
-    rc -= job_start(tau->disable_job_statistics                         \
-                    ? NULL : tau->stats_log, &tau->job);                \
+    rc -= job_start(tau->stats_ringbuf, &tau->job);                     \
                                                                         \
     /* Calculate the next release time */                               \
     timespec_to_utility_time(&tau->next_release_time, &tau->t);         \
@@ -74,13 +73,49 @@
     tau->inside_aperiodic_release = 1;                                  \
     tau->aperiodic_release(tau->args); /* Wait for the aperiodic event */ \
     tau->inside_aperiodic_release = 0;                                  \
-    rc -= job_start(tau->disable_job_statistics                         \
-                    ? NULL : tau->stats_log, &tau->job);                \
+    rc -= job_start(tau->stats_ringbuf, &tau->job);                     \
   } while (rc == 0                                                      \
            && !tau->stopped); /* To have a consistent overhead, the
                                  conditions should be ordered from the
                                  most rare to the most likely to
                                  happen */
+
+static void flush_stats_ringbuf(void *args)
+{
+  task *tau = args;
+
+  if (tau->stats_ringbuf == NULL || tau->disable_job_statistics) {
+    return;
+  }
+
+  /* Fulfill the contract of what will happen once task_stop is called */
+  tau->oldest_job_pos = jobstats_ringbuf_oldest_pos(tau->stats_ringbuf);
+  tau->lost_job_count = jobstats_ringbuf_lost_count(tau->stats_ringbuf);
+  tau->write_count = jobstats_ringbuf_write_count(tau->stats_ringbuf);
+  /* END: Fulfill the contract of what will happen once task_stop is called */
+
+  if (tau->stats_log == NULL) {
+    goto out;
+  }
+
+  task_statistics_ringbuf preamble = {
+    .oldest_job_pos = tau->oldest_job_pos,
+    .lost_job_count = tau->lost_job_count,
+    .write_count = tau->write_count,
+  };
+  if (fwrite(&preamble, sizeof(preamble), 1, tau->stats_log) != 1) {
+    log_syserror("Cannot log task ringbuf parameters");
+    tau->fail_to_close_stats_log++;
+    goto out;
+  }
+
+  tau->fail_to_close_stats_log -= jobstats_ringbuf_save(tau->stats_ringbuf,
+                                                        tau->stats_log);
+
+ out:
+  jobstats_ringbuf_destroy(tau->stats_ringbuf);
+  tau->stats_ringbuf = NULL;
+}
 
 static void close_logging_file(void *args)
 {
@@ -103,6 +138,7 @@ int task_start(task *tau)
 
   tau->thread_id = pthread_self();
   pthread_cleanup_push(close_logging_file, tau);
+  pthread_cleanup_push(flush_stats_ringbuf, tau);
 
   if (tau->aperiodic) {
     task_start_aperiodic(tau);
@@ -110,6 +146,7 @@ int task_start(task *tau)
     task_start_periodic(tau);
   }
 
+  pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   rc -= tau->fail_to_close_stats_log;
 
@@ -173,7 +210,11 @@ static void *overhead_measurement_thread(void *args)
 
   /* Prepare argument for overhead measurement */
   task tau;
+
+  /** Anticipate early bailout **/
   tau.stats_log = NULL;
+  tau.stats_ringbuf = NULL;
+  /** End of anticipating early bailout **/
 
   tau.stopped = 0;
   tau.stop_counter = 1;
@@ -190,6 +231,12 @@ static void *overhead_measurement_thread(void *args)
   if (tau.stats_log == NULL) {
     log_syserror("Cannot create temporary file to measure"
                  " finish-to-start overhead");
+    goto out;
+  }
+
+  tau.stats_ringbuf = jobstats_ringbuf_create(2, 0);
+  if (tau.stats_ringbuf == NULL) {
+    log_error("Cannot create job statistics ring buffer");
     goto out;
   }
 
@@ -221,6 +268,13 @@ static void *overhead_measurement_thread(void *args)
     goto out;
   }
   params->exit_status = -2;
+
+  /* Save the ring buffer */
+  if (jobstats_ringbuf_save(tau.stats_ringbuf, tau.stats_log) != 0) {
+    log_error("Cannot flush job statistics ring buffer");
+    goto out;
+  }
+  /* END: Save the ring buffer */
 
   /* Read the stats log */
   if (fseek(tau.stats_log, 0, SEEK_SET) != 0) {
@@ -259,6 +313,9 @@ static void *overhead_measurement_thread(void *args)
   /* END: Calculate the overhead */
 
  out:
+  if (tau.stats_ringbuf != NULL) {
+    jobstats_ringbuf_destroy(tau.stats_ringbuf);
+  }
   if (tau.stats_log != NULL) {
     if (fclose(tau.stats_log) != 0) {
       log_syserror("Cannot close temporary file to measure"
@@ -310,9 +367,10 @@ int task_create(const char *name,
                 void (*aperiodic_release)(void *args),
                 void *aperiodic_release_args,
                 const char *stats_file_path,
+                unsigned long ringbuffer_size,
+                int ringbuffer_disable_overrun,
                 const relative_time *job_statistics_overhead,
                 const relative_time *finish_to_start_overhead,
-                int disable_job_statistics_logging,
                 void (*task_program)(void *args),
                 void *args,
                 task **res)
@@ -336,6 +394,8 @@ int task_create(const char *name,
     = sizeof(((struct timespec *) 0)->tv_sec);
   task_stats->sizeof_struct_timespec_tv_nsec
     = sizeof(((struct timespec *) 0)->tv_nsec);
+  task_stats->sizeof_unsigned_long
+    = sizeof((unsigned long *) 0);
   /* END: Initialize task stats to be serialized */
 
   /* Create task object */
@@ -351,10 +411,13 @@ int task_create(const char *name,
   utility_time_init(&result->t);
   result->inside_aperiodic_release = 0;
 
-  result->disable_job_statistics = !!disable_job_statistics_logging;
-  task_stats->job_statistics_disabled = !!disable_job_statistics_logging;
-  /* END: Initialize trivial fields of task object */
+  result->disable_job_statistics = !ringbuffer_size;
+  task_stats->job_statistics_disabled = !ringbuffer_size;
 
+  result->oldest_job_pos = 0;
+  result->lost_job_count = 0;
+  result->write_count = 0;
+  /* END: Initialize trivial fields of task object */
 
   /* Create & serialize task's name */
   result->name = malloc(strlen(name) + 1);
@@ -386,6 +449,21 @@ int task_create(const char *name,
   }
   result->fail_to_close_stats_log = 0;
   /* End of opening stats log's name */
+
+  /* Create the ring buffer */
+  if (result->disable_job_statistics) {
+    result->stats_ringbuf = NULL;
+  } else {
+    result->stats_ringbuf = jobstats_ringbuf_create(ringbuffer_size,
+                                                    ringbuffer_disable_overrun);
+    if (result->stats_ringbuf == NULL) {
+      log_error("Not enough memory to create ring buffer of size %lu",
+                ringbuffer_size);
+      rc = -1;
+      goto error;
+    }
+  }
+  /* END: Create the ring buffer */
 
   /* Handle all utility_time objects */
 #define arg_to_task_and_task_stats(arg)                 \
@@ -454,6 +532,9 @@ int task_create(const char *name,
     if (result->stats_log_path != NULL) {
       free(result->stats_log_path);
     }
+    if (result->stats_ringbuf) {
+      jobstats_ringbuf_destroy(result->stats_ringbuf);
+    }
     free(result);
   }
   return rc;
@@ -462,12 +543,20 @@ int task_create(const char *name,
 void task_destroy(task *tau)
 {
   free(tau->name);
+
+  /* The following conditioning on NULL is needed when a task object
+     is created for the sole purpose of reading the task statistics
+     and then destroyed */
   if (tau->stats_log != NULL) {
     utility_file_close(tau->stats_log, tau->stats_log_path);
   }
   if (tau->stats_log_path != NULL) {
     free(tau->stats_log_path);
   }
+  if (tau->stats_ringbuf != NULL) {
+    jobstats_ringbuf_destroy(tau->stats_ringbuf);
+  }
+
   free(tau);
 }
 
@@ -539,6 +628,11 @@ int task_statistics_read(FILE *stats_log,
               " does not match host");
     goto out;
   }
+  if (task_stats.sizeof_unsigned_long
+      != sizeof((unsigned long *) 0)) {
+    log_error("Task stats 'unsigned long' width does not match host");
+    goto out;
+  }
   /* END: Check binary compatibility with host */
 
   task tau;
@@ -587,6 +681,33 @@ int task_statistics_read(FILE *stats_log,
 
 #undef task_stats_arg_to_task
   /* END: Populate task from task_stats */
+
+  /* Populate task ring buffer params from task_statistics_ringbuf */
+  tau.stats_ringbuf = NULL;
+  if (tau.disable_job_statistics) {
+    /* Set the following to a definite value although they are
+       meaningless when job statistics logging is disabled. */
+    tau.oldest_job_pos = -1;
+    tau.lost_job_count = -1;
+    tau.write_count = -1;
+  } else {
+    task_statistics_ringbuf ringbuf_params;
+
+    if (fread(&ringbuf_params, 1, sizeof(ringbuf_params), stats_log)
+        != sizeof(ringbuf_params)) {
+      if (ferror(stats_log)) {
+        log_syserror("Cannot read task stats log stream");
+      } else {
+        log_error("Corrupted task stats log");
+      }
+      goto out;
+    }
+
+    tau.oldest_job_pos = ringbuf_params.oldest_job_pos;
+    tau.lost_job_count = ringbuf_params.lost_job_count;
+    tau.write_count = ringbuf_params.write_count;
+  }  
+  /* END: Populate task ring buffer params from task_statistics_ringbuf */
 
   /* Let task parameters be processed */
   if (task_statistics_fn(&tau, task_statistics_fn_args) != 0) {
@@ -654,6 +775,21 @@ absolute_time *task_statistics_t0(const task *tau)
 relative_time *task_statistics_offset(const task *tau)
 {
   return utility_time_to_utility_time_dyn(&tau->offset);
+}
+
+unsigned long task_statistics_oldest_job_pos(const task *tau)
+{
+  return tau->oldest_job_pos;
+}
+
+unsigned long task_statistics_lost_job_count(const task *tau)
+{
+  return tau->lost_job_count;
+}
+
+unsigned long task_statistics_write_count(const task *tau)
+{
+  return tau->write_count;
 }
 
 relative_time *task_statistics_job_statistics_overhead(const task *tau)
