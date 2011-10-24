@@ -36,6 +36,7 @@ struct proc {
   char **argv;
   pid_t proc_id;
   pid_t *server_pid; /* Only used by client process */
+  pid_t *subserver_pid; /* Only used by server_client process */
   unsigned long *duration_ms; /* Only used by client and hrt_cbs processes */
   int *ftrace_start; /* Only used by client process */
   int *ftrace_stop; /* Only used by client process */
@@ -188,11 +189,23 @@ static void procs_print_argv(const struct proc_head *head)
   }
 }
 
+static char *find_argv_to_adjust(int target_optchar, struct proc *itr);
+
 static int procs_create(struct proc_head *head)
 {
   struct proc *itr;
 
   foreach_proc(itr, head) {
+    /* Adjust server_client -v subserver_pid */
+    if (itr->subserver_pid != NULL) {
+      char *argv_to_adjust = find_argv_to_adjust('v', itr);
+      if (argv_to_adjust != NULL) {
+        snprintf(argv_to_adjust, strlen(argv_to_adjust),
+                 "%d", *itr->subserver_pid);
+      }
+    }
+    /* END: Adjust server_client -v subserver_pid */
+
     itr->proc_id = fork();
     if (itr->proc_id == -1) {
       log_syserror("Cannot fork");
@@ -311,11 +324,11 @@ static int procs_make_argv(struct proc_head *head)
 
 /* Procs management section */
 enum program_ids_idx {
-  SERVER, CLIENT, CPU_HOG, CPU_HOG_CBS, HRT_CBS, SERVER_HOG,
+  SERVER, CLIENT, CPU_HOG, CPU_HOG_CBS, HRT_CBS, SERVER_HOG, SERVER_CLIENT,
 };
 static const char *const program_ids[] = {
   "server", "client", "cpu_hog", "cpu_hog_cbs", "hrt_cbs", "server_hog",
-  NULL
+  "server_client", NULL
 };
 static PROC_HEAD(server_procs);
 static PROC_HEAD(client_procs);
@@ -376,6 +389,13 @@ static int parse_config_file(const char *line, void *args)
       }
 
       switch (i) {
+      case SERVER_CLIENT:
+        if (prms->preceding_server == NULL) {
+          log_error("SERVER_CLIENT must be preceeded by at least one SERVER");
+          goto error;
+        }
+        p->subserver_pid = &prms->preceding_server->proc_id;
+        /* No break; SERVER_CLIENT is treated as a SERVER */
       case SERVER:
         procs_add(&server_procs, p);
         prms->preceding_server = p;
@@ -405,7 +425,9 @@ static int parse_config_file(const char *line, void *args)
       }
 
 #define SNPRINTF_ARGS(fmt_add, ...)                                     \
-      "./%s %s" fmt_add, program_ids[i], remaining_line, ## __VA_ARGS__
+      "./%s %s" fmt_add, (i == SERVER_CLIENT                            \
+                          ? program_ids[SERVER]                         \
+                          : program_ids[i]), remaining_line, ## __VA_ARGS__
 
       remaining_line = token + strlen(token) + 1;
       if (remaining_line >= buffer + buflen) { /* No remaining part */
@@ -438,6 +460,9 @@ static int parse_config_file(const char *line, void *args)
       } else if (i == HRT_CBS) {
         args_buflen = snprintf(NULL, 0,
                                SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+      } else if (i == SERVER_CLIENT) {
+        args_buflen = snprintf(NULL, 0,
+                               SNPRINTF_ARGS(" -v %d", INT_MAX)) + 1;
       } else {
         args_buflen = snprintf(NULL, 0, SNPRINTF_ARGS("")) + 1;
       }
@@ -474,6 +499,9 @@ static int parse_config_file(const char *line, void *args)
       } else if (i == HRT_CBS) {
         args_buflen = snprintf(p->args, args_buflen,
                                SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+      } else if (i == SERVER_CLIENT) {
+        args_buflen = snprintf(p->args, args_buflen,
+                               SNPRINTF_ARGS(" -v %d", INT_MAX)) + 1;
       } else {
         args_buflen = snprintf(p->args, args_buflen, SNPRINTF_ARGS("")) + 1;
       }
@@ -564,22 +592,22 @@ static int parse_cmd_line_args(int argc, char **argv)
              "SIGINT can be used to terminate this program graciously at any\n"
              "time.\n"
              "\n"
-	     "-r CLIENT_TRACING_START is used to start ftrace at the"
-	     "   beginning of the n-th period if n > 0, and to stop ftrace at\n"
-	     "   the end of the epilogue in that period unless\n"
-	     "   CLIENT_TRACING_LIMIT is given in which case stop ftrace at\n"
-	     "   (CLIENT_TRACING_START + CLIENT_TRACING_LIMIT - 1)-th\n"
-	     "   iteration. The former is useful for debugging kernel BWI\n"
-	     "   timing by analyzing ftrace output while the latter is\n"
-	     "   useful to get a snapshot of the execution for illustration\n"
-	     "   in a journal/book. If this is set to 0, ftrace will be\n"
-	     "   enabled continuously up to either the time where the\n"
-	     "   response time is more than CLIENT_TRACING_LIMIT or the end\n"
-	     "   of this program; when ftrace is stopped, this client program\n"
-	     "   will print the job number that turns the ftrace off in\n"
-	     "   stdout in the format: Job #JOB_NUMBER\n"
-	     "-l CLIENT_TRACING_LIMIT can either be a time in millisecond or\n"
-	     "   an iteration count as explained above.\n"
+             "-r CLIENT_TRACING_START is used to start ftrace at the"
+             "   beginning of the n-th period if n > 0, and to stop ftrace at\n"
+             "   the end of the epilogue in that period unless\n"
+             "   CLIENT_TRACING_LIMIT is given in which case stop ftrace at\n"
+             "   (CLIENT_TRACING_START + CLIENT_TRACING_LIMIT - 1)-th\n"
+             "   iteration. The former is useful for debugging kernel BWI\n"
+             "   timing by analyzing ftrace output while the latter is\n"
+             "   useful to get a snapshot of the execution for illustration\n"
+             "   in a journal/book. If this is set to 0, ftrace will be\n"
+             "   enabled continuously up to either the time where the\n"
+             "   response time is more than CLIENT_TRACING_LIMIT or the end\n"
+             "   of this program; when ftrace is stopped, this client program\n"
+             "   will print the job number that turns the ftrace off in\n"
+             "   stdout in the format: Job #JOB_NUMBER\n"
+             "-l CLIENT_TRACING_LIMIT can either be a time in millisecond or\n"
+             "   an iteration count as explained above.\n"
              "-t DURATION is the desired duration of the experiment in\n"
              "   either second (e.g., -t 60s) or millisecond\n"
              "   (e.g., -t 60ms).\n"
@@ -593,7 +621,7 @@ static int parse_cmd_line_args(int argc, char **argv)
              "     SERVER -d 9 -p 7777\n"
              "     CLIENT -1 5 -2 9 -3 5 -q 20 -t 30 -p 7777 -s x.bin -x 60\n"
              "   Available program IDs: SERVER, CLIENT, CPU_HOG, CPU_HOG_CBS,\n"
-             "                          HRT_CBS.\n"
+             "                          HRT_CBS, SERVER_CLIENT.\n"
              "   The option arguments must not contain any whitespace.\n"
              "   Blank lines and lines starting with # will be ignored.\n"
              "   Special for CLIENT program ID, if it comes after a SERVER\n"
@@ -601,6 +629,9 @@ static int parse_cmd_line_args(int argc, char **argv)
              "   of the preceding SERVER PID. To have a client process that\n"
              "   is not associated with any specified server process,\n"
              "   specify the CLIENT program ID before any SERVER program ID.\n"
+             "   Special for SERVER_CLIENT program ID, it must come after a\n"
+             "   SERVER program ID or a SERVER_CLIENT program ID to create a\n"
+             "   nested blocking chain."
              "   Also special for CLIENT and HRT_CBS program ID is that -x\n"
              "   will be forced to have the DURATION value specified to the\n"
              "   driver using -t",

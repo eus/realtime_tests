@@ -174,6 +174,14 @@ static void send_recv(int comm_socket, const void *data, size_t data_len,
     *send_errno = 0;
   }
 
+  if (*byte_sent == -1) {
+    *byte_rcvd = 0;
+    *recv_errno = 0;
+    return;
+  }
+
+  memset(buffer, 0, buf_len);
+
   *byte_rcvd = recv(comm_socket, buffer, buf_len, 0);
   if (*byte_rcvd == -1) {
     *recv_errno = errno;
@@ -548,7 +556,7 @@ MAIN_BEGIN("client", "stderr", NULL)
                "   waiting for the next period.\n"
                "-t PERIOD is the period in millisecond.\n"
                "-x DURATION in millisecond will be divided by PERIOD to\n"
-               "   determine the number of slots in the ring buffer."
+               "   determine the number of slots in the ring buffer.\n"
                "-p SERVER_PORT is the server UDP port number at which the\n"
                "   server is receiving requests.\n"
                "-s STATS_FILE_PATH is the path to the file to store the\n"
