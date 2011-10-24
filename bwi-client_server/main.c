@@ -37,6 +37,8 @@ struct proc {
   pid_t proc_id;
   pid_t *server_pid; /* Only used by client process */
   unsigned long *duration_ms; /* Only used by client and hrt_cbs processes */
+  int *ftrace_start; /* Only used by client process */
+  int *ftrace_stop; /* Only used by client process */
 };
 
 static struct proc *proc_new(void)
@@ -287,6 +289,20 @@ static int procs_make_argv(struct proc_head *head)
                  "%lu", *itr->duration_ms);
       }
     }
+    if (itr->ftrace_start != NULL) {
+      char *argv_to_adjust = find_argv_to_adjust('r', itr);
+      if (argv_to_adjust != NULL) {
+        snprintf(argv_to_adjust, strlen(argv_to_adjust),
+                 "%d", *itr->ftrace_start);
+      }
+    }
+    if (itr->ftrace_stop != NULL) {
+      char *argv_to_adjust = find_argv_to_adjust('l', itr);
+      if (argv_to_adjust != NULL) {
+        snprintf(argv_to_adjust, strlen(argv_to_adjust),
+                 "%d", *itr->ftrace_stop);
+      }
+    }
     /* END: Adjust client -v server_pid, -x duration or hrt_cbs -x duration */
   }
 
@@ -328,6 +344,8 @@ struct parse_config_file_prms
 {
   struct proc *preceding_server;
   unsigned long *duration_ms;
+  int *ftrace_start;
+  int *ftrace_stop;
 };
 static int parse_config_file(const char *line, void *args)
 {
@@ -368,6 +386,8 @@ static int parse_config_file(const char *line, void *args)
           p->server_pid = &prms->preceding_server->proc_id;
         }
         p->duration_ms = prms->duration_ms;
+        p->ftrace_start = prms->ftrace_start;
+        p->ftrace_stop = prms->ftrace_stop;
         break;
       case CPU_HOG:
         procs_add(&cpu_hog_procs, p);
@@ -394,12 +414,26 @@ static int parse_config_file(const char *line, void *args)
 
       if (i == CLIENT) {
         if (prms->preceding_server == NULL) {
-          args_buflen = snprintf(NULL, 0,
-                                 SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+          if (prms->ftrace_start != NULL && prms->ftrace_stop != NULL) {
+            args_buflen = snprintf(NULL, 0,
+                                   SNPRINTF_ARGS(" -x %lu -r %d -l %d",
+                                                 ULONG_MAX, INT_MAX,
+                                                 INT_MAX)) + 1;
+          } else {
+            args_buflen = snprintf(NULL, 0,
+                                   SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+          }
         } else {
-          args_buflen = snprintf(NULL, 0,
-                                 SNPRINTF_ARGS(" -v %d -x %lu",
-                                               INT_MAX, ULONG_MAX)) + 1;
+          if (prms->ftrace_start != NULL && prms->ftrace_stop != NULL) {
+            args_buflen = snprintf(NULL, 0,
+                                   SNPRINTF_ARGS(" -v %d -x %lu -r %d -l %d",
+                                                 INT_MAX, ULONG_MAX,
+                                                 INT_MAX, INT_MAX)) + 1;
+          } else {
+            args_buflen = snprintf(NULL, 0,
+                                   SNPRINTF_ARGS(" -v %d -x %lu",
+                                                 INT_MAX, ULONG_MAX)) + 1;
+          }
         }
       } else if (i == HRT_CBS) {
         args_buflen = snprintf(NULL, 0,
@@ -416,12 +450,26 @@ static int parse_config_file(const char *line, void *args)
 
       if (i == CLIENT) {
         if (prms->preceding_server == NULL) {
-          args_buflen = snprintf(p->args, args_buflen,
-                                 SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+          if (prms->ftrace_start != NULL && prms->ftrace_stop != NULL) {
+            args_buflen = snprintf(p->args, args_buflen,
+                                   SNPRINTF_ARGS(" -x %lu -r %d -l %d",
+                                                 ULONG_MAX, INT_MAX,
+                                                 INT_MAX)) + 1;
+          } else {
+            args_buflen = snprintf(p->args, args_buflen,
+                                   SNPRINTF_ARGS(" -x %lu", ULONG_MAX)) + 1;
+          }
         } else {
-          args_buflen = snprintf(p->args, args_buflen,
-                                 SNPRINTF_ARGS(" -v %d -x %lu",
-                                               INT_MAX, ULONG_MAX)) + 1;
+          if (prms->ftrace_start != NULL && prms->ftrace_stop != NULL) {
+            args_buflen = snprintf(p->args, args_buflen,
+                                   SNPRINTF_ARGS(" -v %d -x %lu -r %d -l %d",
+                                                 INT_MAX, ULONG_MAX,
+                                                 INT_MAX, INT_MAX)) + 1;
+          } else {
+            args_buflen = snprintf(p->args, args_buflen,
+                                   SNPRINTF_ARGS(" -v %d -x %lu",
+                                                 INT_MAX, ULONG_MAX)) + 1;
+          }
         }
       } else if (i == HRT_CBS) {
         args_buflen = snprintf(p->args, args_buflen,
@@ -454,13 +502,29 @@ static int parse_config_file(const char *line, void *args)
 static const char *config_path = NULL;
 static unsigned long int experiment_duration_ms = -1;
 static int cbs_budget_period_ms = -1;
+static int ftrace_start = -1;
+static int ftrace_stop = -1;
 static int parse_cmd_line_args(int argc, char **argv)
 {
   char *duration_unit;
   int optchar;
   opterr = 0;
-  while ((optchar = getopt(argc, argv, ":ht:f:p:")) != -1) {
+  while ((optchar = getopt(argc, argv, ":hr:l:t:f:p:")) != -1) {
     switch (optchar) {
+    case 'r':
+      ftrace_start = atoi(optarg);
+      if (ftrace_start <= 0) {
+        log_error("-r must be at least 1 (-h for help)");
+        return -1;
+      }
+      break;
+    case 'l':
+      ftrace_stop = atoi(optarg);
+      if (ftrace_stop <= 0) {
+        log_error("-l must be at least 1 (-h for help)");
+        return -1;
+      }
+      break;
     case 'p':
       cbs_budget_period_ms = atoi(optarg);
       if (cbs_budget_period_ms <= 0) {
@@ -488,7 +552,7 @@ static int parse_cmd_line_args(int argc, char **argv)
       break;
     case 'h':
       printf("Usage: %1$s -t DURATION -p BUDGET_PERIOD -f CONFIG_FILE\n"
-             "       [-r]\n"
+             "       [-r CLIENT_TRACING_START -l CLIENT_TRACING_LIMIT]\n"
              "\n"
              "This is the experiment driver that will create the necessary\n"
              "programs in the proper order and timing allowing them to\n"
@@ -500,6 +564,22 @@ static int parse_cmd_line_args(int argc, char **argv)
              "SIGINT can be used to terminate this program graciously at any\n"
              "time.\n"
              "\n"
+	     "-r CLIENT_TRACING_START is used to start ftrace at the"
+	     "   beginning of the n-th period if n > 0, and to stop ftrace at\n"
+	     "   the end of the epilogue in that period unless\n"
+	     "   CLIENT_TRACING_LIMIT is given in which case stop ftrace at\n"
+	     "   (CLIENT_TRACING_START + CLIENT_TRACING_LIMIT - 1)-th\n"
+	     "   iteration. The former is useful for debugging kernel BWI\n"
+	     "   timing by analyzing ftrace output while the latter is\n"
+	     "   useful to get a snapshot of the execution for illustration\n"
+	     "   in a journal/book. If this is set to 0, ftrace will be\n"
+	     "   enabled continuously up to either the time where the\n"
+	     "   response time is more than CLIENT_TRACING_LIMIT or the end\n"
+	     "   of this program; when ftrace is stopped, this client program\n"
+	     "   will print the job number that turns the ftrace off in\n"
+	     "   stdout in the format: Job #JOB_NUMBER\n"
+	     "-l CLIENT_TRACING_LIMIT can either be a time in millisecond or\n"
+	     "   an iteration count as explained above.\n"
              "-t DURATION is the desired duration of the experiment in\n"
              "   either second (e.g., -t 60s) or millisecond\n"
              "   (e.g., -t 60ms).\n"
@@ -550,6 +630,11 @@ static int parse_cmd_line_args(int argc, char **argv)
     log_error("-f must be specified (-h for help)");
     return -1;
   }
+  if ((ftrace_start != -1 && ftrace_stop == -1)
+      || (ftrace_start == -1 && ftrace_stop != -1)) {
+    log_error("-r must be specified together with -l (-h for help)");
+    return -1;
+  }
 
   return optind;
 }
@@ -586,6 +671,8 @@ MAIN_BEGIN("bwi-client_server", "stderr", NULL)
     struct parse_config_file_prms args = {
       .preceding_server = NULL,
       .duration_ms = &experiment_duration_ms,
+      .ftrace_start = ftrace_start == -1 ? NULL : &ftrace_start,
+      .ftrace_stop = ftrace_stop == -1 ? NULL : &ftrace_stop,
     };
     if (utility_file_read(config_file, 1024, parse_config_file, &args) != 0) {
       log_error("Cannot completely parse the config file");

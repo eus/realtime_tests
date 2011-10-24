@@ -50,6 +50,7 @@ struct client_prog_prms {
   int nth_iteration;
   int stopping_iteration;
   int ftrace_iteration;
+  int ftrace_iteration_limit;
   FILE *ftrace_file;
   sigset_t send_recv_interrupt_mask;
   absolute_time next_release;
@@ -328,7 +329,7 @@ static void client_prog(void *args)
       fatal_syserror("Cannot revoke BWI");
     }
   }
-  if (prms->nth_iteration == prms->ftrace_iteration) {
+  if (prms->nth_iteration == prms->ftrace_iteration_limit) {
     fprintf(prms->ftrace_file, "0");
   }  
   /* END: BWI revocation */
@@ -441,7 +442,9 @@ MAIN_BEGIN("client", "stderr", NULL)
   int stopping_iteration = -1;
   int ftrace_iteration = -1;
   int cbs_budget_ms = -1;
+  int limit = -1;
   int response_time_limit_ms = -1;
+  int iteration_limit = -1;
   int duration_ms = -1;
   const char *stats_file_path = NULL;
   {
@@ -457,8 +460,8 @@ MAIN_BEGIN("client", "stderr", NULL)
         }
         break;
       case 'l':
-        response_time_limit_ms = atoi(optarg);
-        if (response_time_limit_ms <= 0) {
+        limit = atoi(optarg);
+        if (limit <= 0) {
           fatal_error("LIMIT must be greater than 0 (-h for help)");
         }
         break;
@@ -557,18 +560,20 @@ MAIN_BEGIN("client", "stderr", NULL)
                "-b is specified when this client should give its bandwidth\n"
                "   to the server (the kernel must support BWI syscalls).\n"
                "-r NTH_ITERATION is used to start ftrace at the beginning of\n"
-               "   the n-th period and to stop ftrace at the end of the\n"
-               "   epilogue in that period. This is useful for debugging\n"
-               "   kernel BWI timing by analyzing ftrace output. If this is\n"
-               "   set to 0, ftrace will be enabled continuously up to either\n"
-               "   the time where the response time is more than the stated\n"
-               "   limit in millisecond specified using -l or the end of this\n"
-               "   program.\n"
-               "-l LIMIT is used as the threshold to stop ftrace when -r is\n"
-               "   set to 0 and the response time exceeds the threshold.\n"
-               "   When ftrace is stopped in this way, this client program\n"
+               "   the n-th period if n > 0, and to stop ftrace at the end of\n"
+               "   the epilogue in that period unless LIMIT is given in which\n"
+               "   case stop ftrace at (NTH_ITERATION + LIMIT - 1)-th\n"
+               "   iteration. The former is useful for debugging kernel BWI\n"
+               "   timing by analyzing ftrace output while the latter is\n"
+               "   useful to get a snapshot of the execution for illustration\n"
+               "   in a journal/book. If this is set to 0, ftrace will be\n"
+               "   enabled continuously up to either the time where the\n"
+               "   response time is more than LIMIT or the end of this\n"
+               "   program; when ftrace is stopped, this client program\n"
                "   will print the job number that turns the ftrace off in\n"
                "   stdout in the format: Job #JOB_NUMBER\n"
+               "-l LIMIT can either be a time in millisecond or an iteration\n"
+               "   count as explained above.\n"
                "-q BUDGET is the client CBS budget in millisecond. If this\n"
                "   not specified, the budget is calculated by summing\n"
                "   PROLOGUE_DURATION, EXPECTED_SERVICE_TIME and\n"
@@ -622,10 +627,16 @@ MAIN_BEGIN("client", "stderr", NULL)
   if (server_pid == -1) {
     fatal_error("-v must be specified (-h for help)");
   }
-  if (ftrace_iteration != 0 && response_time_limit_ms != -1) {
-    fatal_error("-l must only be used when -r is set to 0 (-h for help)");
-  } else if (ftrace_iteration == 0 && response_time_limit_ms == -1) {
+  if (ftrace_iteration == -1 && limit != -1) {
+    fatal_error("-l must only be used when -r is set (-h for help)");
+  } else if (ftrace_iteration == 0 && limit == -1) {
     fatal_error("-l must be used when -r is set to 0 (-h for help)");
+  } else if (ftrace_iteration == 0 && limit != -1) {
+    response_time_limit_ms = limit;
+  } else if (ftrace_iteration > 0 && limit == -1) {
+    iteration_limit = ftrace_iteration;
+  } else if (ftrace_iteration > 0 && limit != -1) {
+    iteration_limit = ftrace_iteration + limit - 1;
   }
 
   /* Prepare for tracing */
@@ -770,6 +781,7 @@ MAIN_BEGIN("client", "stderr", NULL)
     .nth_iteration = 0,
     .stopping_iteration = stopping_iteration,
     .ftrace_iteration = ftrace_iteration,
+    .ftrace_iteration_limit = iteration_limit,
     .ftrace_file = ftrace_file,
     .ftrace_response_time_hit = 0,
   };
