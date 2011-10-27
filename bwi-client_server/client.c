@@ -64,6 +64,7 @@ struct client_thread_prms {
   int wcet_ms;
   int budget_ms;
   int period_ms;
+  int offset_ms;
   const char *stats_file_path;
   struct client_prog_prms *client_prog_args;
   const relative_time *job_stats_overhead;
@@ -131,7 +132,7 @@ static void *client_thread(void *args)
                          to_utility_time_dyn(prms->period_ms, ms),
                          to_utility_time_dyn(prms->wcet_ms, ms),
                          &prms->client_prog_args->next_release,
-                         to_utility_time_dyn(0, ms),
+                         to_utility_time_dyn(prms->offset_ms, ms),
                          NULL, NULL,
                          prms->stats_file_path, prms->ringbuf_slot_count, 1,
                          prms->job_stats_overhead,
@@ -444,6 +445,7 @@ MAIN_BEGIN("client", "stderr", NULL)
   int epilogue_duration_ms = -1;
   int expected_waiting_ms = -1;
   int period_ms = -1;
+  int offset_ms = -1;
   int server_port = -1;
   int server_pid = -1;
   int use_bwi = 0;
@@ -458,9 +460,16 @@ MAIN_BEGIN("client", "stderr", NULL)
   {
     int optchar;
     opterr = 0;
-    while ((optchar = getopt(argc, argv, ":hl:v:s:i:r:1:2:3:t:p:q:x:b"))
+    while ((optchar = getopt(argc, argv, ":hl:v:s:i:r:1:2:3:t:p:q:x:bd:"))
            != -1) {
       switch (optchar) {
+      case 'd':
+        offset_ms = atoi(optarg);
+        if (offset_ms < 0) {
+          fatal_error("OFFSET must be greater than or equal to 0"
+                      " (-h for help)");   
+        }
+        break;
       case 'x':
         duration_ms = atoi(optarg);
         if (duration_ms <= 0) {
@@ -530,7 +539,7 @@ MAIN_BEGIN("client", "stderr", NULL)
                "       -3 EPILOGUE_DURATION -t PERIOD -p SERVER_PORT\n"
                "       -s STATS_FILE_PATH -v SERVER_PID -x DURATION\n"
                "       [-i ITERATION] [-b] [-r NTH_ITERATION [-l LIMIT]]\n"
-               "       [-q BUDGET]\n"
+               "       [-q BUDGET] [-d OFFSET]\n"
                "\n"
                "This client periodically sends a message to a local UDP port.\n"
                "In each period, the client will do processing for the given\n"
@@ -585,7 +594,10 @@ MAIN_BEGIN("client", "stderr", NULL)
                "-q BUDGET is the client CBS budget in millisecond. If this\n"
                "   not specified, the budget is calculated by summing\n"
                "   PROLOGUE_DURATION, EXPECTED_SERVICE_TIME and\n"
-               "   EPILOGUE_DURATION.\n",
+               "   EPILOGUE_DURATION.\n"
+               "-d OFFSET is the time to delay the first arrival of the\n"
+               "   client job after the client task is started. If -d is\n"
+               "   not specified, OFFSET will be set to 0.",
                prog_name);
         return EXIT_SUCCESS;
       case '?':
@@ -823,6 +835,7 @@ MAIN_BEGIN("client", "stderr", NULL)
     .wcet_ms = wcet_ms,
     .budget_ms = cbs_budget_ms == -1 ? wcet_ms : cbs_budget_ms,
     .period_ms = period_ms,
+    .offset_ms = offset_ms == -1 ? 0 : offset_ms,
     .stats_file_path = stats_file_path,
     .client_prog_args = &client_prog_args,
     .job_stats_overhead = job_stats_overhead,
