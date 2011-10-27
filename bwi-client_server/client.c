@@ -130,7 +130,7 @@ static void *client_thread(void *args)
     int rc = task_create("client",
                          to_utility_time_dyn(prms->wcet_ms, ms),
                          to_utility_time_dyn(prms->period_ms, ms),
-                         to_utility_time_dyn(prms->wcet_ms, ms),
+                         to_utility_time_dyn(prms->period_ms, ms),
                          &prms->client_prog_args->next_release,
                          to_utility_time_dyn(prms->offset_ms, ms),
                          NULL, NULL,
