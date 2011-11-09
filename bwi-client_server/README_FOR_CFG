@@ -1,0 +1,37 @@
+A .cfg file consists of sub-experiment specifications. One
+specification is expressed as one line. A specification can be
+commented out by starting the line with the character `#'. A blank
+line is ignored.
+
+A specification starts with a program ID which can be one of the
+following:
+SERVER (the program executable is server)
+CLIENT (the program executable is client)
+CPU_HOG (the program executable is cpu_hog)
+CPU_HOG_CBS (the program executable is cpu_hog_cbs)
+HRT_CBS (the program executable is hrt_cbs)
+SERVER_CLIENT (the program executable is server)
+
+After specifying the program ID, a specification should continue with
+the mandatory command line options and arguments required by the
+program. The mandatory command line options and arguments can be
+obtained by running the program executable with -h option.
+
+Please keep in mind that arguments given to a command line option must
+not contain any whitespace. Moreover, special for CLIENT and HRT_CBS
+program ID is that their command line option -x will be forced to have
+the DURATION value specified to executable main using command line
+option -t.
+
+Moreover, the order of specifying the specification _does_ matter as
+explained below to create a specific chain of communication hierarchy.
+
+Special for CLIENT program ID, if it comes after a SERVER program ID,
+the option -v will be forced to have the value of the preceding SERVER
+PID. To have a client process that is not associated with any
+specified server process, specify the CLIENT program ID before any
+SERVER program ID.
+
+Special for SERVER_CLIENT program ID, it must come after a SERVER
+program ID or a SERVER_CLIENT program ID to create a nested blocking
+chain.

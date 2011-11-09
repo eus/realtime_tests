@@ -12,9 +12,10 @@ sub-experiments are concerned about BWI for client-server
 communication, such as RPC (Remote Procedure Call) or the
 communication between an X server and its clients.
 
-All sub-experiments have their parameters stored in .cfg files to be
-run by the driver program: main. For example, to run sub-experiment 1
-for 60 seconds, the following command can be used:
+All sub-experiments have their parameters stored in .cfg files (please
+read README_FOR_CFG for more information on how to write a .cfg file)
+to be run by the driver program: main. For example, to run
+sub-experiment 1 for 60 seconds, the following command can be used:
 
 ./main -t 60s -p 20 -f subexperiment_01.cfg
 
@@ -31,6 +32,16 @@ command like the following can be used instead:
 
 As a convenient, the BASH script run_experiment.sh takes a
 sub-experiment number and produces both the .bin and .m files.
+
+The BASH script run_experiment_ftraced.sh works like run_experiment.sh
+except that it prepares the Linux kernel ftrace sub-system for
+tracing. The script is used for problem analysis like the ones stored
+in directory variation_in_response_time.
+
+The BASH script run_thesis_evaluations.sh is used to run
+sub-experiments specially made for Eus's master thesis. While the BASH
+script thesis_evaluation_mkcdf.sh is used to take the results of the
+sub-experiments and plot the CDF graphs for Eus's master thesis.
 
 [Sub-experiment 1]
 First, a server accepting and responding to UDP packet and a CPU
