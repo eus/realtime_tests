@@ -3,9 +3,9 @@
 # soft replenishment: lt 1 pt 6
 # hard replenishment: lt 2 pt 4
 
-every_BWI_no_3=30
+every_BWI_no_3=50
 every_BWI_no=120
-every_BWI_yes_47=30
+every_BWI_yes_47=80
 every_BWI_yes=80
 every_BWI_no_hrt=20
 every_BWI_yes_hrt=30
